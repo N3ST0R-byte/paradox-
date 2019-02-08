@@ -68,3 +68,18 @@ async def prim_cmd_discrim(ctx):
     max_len = len(max(list(zip(*user_info))[0], key=len))
     user_strs = ["{0[0]:^{max_len}} {0[1]:^25}".format(user, max_len=max_len) for user in user_info]
     await ctx.pager(ctx.paginate_list(user_strs, title="{} user{} found".format(len(user_strs), "s" if len(user_strs) > 1 else "", discrim)))
+
+@cmds.cmd("sorry",
+          category="Fun Stuff",
+          short_help="Sorry, love.")
+async def cmd_sorry(ctx):
+    """
+    Usage:
+        {prefix}sorry 
+    Description:
+        Sorry, love
+        Due to popular demand, sorry is back!
+    """
+   embed = discord.Embed(color=discord.Colour.purple())
+   embed.set_image(url="https://cdn.discordapp.com/attachments/309625872665542658/406040395462737921/image.png")
+   await ctx.reply(embed=embed)
