@@ -41,6 +41,7 @@ async def get_query(query, appid, **kwargs):
     payload = {"input": query,
                "appid": appid,
                "format": "image,plaintext",
+               "reinterpret": "true",
                "units": "metric",
                "output": "json"}
 
