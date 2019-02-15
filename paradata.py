@@ -7,10 +7,10 @@ prop_table_info = [
     ("members", "members", ["serverid", "userid"])
 ]
 
+
 class BotData:
     def __init__(self, dbfile, app=""):
         self.conn = sq.connect(dbfile)
-        cursor = self.conn.cursor()
         for name, table_name, keys in prop_table_info:
             manipulator = _propTableManipulator(table_name, keys, self.conn, app)
             self.__setattr__(name, manipulator)
@@ -26,7 +26,7 @@ class _propTableManipulator:
         self.keys = keys
         self.conn = conn
         self.app = app
- 
+
         self.ensure_tables()
         self.propmap = self.get_propmap()
 
@@ -88,7 +88,7 @@ class _propTableManipulator:
         cursor = self.conn.cursor()
         cursor.execute('SELECT EXISTS(SELECT 1 from {} where {})'.format(self.table, criteria).format(*self.keys, 'property'), tuple([*args[:-2], prop]))
         exists = cursor.fetchone()
-        
+
         if not exists[0]:
             cursor.execute('INSERT INTO {} VALUES ({})'.format(self.table, values), tuple([*args[:-2], prop, value]))
         else:
