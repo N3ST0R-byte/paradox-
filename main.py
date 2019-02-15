@@ -160,7 +160,7 @@ emojis = {"emoji_tex_del": "delete",
 # Initialise bot objects
 
 bot.objects["ready"] = False
-bot.objects["command_cache"] = LRUCache(1000)
+bot.objects["command_cache"] = LRUCache(300)
 
 
 # ----Discord event handling----
