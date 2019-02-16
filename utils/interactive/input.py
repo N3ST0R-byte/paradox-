@@ -115,7 +115,7 @@ def load_into(bot):
         # send pages off to discord
         sent_message = await ctx.pager(pages)
         # get answer
-        user_answer = await ctx.ctx.bot.wait_for_message(author=ctx.author, timeout=timeout)
+        user_answer = await ctx.bot.wait_for_message(author=ctx.author, timeout=timeout)
         try:
             # delete answer
             await ctx.bot.delete_message(sent_message)
@@ -155,7 +155,7 @@ def load_into(bot):
         if text[0] == '!':
             normal = parse_multi_select_message(text[1:], size)
             inverted = []
-            for i in range(1, size + 1):
+            for i in range(1, size):
                 if not i in normal:
                     inverted.append(i)
             return inverted
@@ -173,7 +173,10 @@ def load_into(bot):
                 selected.append(int(item))
 
         # deduplicate output
-        return list(set(selected))
+        selected = list(set(selected))
+        # decrement each item and make sure they are within range, since it was increased for user friendliness
+        selected = [x - 1 for x in selected if 0 < x <= size]
+        return selected
 
     @bot.util
     async def silent_selector(ctx, message, select_from, timeout=120, use_msg=None):
