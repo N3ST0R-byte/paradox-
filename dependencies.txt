@@ -5,3 +5,4 @@ pytz
 pyparsing
 cachetools
 BeautifulSoup4
+pillow
