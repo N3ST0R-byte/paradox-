@@ -104,7 +104,7 @@ async def cmd_rolemembers(ctx):
 @cmds.cmd("userinfo",
           category="Info",
           short_help="Shows the user's information",
-          aliases=["uinfo", "ui"])
+          aliases=["uinfo", "ui", "user"])
 @cmds.require("in_server")
 @cmds.execute("user_lookup", in_server=True, greedy=True)
 async def cmd_userinfo(ctx):
