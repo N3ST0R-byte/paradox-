@@ -240,7 +240,7 @@ async def cmd_piggybank(ctx):
 @cmds.cmd("timezone",
           category="Utility",
           short_help="Searches the timezone list",
-          aliases=["tz"])
+          aliases=["tz", "timein"])
 async def cmd_timezone(ctx):
     """
     Usage:
