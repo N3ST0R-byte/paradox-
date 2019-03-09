@@ -78,7 +78,7 @@ async def cmd_sorry(ctx):
         {prefix}sorry 
     Description:
         Sorry, love
-        Due to popular demand, sorry is back!
+        Due to demand (from Cosmic), sorry is back!
     """
     embed = discord.Embed(color=discord.Colour.purple())
     embed.set_image(url="https://cdn.discordapp.com/attachments/309625872665542658/406040395462737921/image.png")

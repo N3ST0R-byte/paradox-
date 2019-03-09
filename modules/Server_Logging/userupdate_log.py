@@ -24,7 +24,7 @@ async def log_member_update(bot, before, after):
         desc_lines.append("`After:` {}".format(after.name))
 
     if (events is None or "nickname" in events) and before.nick != after.nick:
-        desc_lines.append("**Nickname Changed** for {}".format(after.mention))
+        desc_lines.append("**Nickname Changed** for {}".format(after.tag))
         desc_lines.append("`Before:` {}".format(before.nick))
         desc_lines.append("`After:` {}".format(after.nick))
 
