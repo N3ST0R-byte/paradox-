@@ -19,17 +19,17 @@ async def log_member_update(bot, before, after):
     desc_lines = []
     image_url = None
     if (events is None or "username" in events) and before.name != after.name:
-        desc_lines.append("**Username Changed** for {}".format(after.mention))
+        desc_lines.append("**Username Changed** for {}#{}".format(after.name, after.discriminator))
         desc_lines.append("`Before:` {}".format(before.name))
         desc_lines.append("`After:` {}".format(after.name))
 
     if (events is None or "nickname" in events) and before.nick != after.nick:
-        desc_lines.append("**Nickname Changed** for {} #{}".format(after.name, after.discriminator))
+        desc_lines.append("**Nickname Changed** for {}#{}".format(after.name, after.discriminator))
         desc_lines.append("`Before:` {}".format(before.nick))
         desc_lines.append("`After:` {}".format(after.nick))
 
     if (events is None or "avatar" in events) and before.avatar_url != after.avatar_url:
-        desc_lines.append("**Avatar Changed** for {}".format(after.mention))
+        desc_lines.append("**Avatar Changed** for {}#{}".format(after.name, after.discriminator))
         old_av = "[Old Avatar]({})".format(before.avatar_url) if before.avatar_url else "None"
         new_av = "[New Avatar]({})".format(after.avatar_url) if after.avatar_url else "None"
         desc_lines.append("`Before:` {}".format(old_av))
@@ -41,7 +41,7 @@ async def log_member_update(bot, before, after):
         after_roles = [role.name for role in after.roles]
         added_roles = [role for role in after_roles if role not in before_roles]
         removed_roles = [role for role in before_roles if role not in after_roles]
-        desc_lines.append("**Roles Updated** for {}".format(after.mention))
+        desc_lines.append("**Roles Updated** for {}#{}".format(after.name, after.discriminator))
         if added_roles:
             desc_lines.append("Added roles `{}`".format("`, `".join(added_roles)))
         if removed_roles:
