@@ -54,13 +54,28 @@ async def cmd_texlisten(ctx):
 
 
 def _is_tex(msg):
+    content = msg.clean_content
     is_tex = False
-    is_tex = is_tex or (("$" in msg.clean_content) and
-                        1 - (msg.clean_content.count("$") % 2) and
-                        msg.clean_content.strip("$"))
-    is_tex = is_tex or ("\\begin{" in msg.clean_content)
-    is_tex = is_tex or ("\\[" in msg.clean_content and "\\]" in msg.clean_content)
-    is_tex = is_tex or ("\\(" in msg.clean_content and "\\)" in msg.clean_content)
+
+    # Even number of dollar signs
+    is_tex = is_tex or (("$" in content) and
+                        1 - (content.count("$") % 2) and
+                        content.strip("$"))
+
+    # Start of an environment
+    is_tex = is_tex or ("\\begin{" in content)
+
+    # The \[ \] and \( \) math modes
+    is_tex = is_tex or ("\\[" in content and "\\]" in content)
+    is_tex = is_tex or ("\\(" in content and "\\)" in content)
+
+    # If a non-latex code block exists, the message probably isn't LaTeX
+    if is_tex and "```" in content and not any(word in content for word in ["```tex", "```latex", "```\n"]):
+        # Check whether every such code block is a one liner, or has a space in the syntax field
+        lines = content.splitlines()
+        if not all(1 - line.count("```") % 2 or " " in line or line == "```" for line in lines if "```" in line):
+            is_tex = False
+
     return is_tex
 
 
@@ -186,8 +201,25 @@ async def cmd_tex(ctx):
 
 
 async def parse_tex(ctx, source):
-    if source.strip().startswith("```tex"):
-        source = source[6:]
+    if "```" in source:
+        # TeX source with codeblocks gets treated specially.
+        # Only the code in the codeblocks gets rendered.
+        # We can assume here, from _is_tex, that there are no foreign codeblocks
+        lines = source.splitlines()
+        to_compile = []
+        in_block = False
+        for line in lines:
+            if "```" in line:
+                splits = line.split("```")
+                for split in splits:
+                    if in_block and split not in ["", "tex", "latex"]:
+                        to_compile.append(split)
+                    in_block = not in_block
+                in_block = not in_block
+            elif in_block:
+                to_compile.append(line)
+        source = "\n".join(to_compile)
+
     source = source.strip("`").strip()
     if ctx.objs["latex_listening"]:
         return source
