@@ -90,7 +90,7 @@ async def cmd_tex(ctx):
         --colour:: Changes your colourscheme. One of default, white, black, or grey.
         --keepmsg:: Toggles whether I delete your source message or not.
         --alwaysmath:: Toggles whether {prefix}tex always renders in math mode.
-        --allowother:: Toogles whether other users may use the reaction to show your message source.
+        --allowother:: Toggles whether other users may use the reaction to show your message source.
         --name:: Toggles whether your name appears on the output message. Note the name of the image is your userid.
     Examples:
         {prefix}tex This is a fraction: $\\frac{{1}}{{2}}$
