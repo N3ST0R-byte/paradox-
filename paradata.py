@@ -10,7 +10,7 @@ prop_table_info = [
 
 class BotData:
     def __init__(self, dbfile, app=""):
-        self.conn = sq.connect(dbfile)
+        self.conn = sq.connect(dbfile, timeout=20)
         for name, table_name, keys in prop_table_info:
             manipulator = _propTableManipulator(table_name, keys, self.conn, app)
             self.__setattr__(name, manipulator)
