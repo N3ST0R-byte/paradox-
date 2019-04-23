@@ -218,7 +218,7 @@ async def parse_tex(ctx, source):
                 in_block = not in_block
             elif in_block:
                 to_compile.append(line)
-        source = "\n".join(to_compile)
+        source = "\\\\\n".join(to_compile)
 
     source = source.strip("`").strip()
     if ctx.objs["latex_listening"]:
