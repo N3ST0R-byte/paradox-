@@ -583,7 +583,7 @@ async def register_tex_listeners(bot):
 
 
 async def tex_listener(ctx):
-    if ctx.author.bot:
+    if ctx.author.bot and int(ctx.authid) not in ctx.bot.bot_conf.getintlist("whitelisted_bots"):
         return
     if "ready" not in ctx.bot.objects or not ctx.bot.objects["ready"]:
         return
