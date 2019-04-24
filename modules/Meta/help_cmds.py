@@ -25,8 +25,6 @@ async def cmd_help(ctx):
                  "msg": ctx.msg}
     msg = ""
     all_commands = await ctx.get_cmds()  # Should probably be cached from ctx init
-    if ctx.arg_str.strip() == "cmd":
-        await ctx.reply("~~You really shouldn't take it literally.~~ Please type `{0.used_prefix}help rolemod` for example. Full command list can be found with `{0.used_prefix}list`.".format(ctx))
     if ctx.arg_str == "":
         help_msg = ctx.bot.objects["help_str"].format(prefix=prefix,
                                                       user=ctx.author,
@@ -54,6 +52,9 @@ async def cmd_help(ctx):
                 await ctx.emb_add_fields(embed, emb_fields)
                 await ctx.reply(embed=embed)
         else:
+        if ctx.arg_str.strip() == "cmd":
+        await ctx.reply("~~You really shouldn't take it literally.~~ Please type `{0.used_prefix}help rolemod` for example. Full command list can be found with `{0.used_prefix}list`.".format(ctx))
+        return
             msg += "I couldn't find a command named `{}`. Please make sure you have spelled the command correctly. \n".format(cmd)
         if msg:
             await ctx.reply(msg, split=True, code=False)
