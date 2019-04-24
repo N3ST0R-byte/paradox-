@@ -478,10 +478,10 @@ async def cmd_preamble(ctx):
                 return
             new_preamble = new_preamble if new_preamble.strip() else default_preamble
             await ctx.data.users.set(user_id, "latex_preamble", new_preamble)
-            await ctx.reply("The preamble change has been approved")
+            await ctx.reply("The preamble change has been approved.")
         await ctx.data.users.set(user_id, "limbo_preamble", "")
         if ctx.flags["deny"]:
-            await ctx.reply("The preamble change has been denied")
+            await ctx.reply("The preamble change has been denied.")
         return
 
     if ctx.flags["reset"]:
@@ -547,7 +547,7 @@ async def cmd_preamble(ctx):
     if in_file:
         temp_file.seek(0)
         await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], fp=temp_file, filename=file_name)
-    await ctx.reply("Your new preamble has been sent to the bot managers for review!")
+    await ctx.reply("Your new preamble has been sent to the bot managers for review!\n Use `{}preamble --retract` to retract your preamble.").format(ctx.server_conf.guild_prefix)
 
 
 async def texcomp(ctx):
