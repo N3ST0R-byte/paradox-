@@ -16,7 +16,7 @@ status_dict = {"online": discord.Status.online,
           category="Bot admin")
 @cmds.require("master_perm")
 async def cmd_shutdown(ctx):
-    await ctx.reply("Shutting down, cya another day~")
+    await ctx.reply("Shutting down...")
     await ctx.bot.logout()
 
 
