@@ -26,7 +26,7 @@ async def cmd_help(ctx):
     msg = ""
     all_commands = await ctx.get_cmds()  # Should probably be cached from ctx init
     if ctx.arg_str.strip() == "cmd":
-        await ctx.reply("~~You really shouldn't take it literally.~~ Please type `{0.used_prefix}help rolemod` for example. Full command list can be found with `{0.used_prefix}list`.").format(ctx)
+        await ctx.reply("~~You really shouldn't take it literally.~~ Please type `{0.used_prefix}help rolemod` for example. Full command list can be found with `{0.used_prefix}list`.".format(ctx))
     if ctx.arg_str == "":
         help_msg = ctx.bot.objects["help_str"].format(prefix=prefix,
                                                       user=ctx.author,
