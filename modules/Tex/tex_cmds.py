@@ -547,7 +547,7 @@ async def cmd_preamble(ctx):
     if in_file:
         temp_file.seek(0)
         await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], fp=temp_file, filename=file_name)
-    await ctx.reply("Your new preamble has been sent to the bot managers for review!\n Use `{}preamble --retract` to retract your preamble.").format(ctx.server_conf.guild_prefix)
+    await ctx.reply("Your new preamble has been sent to the bot managers for review!\n Use `,preamble --retract` to retract your preamble.")
 
 
 async def texcomp(ctx):
