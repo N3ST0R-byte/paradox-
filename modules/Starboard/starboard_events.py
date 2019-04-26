@@ -28,11 +28,9 @@ async def starboard_listener(bot, reaction, user):
         return
     sb_emoji = bot.objects["server_starboard_emojis"][message.server.id]
     emoji = reaction.emoji if isinstance(reaction.emoji, str) else reaction.emoji.id
+    star_count = reaction.count - 1 if message.author.id == user.id
 
     if emoji != sb_emoji:
-        return
-
-    if message.author.id == user.id:
         return
 
     ctx = Context(bot=bot, message=message, server=message.server)
@@ -59,7 +57,7 @@ async def starboard_listener(bot, reaction, user):
             server_board.pop(message.id, None)
             return
 
-    post_msg = "{} {} in {}".format(str(reaction.emoji), reaction.count, message.channel.mention)
+    post_msg = "{} {} in {}".format(str(reaction.emoji), star_count, message.channel.mention)
 
     embed = discord.Embed(colour=discord.Colour.gold(), description=message.content)
     embed.set_author(name="{user.name}".format(user=message.author),
