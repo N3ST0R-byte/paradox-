@@ -32,6 +32,9 @@ async def starboard_listener(bot, reaction, user):
     if emoji != sb_emoji:
         return
 
+    if message.author.id == user.id:
+        return
+
     ctx = Context(bot=bot, message=message, server=message.server)
 
     sb_channel = await ctx.server_conf.starboard_channel.get(ctx)
@@ -58,7 +61,7 @@ async def starboard_listener(bot, reaction, user):
 
     post_msg = "{} {} in {}".format(str(reaction.emoji), reaction.count, message.channel.mention)
 
-    embed = discord.Embed(colour=discord.Colour.light_grey(), description=message.content)
+    embed = discord.Embed(colour=discord.Colour.gold(), description=message.content)
     embed.set_author(name="{user.name}".format(user=message.author),
                      icon_url=message.author.avatar_url)
     embed.add_field(name="Message link", value="[Click to jump to message]({})".format(ctx.msg_jumpto(message)), inline=False)
