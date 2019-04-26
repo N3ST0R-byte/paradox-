@@ -33,9 +33,12 @@ async def starboard_listener(bot, reaction, user):
         return
 
     ctx = Context(bot=bot, message=message, server=message.server)
-    star_count = reaction.count - 1 if message.author.id == user.id
+
     sb_channel = await ctx.server_conf.starboard_channel.get(ctx)
     if not sb_channel:
+        return
+
+    if message.author.id == user.id
         return
 
     sb_channel = ctx.server.get_channel(sb_channel)
@@ -56,7 +59,7 @@ async def starboard_listener(bot, reaction, user):
             server_board.pop(message.id, None)
             return
 
-    post_msg = "{} {} in {}".format(str(reaction.emoji), star_count, message.channel.mention)
+    post_msg = "{} {} in {}".format(str(reaction.emoji), reaction.count, message.channel.mention)
 
     embed = discord.Embed(colour=discord.Colour.gold(), description=message.content)
     embed.set_author(name="{user.name}".format(user=message.author),
