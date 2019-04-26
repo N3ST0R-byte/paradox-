@@ -28,13 +28,12 @@ async def starboard_listener(bot, reaction, user):
         return
     sb_emoji = bot.objects["server_starboard_emojis"][message.server.id]
     emoji = reaction.emoji if isinstance(reaction.emoji, str) else reaction.emoji.id
-    star_count = reaction.count - 1 if message.author.id == user.id
 
     if emoji != sb_emoji:
         return
 
     ctx = Context(bot=bot, message=message, server=message.server)
-
+    star_count = reaction.count - 1 if message.author.id == user.id
     sb_channel = await ctx.server_conf.starboard_channel.get(ctx)
     if not sb_channel:
         return
