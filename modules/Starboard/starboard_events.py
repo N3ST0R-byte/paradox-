@@ -38,7 +38,7 @@ async def starboard_listener(bot, reaction, user):
     if not sb_channel:
         return
 
-    if message.author.id == user.id
+    if message.author.id == user.id:
         return
 
     sb_channel = ctx.server.get_channel(sb_channel)
