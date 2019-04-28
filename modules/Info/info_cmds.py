@@ -259,9 +259,9 @@ async def cmd_serverinfo(ctx):
     status = "{} - **{}**\n{} - **{}**\n{} - **{}**\n{} - **{}**".format(Online, online, Idle, idle, Dnd, dnd, Offline, offline)
     avatar_url = ctx.server.icon_url
     icon = "[Icon Link]({})".format(avatar_url)
-    is_large = "More than 200 members" if ctx.server.large else "Less than 200 members"
+    is_large = "Yes, more than 200 members" if ctx.server.large else "No, less than 200 members"
 
-    prop_list = ["Owner", "Region", "Icon", "Large server", "Verification", "2FA", "Roles", "Members", "Channels", "Created at", ""]
+    prop_list = ["Owner", "Region", "Icon", "Large server?", "Verification", "2FA", "Roles", "Members", "Channels", "Created at", ""]
     value_list = [owner,
                   regions[str(ctx.server.region)],
                   icon,
