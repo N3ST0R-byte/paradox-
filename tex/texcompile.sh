@@ -1,12 +1,9 @@
-cd tex
-mkdir -p staging/$1/
+cd tex/staging/$1/
 
-cp $1.tex staging/$1/
+chmod --quiet -R o+rwx .
 
-cd staging/$1/
-chmod -R o+rwx .
+sudo -u latex timeout 1m pdflatex -no-shell-escape $1.tex > texout.log 2>&1
 
-sudo -u latex TEXINPUTS=:../../../resources timeout 1m pdflatex -no-shell-escape $1.tex >> texout.log 2>&1
 RET=$?
 if [ $RET -eq 0 ];
 then
