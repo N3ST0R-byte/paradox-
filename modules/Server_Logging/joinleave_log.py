@@ -19,7 +19,9 @@ async def log_join(bot, member):
     ctx = Context(bot=bot, member=member)
 
     user = member
-    colour = (user.colour if user.colour.value else discord.Colour.light_grey())
+    colour = (user.colour if user.colour.value else discord.Colour.yellow())
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
 
     game = user.game if user.game else "Nothing"
     status = statusdict[str(user.status)]
@@ -33,9 +35,9 @@ async def log_join(bot, member):
 
     embed = discord.Embed(type="rich", color=colour, description=desc)
     embed.set_author(name="New {usertype} joined: {user} (id: {user.id})".format(usertype="bot" if user.bot else "user", user=user),
-                     icon_url=user.avatar_url,
-                     url=user.avatar_url)
-    embed.set_thumbnail(url=user.avatar_url)
+                     icon_url=avlink,
+                     url=avlink)
+    embed.set_thumbnail(url=avlink)
     embed.set_footer(text=datetime.utcnow().strftime("Sent at %-I:%M %p, %d/%m/%Y"))
 
     await ctx.send(joinlog, embed=embed)
@@ -52,7 +54,9 @@ async def log_leave(bot, member):
     ctx = Context(bot=bot, member=member)
 
     user = member
-    colour = (user.colour if user.colour.value else discord.Colour.light_grey())
+    colour = (user.colour if user.colour.value else discord.Colour.orange())
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
 
     joined_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - user.joined_at))
     joined = user.joined_at.strftime("%-I:%M %p, %d/%m/%Y")
@@ -72,9 +76,9 @@ async def log_leave(bot, member):
 
     embed = discord.Embed(type="rich", color=colour, description=desc)
     embed.set_author(name="{usertype} left: {user} (id: {user.id})".format(usertype="Bot" if user.bot else "User", user=user),
-                     icon_url=user.avatar_url,
-                     url=user.avatar_url)
-    embed.set_thumbnail(url=user.avatar_url)
+                     icon_url=avlink,
+                     url=avlink)
+    embed.set_thumbnail(url=avlink)
     embed.set_footer(text=datetime.utcnow().strftime("Sent at %-I:%M %p, %d/%m/%Y"))
 
     await ctx.send(joinlog, embed=embed)
