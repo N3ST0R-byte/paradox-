@@ -115,6 +115,8 @@ async def cmd_userinfo(ctx):
         Sends information on the provided user, or yourself.
     """
     user = ctx.author
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
@@ -176,9 +178,9 @@ async def cmd_userinfo(ctx):
 
     embed = discord.Embed(type="rich", color=colour, description=desc)
     embed.set_author(name="{user.name} (id: {user.id})".format(user=user),
-                     icon_url=user.avatar_url,
-                     url=user.avatar_url)
-    embed.set_thumbnail(url=user.avatar_url)
+                     icon_url=avlink,
+                     url=avlink)
+    embed.set_thumbnail(url=avlink)
 
     emb_fields = [("Roles", roles, 0), ("Join order", join_seq, 0)]
     await ctx.emb_add_fields(embed, emb_fields)
@@ -296,10 +298,11 @@ async def cmd_avatar(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    avatar = user.avatar_url if user.avatar_url else user.default_avatar_url
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     embed = discord.Embed(colour=discord.Colour.green())
     embed.set_author(name="{}'s Avatar".format(user))
-    embed.set_image(url=avatar)
+    embed.set_image(url=avlink)
 
     out_msg = await ctx.reply(embed=embed, dm=ctx.bot.objects["brief"])
     if out_msg and ctx.bot.objects["brief"]:
