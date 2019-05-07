@@ -115,14 +115,13 @@ async def cmd_userinfo(ctx):
         Sends information on the provided user, or yourself.
     """
     user = ctx.author
-    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
-    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     bot_emoji = ctx.bot.objects["emoji_bot"]
     statusdict = {"offline": ("Offline/Invisible", ctx.bot.objects["emoji_offline"]),
                   "dnd": ("Do Not Disturb", ctx.bot.objects["emoji_dnd"]),
