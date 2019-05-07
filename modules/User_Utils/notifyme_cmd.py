@@ -138,7 +138,7 @@ async def cmd_notifyme(ctx):
         if ctx.flags["from"] == "me":
             user = ctx.author
         else:
-            user = await ctx.find_user(ctx.flags["from"], interactive=True)
+            user = await ctx.find_user(ctx.flags["from"], interactive=True, in_server=True)
             if not user:
                 return
         check["from"] = {"id": user.id}
