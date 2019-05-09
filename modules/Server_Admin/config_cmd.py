@@ -76,7 +76,9 @@ async def cmd_config(ctx):
         if len(ctx.params) == 1:
             op = ctx.params[0]
             op_conf = serv_conf[op]
-            msg = "\n{}.\nAcceptable input: `{}`.\nDefault value: `{}`\n"\
+            # Why must you do this to me
+            whydoyoudothis = "" if op_conf.desc.endswith(".") else "."
+            msg = "\n{}.\nAcceptable input: `{}`{}\nDefault value: `{}`\n"\
                 .format(op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx))
             msg += "Current value: {}".format(await op_conf.hr_get(ctx))
             embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(ctx.params[0]), description="{}".format(msg))
