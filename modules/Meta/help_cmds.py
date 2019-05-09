@@ -57,7 +57,7 @@ async def cmd_help(ctx):
                 return
             msg += "I couldn't find a command named `{}`. Please make sure you have spelled the command correctly. \n".format(cmd)
         if msg:
-            await ctx.offer_delete(await ctx.reply(msg, split=True, code=False))
+            await ctx.offer_delete(ctx.reply(msg, split=True, code=False))
 
 
 @cmds.cmd("list",
