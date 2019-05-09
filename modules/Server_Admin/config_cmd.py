@@ -77,7 +77,7 @@ async def cmd_config(ctx):
             op = ctx.params[0]
             op_conf = serv_conf[op]
             # Why must you do this to me
-            whydoyoudothis = "" if op_conf.desc.endswith(".") else "."
+            whydoyoudothis = None if op_conf.desc.endswith(".") else "."
             msg = "\n{}.\nAcceptable input: `{}`{}\nDefault value: `{}`\n"\
                 .format(op_conf.desc, whydoyoudothis, op_conf.accept, await op_conf.dyn_default(ctx))
             msg += "Current value: {}".format(await op_conf.hr_get(ctx))
