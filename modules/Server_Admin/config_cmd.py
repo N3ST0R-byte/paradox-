@@ -79,7 +79,7 @@ async def cmd_config(ctx):
             # Why must you do this to me
             whydoyoudothis = "" if op_conf.desc.endswith(".") else "."
             msg = "\n{}.\nAcceptable input: `{}`{}\nDefault value: `{}`\n"\
-                .format(op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx))
+                .format(op_conf.desc, whydoyoudothis, op_conf.accept, await op_conf.dyn_default(ctx))
             msg += "Current value: {}".format(await op_conf.hr_get(ctx))
             embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(ctx.params[0]), description="{}".format(msg))
             await ctx.reply(embed=embed)
