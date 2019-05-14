@@ -393,6 +393,9 @@ async def cmd_serverpreamble(ctx):
     current_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
     current_preamble = current_preamble if current_preamble else default_preamble
 
+    desc = "```tex\n{}```".format(current_preamble)
+    embed = discord.Embed(title="Server LaTeX Configuration", color=discord.Colour.light_grey(), description=desc)
+
     if not ctx.arg_str and not ctx.msg.attachments:
         if len(current_preamble) > 1000:
             temp_file = StringIO()
@@ -401,7 +404,7 @@ async def cmd_serverpreamble(ctx):
             temp_file.seek(0)
             await ctx.offer_delete(await ctx.reply(file_data=temp_file, file_name="server_preamble.tex", message="Current server preamble"))
         else:
-            await ctx.offer_delete(await ctx.reply("Current server preamble:\n```tex\n{}```".format(current_preamble)))
+            await ctx.offer_delete(await ctx.reply(embed=embed))
         return
 
     ctx.objs["latex_handled"] = True
