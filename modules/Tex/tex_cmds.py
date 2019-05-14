@@ -399,9 +399,9 @@ async def cmd_serverpreamble(ctx):
             temp_file.write(current_preamble)
 
             temp_file.seek(0)
-            await ctx.reply(file_data=temp_file, file_name="server_preamble.tex", message="Current server preamble")
+            await ctx.offer_delete(await ctx.reply(file_data=temp_file, file_name="server_preamble.tex", message="Current server preamble"))
         else:
-            await ctx.reply("Current server preamble:\n```tex\n{}```".format(current_preamble))
+            await ctx.offer_delete(await ctx.reply("Current server preamble:\n```tex\n{}```".format(current_preamble)))
         return
 
     ctx.objs["latex_handled"] = True
