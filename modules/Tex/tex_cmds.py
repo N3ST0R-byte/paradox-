@@ -363,7 +363,7 @@ async def show_config(ctx):
     if new_preamble:
         embed.add_field(name="Awaiting approval", value=new_preamble_message, inline=False)
 
-    await ctx.reply(embed=embed)
+    await ctx.offer_delete(await ctx.reply(embed=embed))
 
 
 @cmds.cmd("serverpreamble",
