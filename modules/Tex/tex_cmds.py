@@ -57,6 +57,49 @@ def _is_tex(msg):
     return (("$" in msg.clean_content) and 1 - (msg.clean_content.count("$") % 2) and msg.clean_content.strip("$")) or ("\\begin{" in msg.clean_content) or ("\\[" in msg.clean_content and "\\]" in msg.clean_content)
 
 
+@cmds.cmd("preamblepreset",
+          category="Maths",
+          short_help="Instantly changes your preamble to the requested preset.",
+          aliases=["ppr"])
+@cmds.execute("flags", flags=["list", "set"])
+async def cmd_ppr(ctx):
+    """
+    Usage:
+        {prefix}preamblepreset
+        {prefix}preamblepreset --list
+        {prefix}preamblepreset --set funandgames
+        {prefix}preamblepreset --set physics
+    Description:
+        Updates your preamble to a preset preamble, giving you the choice of what you want. 
+        Presets are currently manually submitted but will be changed in the future.
+        Doesn't require bot manager approval!
+        **NOTE!** This __overwrites__ your current preamble.
+
+    """
+    # Get the preset list
+    l=os.listdir('tex/presets')
+    li=[x.split('.')[0] for x in l]
+    if ctx.flags["list"]:
+        await ctx.reply("Available presets:\n```{}```".format(", ".join(li)))
+        return
+    if ctx.flags["set"]:
+        args = ctx.arg_str
+        if sauce == "":
+            await ctx.reply("Please provide a preset to set! Use `{0.used_prefix}preamblepreset --list` to obtain the list of presets.")
+            return
+        if args not in li:
+            await ctx.reply("Invalid preset.\nAvailable presets:`{}`".format(", ".join(li)))
+            return
+        # Open the preset then set it
+        path = "tex/presets/{}.tex".format(args)
+        with open(path, 'r') as preset:
+            data = preset.read()
+            await ctx.data.users.set(ctx.authid, "latex_preamble", data)
+            await ctx.reply("You have applied the preset `{}`.".format(args))
+            return
+    await ctx.reply("Preamble presets don't require bot manager approval to apply. Presets will be added or updated regularly!\nUse `{0.used_prefix}preamblepreset --list` to view the list, and `{0.used_prefix}preamblepreset --set <preset>` to set your preset.")
+
+
 @cmds.cmd("tex",
           category="Maths",
           short_help="Renders LaTeX code",
