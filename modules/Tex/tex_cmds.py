@@ -84,8 +84,8 @@ async def cmd_ppr(ctx):
         return
     if ctx.flags["set"]:
         args = ctx.arg_str
-        if sauce == "":
-            await ctx.reply("Please provide a preset to set! Use `{0.used_prefix}preamblepreset --list` to obtain the list of presets.")
+        if args == "":
+            await ctx.reply("Please provide a preset to set! Use `{0.used_prefix}preamblepreset --list` to obtain the list of presets.".format(ctx))
             return
         if args not in li:
             await ctx.reply("Invalid preset.\nAvailable presets:`{}`".format(", ".join(li)))
@@ -97,7 +97,7 @@ async def cmd_ppr(ctx):
             await ctx.data.users.set(ctx.authid, "latex_preamble", data)
             await ctx.reply("You have applied the preset `{}`.".format(args))
             return
-    await ctx.reply("Preamble presets don't require bot manager approval to apply. Presets will be added or updated regularly!\nUse `{0.used_prefix}preamblepreset --list` to view the list, and `{0.used_prefix}preamblepreset --set <preset>` to set your preset.")
+    await ctx.reply("Preamble presets don't require bot manager approval to apply. Presets will be added or updated regularly!\nUse `{0.used_prefix}preamblepreset --list` to view the list, and `{0.used_prefix}preamblepreset --set <preset>` to set your preset.".format(ctx))
 
 
 @cmds.cmd("tex",
