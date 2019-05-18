@@ -104,7 +104,7 @@ async def cmd_ppr(ctx):
         if ctx.arg_str == "":
             await ctx.reply("I can't delete nothing!")
             return
-        whatdelete = "D:/Projects/bread/tex/presets/{}.tex".format(ctx.arg_str)
+        whatdelete = "tex/presets/{}.tex".format(ctx.arg_str)
         if os.path.isfile(whatdelete):
             os.remove(whatdelete)
             await ctx.reply("Successfully removed the preset `{}`.".format(ctx.arg_str))
@@ -136,7 +136,7 @@ async def cmd_ppr(ctx):
         else:      
             name = ctx.arg_str.split(" ", 1)[0] 
             content = ctx.arg_str.split(" ", 1)[1]
-        file = "D:/Projects/bread/tex/presets/{}.tex".format(name)
+        file = "tex/presets/{}.tex".format(name)
         with open(he, "w") as pf:
             pf.write(content)
             pf.close()
