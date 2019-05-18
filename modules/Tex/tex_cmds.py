@@ -61,7 +61,7 @@ def _is_tex(msg):
           category="Maths",
           short_help="Instantly changes your preamble to the requested preset.",
           aliases=["ppr"])
-@cmds.execute("flags", flags=["list", "set"])
+@cmds.execute("flags", flags=["list", "set", "add", "remove", "view"])
 async def cmd_ppr(ctx):
     """
     Usage:
@@ -69,6 +69,7 @@ async def cmd_ppr(ctx):
         {prefix}preamblepreset --list
         {prefix}preamblepreset --set funandgames
         {prefix}preamblepreset --set physics
+        {prefix}preamblepreset --view funandgames
     Description:
         Updates your preamble to a preset preamble, giving you the choice of what you want. 
         Presets are currently manually submitted but will be changed in the future.
