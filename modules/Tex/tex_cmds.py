@@ -154,7 +154,7 @@ async def cmd_ppr(ctx):
         with open(path, 'r') as preset:
             data = preset.read()
             msg = "Viewing preset {}:""\n{}".format(args, data)
-            await ctx.offer_delete(await ctx.reply(msg, split=True, code=True))
+            await ctx.reply(msg, split=True, code=True)
             return
     await ctx.reply("Preamble presets don't require bot manager approval to apply. Presets will be added or updated regularly!\nUse `{0.used_prefix}preamblepreset --list` to view the list, and `{0.used_prefix}preamblepreset --set <preset>` to set your preset.".format(ctx))
 
