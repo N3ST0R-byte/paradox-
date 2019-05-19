@@ -1,5 +1,5 @@
 # Paradøx
-Paradøx is a Discord.py bot coded by Puerosola#0064, nockia#0065, and RetroTho#0912.
+Paradøx is a Discord.py bot coded by Puerosola#0064 and JetRaidz#3989.
 
 # Features
 Paradøx has a constantly expanding, customisable server configuration, where you can change the prefix, enable join/leave messages, set the channel, and set a custom message!
