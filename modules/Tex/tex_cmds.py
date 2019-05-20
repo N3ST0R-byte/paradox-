@@ -75,6 +75,10 @@ async def cmd_ppr(ctx):
         Presets are currently manually submitted but will be changed in the future.
         Doesn't require bot manager approval!
         **NOTE!** This __overwrites__ your current preamble.
+    Flags:
+        --list: Lists all presets that are currently available.
+        --view: Views the content of a preset.
+        --set: Sets your preamble to the specified preset.
 
     """
     # Get the preset list
