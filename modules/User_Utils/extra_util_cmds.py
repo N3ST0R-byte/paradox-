@@ -60,7 +60,7 @@ async def cmd_jumpto(ctx):
 @cmds.cmd("quote",
           category="Utility",
           short_help="Quotes a message by ID")
-@cmds.execute("flags", flags=["a"])
+@cmds.execute("flags", flags=["a", "r"])
 @cmds.require("in_server")
 async def cmd_quote(ctx):
     """
@@ -71,6 +71,7 @@ async def cmd_quote(ctx):
         Note that the message must be from the same server.
     Flags:
         -a:  (anonymous) Removes author information from the quote.
+        -r: (raw) Gives the raw message instead of an embed.
     """
     msgid = ctx.arg_str
     if msgid == "" or not msgid.isdigit():
@@ -95,6 +96,16 @@ async def cmd_quote(ctx):
     if not message:
         await ctx.reply("Couldn't find the message!")
         return
+    if ctx.flags["r"]:
+        if message.attachments:
+            await ctx.reply("I can't get the raw content of an attachment!")
+            return
+        if message.content.startswith("```"):
+            await ctx.reply(message.content)
+            return
+        msg = "```{}```".format(message.content)
+        await ctx.reply(msg)
+        return
     embed = discord.Embed(colour=discord.Colour.light_grey(), description=message.content)
     if not ctx.flags["a"]:
         embed.set_author(name="{user.name}".format(user=message.author),
@@ -104,6 +115,7 @@ async def cmd_quote(ctx):
     if message.attachments:
         embed.set_image(url=message.attachments[0]["proxy_url"])
     await ctx.reply(embed=embed)
+
 
 
 @cmds.cmd("secho",
