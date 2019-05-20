@@ -172,7 +172,7 @@ async def update_checks(ctx, checks):
 
 
 async def notify_user(user, ctx, check):
-    await ctx.log("Notifying user {} with check {}".format(user, check))
+    await ctx.log("Notifying user {} ({}) with check {}".format(user, user.id, check))
     prior_msgs = [ctx.msg]
     async for msg in ctx.bot.logs_from(ctx.ch, limit=5, before=ctx.msg):
         prior_msgs.append(msg)
