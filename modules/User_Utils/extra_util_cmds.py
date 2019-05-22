@@ -98,13 +98,12 @@ async def cmd_quote(ctx):
         return
     if ctx.flags["r"]:
         if message.attachments:
-            await ctx.reply("I can't get the raw content of an attachment!")
+            await ctx.reply("Cannot get the raw content of an attachment.")
             return
-        if message.content.startswith("```"):
-            await ctx.reply(message.content)
+        if not message.content.startswith("```"):
+            await ctx.reply("```{}```".format(message.content))
             return
-        msg = "```{}```".format(message.content)
-        await ctx.reply(msg)
+        await ctx.reply(message.clean_content)
         return
     embed = discord.Embed(colour=discord.Colour.light_grey(), description=message.content)
     if not ctx.flags["a"]:
@@ -116,7 +115,75 @@ async def cmd_quote(ctx):
         embed.set_image(url=message.attachments[0]["proxy_url"])
     await ctx.reply(embed=embed)
 
+@cmds.cmd("channelinfo",
+          category="Utility",
+          short_help="Shows info on a channel.",
+          aliases=["ci"])
+async def cmd_secho(ctx):
+    """
+    Usage:
+        {prefix}channelinfo #electronics
+        {prefix}channelinfo 525457831869284353
+        {prefix}channelinfo general
+    Description:
+        Gives information on a text channel, voice channel, or category.
+    """
+    ch = await ctx.find_channel(ctx.arg_str, interactive=True)
+    if not ch:
+        return
+    name = "{} [{}]".format(ch.name, ch.mention)
+    #category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
+    id = ch.id
+    type = str(ch.type)
+    createdat = ch.created_at.strftime("%d/%m/%Y")
+    created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - ch.created_at, minutes=False))
+    atgo = "{} {}".format(createdat, created_ago)
+    if ch.topic == "":
+        topic = "None"
+    else:
+        topic = ch.topic
+    userlimit = ch.user_limit
 
+    tv = {
+        "text": "Text channel",
+        "voice": "Voice channel",
+        "4": "Category"
+    }
+    if userlimit == 0:
+        reallimit = "Unlimited"
+    else:
+        reallimit = userlimit
+
+    if not ch.voice_members:
+        members = "No members in this channel."
+    else:
+        members = ", ".join([mem.mention for mem in ch.voice_members])
+
+    if str(ch.type) == "text":
+        prop_list = ["Name", "Type", "ID", "Created at", "Topic"]
+        value_list = [name, tv[type], id, atgo, topic]
+        desc = ctx.prop_tabulate(prop_list, value_list)
+        embed = discord.Embed(type="rich", color=discord.Colour.green(), description=desc)
+        embed.set_author(name="Text channel info")
+        await ctx.reply(embed=embed)
+        return
+    elif str(ch.type) == "voice":
+        whore = ["Name", "Type", "ID", "Created at", "User limit", "Current members"]
+        extrawhore = [name, tv[type], id, atgo, reallimit, members]
+        desc = ctx.prop_tabulate(whore, extrawhore)
+        embed = discord.Embed(type="rich", color=discord.Colour.purple(), description=desc)
+        embed.set_author(name="Voice channel info")
+        await ctx.reply(embed=embed)
+        return
+    elif str(ch.type) == "4":
+        prop_list = ["Name", "Type", "ID", "Created at"]
+        value_list = [ch.name, tv[type], id, atgo]
+        desc = ctx.prop_tabulate(prop_list, value_list)
+        embed = discord.Embed(type="rich", color=discord.Colour.blue(), description=desc)
+        embed.set_author(name="Category info")
+        embed.set_footer(text="Category information limited due to Discord.py version")
+        await ctx.reply(embed=embed)
+        return
 
 @cmds.cmd("secho",
           category="Utility",
