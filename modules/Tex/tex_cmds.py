@@ -406,7 +406,7 @@ async def reaction_edit_handler(ctx, out_msg):
 
 async def show_config(ctx):
     # Grab the config values
-    grab = ["latex_keep_msg", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname"]
+    grab = ["latex_keep_message", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname"]
     grab_names = ["keepmsg", "colour", "alwaysmath", "allowother", "showname"]
 
     values = []
