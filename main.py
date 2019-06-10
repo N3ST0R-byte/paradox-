@@ -136,7 +136,8 @@ bot.objects["regions"] = {
     "us-west": "Western United States",
     "eu-west": "Western Europe",
     "vip-amsterdam": "Amsterdam (VIP)",
-    "vip-us-east": "Eastern United States (VIP)"
+    "vip-us-east": "Eastern United States (VIP)",
+    "india": "India"
 }
 
 emojis = {"emoji_tex_del": "delete",
