@@ -8,7 +8,7 @@ cmds = paraCH()
 @cmds.cmd("giveme",
           category="Moderation",
           short_help="Request, list and modify the self assignable roles.",
-          aliases=["selfrole", "srole", "iam", "iamnot"])
+          aliases=["selfrole", "srole", "iam", "iamnot", "roleme"])
 @cmds.require("in_server")
 @cmds.execute("flags", flags=["add", "remove", "list"])
 async def cmd_giveme(ctx):
