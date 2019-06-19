@@ -452,7 +452,7 @@ async def cmd_serverpreamble(ctx):
           category="Maths",
           short_help="Change how your LaTeX compiles",
           aliases=["texconfig"])
-@cmds.execute("flags", flags=["reset", "replace", "add", "approve==", "remove", "retract", "deny=="])
+@cmds.execute("flags", flags=["reset", "replace", "add", "a==", "remove", "retract", "d=="])
 async def cmd_preamble(ctx):
     """
     Usage:
@@ -467,12 +467,12 @@ async def cmd_preamble(ctx):
         remove:: Removes all lines from your preamble containing the given text.
         retract:: Retract a pending preamble.
     """
-    user_id = ctx.flags["approve"] or ctx.flags["deny"]
+    user_id = ctx.flags["a"] or ctx.flags["d"]
     if user_id:
         (code, msg) = await cmds.checks["manager_perm"](ctx)
         if code != 0:
             return
-        if ctx.flags["approve"]:
+        if ctx.flags["a"]:
             new_preamble = await ctx.data.users.get(user_id, "limbo_preamble")
             if not new_preamble:
                 await ctx.reply("Nothing to approve. Perhaps this preamble was already approved?")
@@ -481,7 +481,7 @@ async def cmd_preamble(ctx):
             await ctx.data.users.set(user_id, "latex_preamble", new_preamble)
             await ctx.reply("The preamble change has been approved")
         await ctx.data.users.set(user_id, "limbo_preamble", "")
-        if ctx.flags["deny"]:
+        if ctx.flags["d"]:
             await ctx.reply("The preamble change has been denied")
         return
 
@@ -544,10 +544,10 @@ async def cmd_preamble(ctx):
         .add_field(name="Requested preamble", value=preamble_message, inline=False) \
         .add_field(name="To Approve", value="`preamble --approve {}`".format(ctx.authid), inline=False) \
         .set_footer(text=datetime.utcnow().strftime("Sent from {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
-    await ctx.bot.send_message(ctx.bot.objects["preamble_channel"], embed=embed)
+    await ctx.bot.send_message(ctx.bot.objects["preamble_channel"], ctx.authid, embed=embed)
     if in_file:
         temp_file.seek(0)
-        await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], fp=temp_file, filename=file_name)
+        await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], ctx.authid, fp=temp_file, filename=file_name)
     await ctx.reply("Your new preamble has been sent to the bot managers for review!")
 
 
