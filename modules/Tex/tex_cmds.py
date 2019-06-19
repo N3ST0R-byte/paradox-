@@ -542,7 +542,7 @@ async def cmd_preamble(ctx):
         .set_author(name="{} ({})".format(ctx.author, ctx.authid),
                     icon_url=ctx.author.avatar_url) \
         .add_field(name="Requested preamble", value=preamble_message, inline=False) \
-        .add_field(name="To Approve", value="`preamble --approve {}`".format(ctx.authid), inline=False) \
+        .add_field(name="To Approve", value="`,preamble --a {}`".format(ctx.authid), inline=False) \
         .set_footer(text=datetime.utcnow().strftime("Sent from {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
     await ctx.bot.send_message(ctx.bot.objects["preamble_channel"], ctx.authid, embed=embed)
     if in_file:
