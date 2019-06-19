@@ -452,7 +452,7 @@ async def cmd_serverpreamble(ctx):
           category="Maths",
           short_help="Change how your LaTeX compiles",
           aliases=["texconfig"])
-@cmds.execute("flags", flags=["reset", "replace", "add", "a==", "remove", "retract", "d=="])
+@cmds.execute("flags", flags=["reset", "replace", "add", "appr==", "remove", "retract", "deny=="])
 async def cmd_preamble(ctx):
     """
     Usage:
@@ -467,12 +467,12 @@ async def cmd_preamble(ctx):
         remove:: Removes all lines from your preamble containing the given text.
         retract:: Retract a pending preamble.
     """
-    user_id = ctx.flags["a"] or ctx.flags["d"]
+    user_id = ctx.flags["appr"] or ctx.flags["deny"]
     if user_id:
         (code, msg) = await cmds.checks["manager_perm"](ctx)
         if code != 0:
             return
-        if ctx.flags["a"]:
+        if ctx.flags["appr"]:
             new_preamble = await ctx.data.users.get(user_id, "limbo_preamble")
             if not new_preamble:
                 await ctx.reply("Nothing to approve. Perhaps this preamble was already approved?")
@@ -481,7 +481,7 @@ async def cmd_preamble(ctx):
             await ctx.data.users.set(user_id, "latex_preamble", new_preamble)
             await ctx.reply("The preamble change has been approved")
         await ctx.data.users.set(user_id, "limbo_preamble", "")
-        if ctx.flags["d"]:
+        if ctx.flags["deny"]:
             await ctx.reply("The preamble change has been denied")
         return
 
