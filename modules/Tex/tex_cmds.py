@@ -547,7 +547,7 @@ async def cmd_preamble(ctx):
     await ctx.bot.send_message(ctx.bot.objects["preamble_channel"], ctx.authid, embed=embed)
     if in_file:
         temp_file.seek(0)
-        await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], ctx.authid, fp=temp_file, filename=file_name)
+        await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], fp=temp_file, filename=file_name)
     await ctx.reply("Your new preamble has been sent to the bot managers for review!")
 
 
