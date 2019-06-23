@@ -4,10 +4,7 @@ from tex_config import default_preamble
 
 
 header = "\\documentclass[preview, border=5pt, 12pt]{standalone}\
-          \n\\nonstopmode\
-          \n\\everymath{\\displaystyle}\
-          \n\\usepackage[mathletters]{ucs}\
-          \n\\usepackage[utf8x]{inputenc}"
+          \n\\nonstopmode"
 
 
 async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="default", header=header):

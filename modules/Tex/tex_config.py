@@ -8,11 +8,8 @@ from paraCH import paraCH
 
 cmds = paraCH()
 
-default_preamble = "\\usepackage{amsmath}\
-                    \n\\usepackage{fancycom}\
-                    \n\\usepackage{color}\
-                    \n\\usepackage{tikz-cd}\
-                    \n\\usepackage{physics}"
+with open("preamble.tex", 'r') as preamble:
+    default_preamble = preamble.read()
 
 
 async def show_config(ctx):
