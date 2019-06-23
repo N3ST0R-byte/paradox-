@@ -6,6 +6,12 @@ from tex_config import default_preamble
 header = "\\documentclass[preview, border=5pt, 12pt]{standalone}\
           \n\\nonstopmode"
 
+to_compile = "{header}\
+    \n{preamble}\
+    \n\\begin{{document}}\
+    \n{source}\
+    \n\\end{{document}}"
+
 
 async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="default", header=header):
     path = "tex/staging/{}".format(userid)
@@ -15,10 +21,7 @@ async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="defaul
     fn = "{}/{}.tex".format(path, userid)
 
     with open(fn, 'w') as work:
-        work.write(header + preamble)
-        work.write('\n' + '\\begin{document}' + '\n')
-        work.write(source)
-        work.write('\n' + '\\end{document}' + '\n')
+        work.write(to_compile.format(header, preamble, source))
         work.close()
 
     return await ctx.run_sh("tex/texcompile.sh {} {}".format(userid, colour))
