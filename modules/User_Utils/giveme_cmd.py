@@ -8,7 +8,7 @@ cmds = paraCH()
 @cmds.cmd("giveme",
           category="Moderation",
           short_help="Request, list and modify the self assignable roles.",
-          aliases=["selfrole", "srole", "iam", "iamnot"])
+          aliases=["selfrole", "srole", "iam", "iamnot", "roleme"])
 @cmds.require("in_server")
 @cmds.execute("flags", flags=["add", "remove", "list"])
 async def cmd_giveme(ctx):
@@ -104,7 +104,8 @@ async def cmd_giveme(ctx):
         except discord.Forbidden:
             await ctx.reply("I don't have permissions to update these roles for you!")
             return
-    await ctx.reply("Updated your roles!")
+    msg = "You now have `{}`.".format(role.name) if role in ctx.author.roles else "You no longer have `{}`.".format(role.name)
+    await ctx.reply(msg)
     # TODO: Make interactive system with no arg_str, with comma separated list of numbers selecting roles
     # This probably needs a check func passed to the wait_for
 

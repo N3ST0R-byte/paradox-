@@ -57,6 +57,112 @@ def _is_tex(msg):
     return (("$" in msg.clean_content) and 1 - (msg.clean_content.count("$") % 2) and msg.clean_content.strip("$")) or ("\\begin{" in msg.clean_content) or ("\\[" in msg.clean_content and "\\]" in msg.clean_content) or ("\\(" in msg.clean_content and "\\)" in msg.clean_content)
 
 
+@cmds.cmd("preamblepreset",
+          category="Maths",
+          short_help="Instantly changes your preamble to the requested preset.",
+          aliases=["ppr"])
+@cmds.execute("flags", flags=["list", "set", "add", "remove", "view"])
+async def cmd_ppr(ctx):
+    """
+    Usage:
+        {prefix}preamblepreset
+        {prefix}preamblepreset --list
+        {prefix}preamblepreset --set funandgames
+        {prefix}preamblepreset --set physics
+        {prefix}preamblepreset --view funandgames
+    Description:
+        Updates your preamble to a preset preamble, giving you the choice of what you want. 
+        Presets are currently manually submitted but will be changed in the future.
+        Doesn't require bot manager approval!
+        **NOTE!** This __overwrites__ your current preamble.
+    Flags:
+        --list: Lists all presets that are currently available.
+        --view: Views the content of a preset.
+        --set: Sets your preamble to the specified preset.
+
+    """
+    # Get the preset list
+    l=os.listdir('tex/presets')
+    li=[x.split('.')[0] for x in l]
+    args = ctx.arg_str
+    if ctx.flags["list"]:
+        await ctx.reply("Available presets:\n```{}```".format(", ".join(li)))
+        return
+    if ctx.flags["set"]:
+        if args == "":
+            await ctx.reply("Please provide a preset to set! Use `{0.used_prefix}preamblepreset --list` to obtain the list of presets.".format(ctx))
+            return
+        if args not in li:
+            await ctx.reply("Invalid preset.\nAvailable presets:`{}`".format(", ".join(li)))
+            return        
+        # Open the preset then set it
+        path = "tex/presets/{}.tex".format(name)
+        with open(path, 'r') as preset:
+            data = preset.read()
+            await ctx.data.users.set(ctx.authid, "latex_preamble", data)
+            await ctx.reply("You have applied the preset `{}`.".format(args))
+            return
+    if ctx.flags["remove"]:
+        (code, msg) = await cmds.checks["manager_perm"](ctx)
+        if code != 0:
+            return
+        if ctx.arg_str == "":
+            await ctx.reply("I can't delete nothing!")
+            return
+        whatdelete = "tex/presets/{}.tex".format(ctx.arg_str)
+        if os.path.isfile(whatdelete):
+            os.remove(whatdelete)
+            await ctx.reply("Successfully removed the preset `{}`.".format(ctx.arg_str))
+            return
+        else:
+            await ctx.reply("Unknown file: `{}`".format(ctx.arg_str))
+            return
+    if ctx.flags["add"]:
+        (code, msg) = await cmds.checks["manager_perm"](ctx)
+        if code != 0:
+            return
+        if (ctx.arg_str == "") and len(ctx.msg.attachments) == 0:
+            await ctx.reply('Please provide arguments or attach a file!')
+            return
+        if len(ctx.arg_str.split(" ", 1)) == 2 and len(ctx.msg.attachments) >= 1:
+            await ctx.reply("Too many arguments!")
+            return
+        if len(ctx.arg_str.split(" ", 1)) == 1 and len(ctx.msg.attachments) == 0:
+            await ctx.reply("Please provide content for the file.")
+            return
+        if ctx.msg.attachments:
+            file_info = ctx.msg.attachments[0]
+            async with aiohttp.get(file_info['url']) as r:
+                content = await r.text()
+            if (ctx.arg_str != ""): 
+                name = ctx.arg_str
+            else:
+                name = file_info['filename']
+        else:      
+            name = ctx.arg_str.split(" ", 1)[0] 
+            content = ctx.arg_str.split(" ", 1)[1]
+        file = "tex/presets/{}.tex".format(name)
+        with open(he, "w") as pf:
+            pf.write(content)
+            pf.close()
+        await ctx.reply("Successfully added preset `{}`.".format(name))
+        return
+    if(ctx.flags["view"]):
+        path = "tex/presets/{}.tex".format(args)
+        if args == "":
+            await ctx.reply("Please provide a preset to view! Use `{0.used_prefix}preamblepreset --list` to obtain the list of presets.".format(ctx))
+            return
+        if args not in li:
+            await ctx.reply("Invalid preset.\nAvailable presets:`{}`".format(", ".join(li)))
+            return
+        with open(path, 'r') as preset:
+            data = preset.read()
+            msg = "Viewing preset {}:""\n{}".format(args, data)
+            await ctx.reply(msg, split=True, code=True)
+            return
+    await ctx.reply("Preamble presets don't require bot manager approval to apply. Presets will be added or updated regularly!\nUse `{0.used_prefix}preamblepreset --list` to view the list, and `{0.used_prefix}preamblepreset --set <preset>` to set your preset.".format(ctx))
+
+
 @cmds.cmd("tex",
           category="Maths",
           short_help="Renders LaTeX code",
@@ -90,7 +196,7 @@ async def cmd_tex(ctx):
         --colour:: Changes your colourscheme. One of default, white, black, or grey.
         --keepmsg:: Toggles whether I delete your source message or not.
         --alwaysmath:: Toggles whether {prefix}tex always renders in math mode.
-        --allowother:: Toogles whether other users may use the reaction to show your message source.
+        --allowother:: Toggles whether other users may use the reaction to show your message source.
         --name:: Toggles whether your name appears on the output message. Note the name of the image is your userid.
     Examples:
         {prefix}tex This is a fraction: $\\frac{{1}}{{2}}$
@@ -364,7 +470,7 @@ async def show_config(ctx):
     if new_preamble:
         embed.add_field(name="Awaiting approval", value=new_preamble_message, inline=False)
 
-    await ctx.reply(embed=embed)
+    await ctx.offer_delete(await ctx.reply(embed=embed))
 
 
 @cmds.cmd("serverpreamble",
@@ -394,15 +500,18 @@ async def cmd_serverpreamble(ctx):
     current_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
     current_preamble = current_preamble if current_preamble else default_preamble
 
+    desc = "```tex\n{}```".format(current_preamble)
+    embed = discord.Embed(title="Server LaTeX Configuration", color=discord.Colour.light_grey(), description=desc)
+
     if not ctx.arg_str and not ctx.msg.attachments:
         if len(current_preamble) > 1000:
             temp_file = StringIO()
             temp_file.write(current_preamble)
 
             temp_file.seek(0)
-            await ctx.reply(file_data=temp_file, file_name="server_preamble.tex", message="Current server preamble")
+            await ctx.offer_delete(await ctx.reply(file_data=temp_file, file_name="server_preamble.tex", message="Current server preamble"))
         else:
-            await ctx.reply("Current server preamble:\n```tex\n{}```".format(current_preamble))
+            await ctx.offer_delete(await ctx.reply(embed=embed))
         return
 
     ctx.objs["latex_handled"] = True
@@ -479,7 +588,7 @@ async def cmd_preamble(ctx):
                 return
             new_preamble = new_preamble if new_preamble.strip() else default_preamble
             await ctx.data.users.set(user_id, "latex_preamble", new_preamble)
-            await ctx.reply("The preamble change has been approved")
+            await ctx.reply("The preamble change has been approved.")
         await ctx.data.users.set(user_id, "limbo_preamble", "")
         if ctx.flags["d"]:
             await ctx.reply("The preamble change has been denied")
@@ -548,7 +657,7 @@ async def cmd_preamble(ctx):
     if in_file:
         temp_file.seek(0)
         await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], fp=temp_file, filename=file_name)
-    await ctx.reply("Your new preamble has been sent to the bot managers for review!")
+    await ctx.reply("Your new preamble has been sent to the bot managers for review!\n Use `{0.used_prefix}preamble --retract` to retract your preamble.".format(ctx))
 
 
 async def texcomp(ctx):
