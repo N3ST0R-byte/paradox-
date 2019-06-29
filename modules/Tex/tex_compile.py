@@ -2,6 +2,10 @@ import os
 
 from tex_config import default_preamble
 
+"""
+Provides a single context utility to compile LaTeX code from a user and return any error message
+"""
+
 
 header = "\\documentclass[preview, border=5pt, 12pt]{standalone}\
           \n\\nonstopmode"

@@ -11,7 +11,64 @@ from paraCH import paraCH
 
 cmds = paraCH()
 
-# TODO: Factor out into a util file everything except commands.
+"""
+Commands and handlers for LaTeX compilation, both manual and automatic.
+
+Commands provided:
+    texlisten:
+        Toggles a user-setting for global tex recognition
+    tex:
+        Manually render LaTeX and configure rendering settings.
+
+Handlers:
+    tex_edit_listener:
+        Listens to edited messages for automatic tex (re)compilation
+    tex_listener:
+        Listens to all new messages for automatic tex compilation
+
+Initialisation:
+    register_tex_listeners:
+        Add all users and servers with tex listening enabled to bot objects
+
+Bot Objects:
+    user_tex_listeners: set of user id strings
+    server_tex_listeners: dictionary of lists of math channel ids, indexed by server id
+    latex_messages: dictionary of Contexts, indexed by message ids
+
+User data:
+    tex_listening: bool
+        (app specific, user configured)
+        Whether the user has global tex listening enabled
+    latex_keepmsg: bool
+        (app specific, user configured)
+        Whether the latex source message will be deleted after compilation
+    latex_colour: string
+        (app specific, user configured)
+        The background colour for compiled LaTeX output
+    latex_alwaysmath: bool
+        (app specific, user configured)
+        Whether the `tex` command should render in paragraph or math mode
+    latex_allowother: bool
+        (app specific, user configured)
+        Whether other users are allowed to use the showtex reaction on compiled output
+    latex_showname: bool
+        (app specific, user configured)
+        Whether the user's name should be shown on the output
+    latex_preamble: string
+        (app independent, user configured)
+        The preamble used in LaTeX compilation
+    limbo-preamble: string
+        (app independent, user configured)
+        A preamble submitted by the user which is awaiting approval
+
+Server data:
+    maths_channels: list of channel ids
+        (app specific, admin configured)
+        The channels with automatic latex recognition enabled
+    latex_listen_enabled: bool
+        (app specific, admin configured)
+        Whether automatic latex recognition is enabled at all
+"""
 
 
 @cmds.cmd("texlisten",
@@ -27,31 +84,34 @@ async def cmd_texlisten(ctx):
         When tex is found, compiles it and replies to you.
     """
     listening = await ctx.data.users.get(ctx.authid, "tex_listening")
+
+    # Add or remove the user from the current user tex listeners, and update the db entry
     if listening:
-        if ctx.authid in ctx.bot.objects["user_tex_listeners"]:
-            ctx.bot.objects["user_tex_listeners"].remove(ctx.authid)
+        ctx.bot.objects["user_tex_listeners"].discard(ctx.authid)
         await ctx.data.users.set(ctx.authid, "tex_listening", False)
         await ctx.reply("I have stopped listening to your tex.")
-        return
     else:
+        ctx.bot.objects["user_tex_listeners"].add(ctx.authid)
         await ctx.data.users.set(ctx.authid, "tex_listening", True)
-        ctx.bot.objects["user_tex_listeners"].append(ctx.authid)
         await ctx.reply("I am now listening to your tex.")
 
 
 def _is_tex(msg):
+    """
+    Helper to check whether an incoming or edited message contains LaTeX source code.
+    """
     content = msg.clean_content
     is_tex = False
 
-    # Even number of dollar signs
+    # Check if there are an even number of dollar signs
     is_tex = is_tex or (("$" in content) and
                         1 - (content.count("$") % 2) and
                         content.strip("$"))
 
-    # Start of an environment
+    # Check if it contains the start of an environment
     is_tex = is_tex or ("\\begin{" in content)
 
-    # The \[ \] and \( \) math modes
+    # Check if it contains the \[ \] or \( \) math modes
     is_tex = is_tex or ("\\[" in content and "\\]" in content)
     is_tex = is_tex or ("\\(" in content and "\\)" in content)
 
@@ -163,19 +223,26 @@ async def cmd_tex(ctx):
             await ctx.reply("Your name is no longer shown on the output message. Note that your user id appears in the name of the output image.")
         return
 
+    # Handle empty input
     if ctx.arg_str == "":
         if ctx.used_cmd_name != ",":
             await ctx.reply("Please give me something to compile! See `{0}help` and `{0}help tex` for usage!".format(ctx.used_prefix))
         return
+
+    # Set the messages compilation flags
     ctx.objs["latex_listening"] = False
     ctx.objs["latex_source_deleted"] = False
     ctx.objs["latex_out_deleted"] = False
     ctx.objs["latex_handled"] = True
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
 
+    # Compile and send the final output message
     out_msg = await make_latex(ctx)
 
+    # Start the reaction handler
     asyncio.ensure_future(reaction_edit_handler(ctx, out_msg), loop=ctx.bot.loop)
+
+    # Hold the message context in cache for 600 seconds after the last edit or compilation
     if not ctx.objs["latex_source_deleted"]:
         ctx.objs["latex_edit_renew"] = False
         while True:
@@ -187,6 +254,9 @@ async def cmd_tex(ctx):
 
 
 async def parse_tex(ctx, source):
+    """
+    Extract the LaTeX source code to compile from a raw incoming message containing LaTeX.
+    """
     if "```" in source:
         # TeX source with codeblocks gets treated specially.
         # Only the code in the codeblocks gets rendered.
@@ -206,9 +276,15 @@ async def parse_tex(ctx, source):
                 to_compile.append(line)
         source = "\\\\\n".join(to_compile)
 
-    source = source.strip("`").strip()
+    # If the message starts and ends with backticks, strip them
+    if source.startswith('`') and source.endswith('`'):
+        source = source[1:-1]
+
+    # If the message came from automatic recognition, don't change anything
     if ctx.objs["latex_listening"]:
         return source
+
+    # Different compilation commands require different source wrappers
     always = await ctx.bot.data.users.get(ctx.authid, "latex_alwaysmath")
     if ctx.used_cmd_name == "latex" or (ctx.used_cmd_name == "tex" and not always):
         return source
@@ -225,15 +301,23 @@ async def parse_tex(ctx, source):
 
 
 async def make_latex(ctx):
+    """
+    Compile LaTeX, send the outpu, and handle cleanup
+    """
+    # Strip the command header off the message if required
     source = ctx.msg.clean_content if ctx.objs["latex_listening"] else ctx.msg.clean_content.partition(ctx.used_cmd_name)[2].strip()
     ctx.objs["latex_source"] = await parse_tex(ctx, source)
 
+    # Compile the source
     error = await texcomp(ctx)
     err_msg = ""
 
+    # Check if the user wants to keep the source message
     keep = await ctx.data.users.get(ctx.authid, "latex_keep_message")
     keep = keep or (keep is None)
 
+    # Make the error message if required
+    # If there's no error and the user doesn't want to keep the source, delete it
     if error != "":
         err_msg = "Compile error! Output:\n```\n{}\n```".format(error)
     elif not keep:
@@ -245,13 +329,17 @@ async def make_latex(ctx):
     ctx.objs["latex_delsource_emoji"] = ctx.bot.objects["emoji_tex_delsource"]
     ctx.objs["latex_show_emoji"] = ctx.bot.objects["emoji_tex_errors" if error else "emoji_tex_show"]
 
+    # Clean up the author's name and store it
     ctx.objs["latex_name"] = "**{}**:\n".format(ctx.author.name.replace("*", "\\*")) if (await ctx.data.users.get(ctx.authid, "latex_showname")) in [None, True] else ""
 
+    # Send the final output, or a failure image if there is no output
     file_name = "tex/{}.png".format(ctx.authid)
     exists = True if os.path.isfile(file_name) else False
     out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
                               message="{}{}".format(ctx.objs["latex_name"],
                                                     ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
+
+    # Remove the output image and clean up
     if exists:
         os.remove(file_name)
     ctx.objs["latex_show"] = 0
@@ -260,16 +348,18 @@ async def make_latex(ctx):
 
 
 async def reaction_edit_handler(ctx, out_msg):
+    # Add the control reactions
     try:
         await ctx.bot.add_reaction(out_msg, ctx.objs["latex_del_emoji"])
         await ctx.bot.add_reaction(out_msg, ctx.objs["latex_show_emoji"])
         if not ctx.objs["latex_source_deleted"]:
             await ctx.bot.add_reaction(out_msg, ctx.objs["latex_delsource_emoji"])
-
     except discord.Forbidden:
+        # If we can't react to the message or use external emojis, give up
         return
     allow_other = await ctx.bot.data.users.get(ctx.authid, "latex_allowother")
 
+    # Build a check function to check if a reaction is valid
     def check(reaction, user):
         if user == ctx.me:
             return False
@@ -278,6 +368,7 @@ async def reaction_edit_handler(ctx, out_msg):
         result = result or (reaction.emoji == ctx.objs["latex_delsource_emoji"] and (user == ctx.author))
         return result
 
+    # Loop around, waiting for valid reactions and handling them if they occur
     while True:
         res = await ctx.bot.wait_for_reaction(message=out_msg,
                                               timeout=300,
@@ -313,6 +404,8 @@ async def reaction_edit_handler(ctx, out_msg):
             ctx.objs["latex_show"] = 1 - ctx.objs["latex_show"]
             await ctx.bot.edit_message(out_msg,
                                        "{}{} ".format(ctx.objs["latex_name"], (ctx.objs["latex_source_msg"] if ctx.objs["latex_show"] else "")))
+
+    # Remove the reactions and clean up
     try:
         await ctx.bot.remove_reaction(out_msg, ctx.objs["latex_del_emoji"], ctx.me)
         await ctx.bot.remove_reaction(out_msg, ctx.objs["latex_show_emoji"], ctx.me)
@@ -321,10 +414,12 @@ async def reaction_edit_handler(ctx, out_msg):
         pass
     except discord.NotFound:
         pass
-    pass
 
 
 async def texcomp(ctx):
+    """
+    Put together the final configuration options for the LaTeX compilation, and compile
+    """
     source = ctx.objs["latex_source"]
     preamble = await ctx.get_preamble()
     colour = await ctx.data.users.get(ctx.authid, "latex_colour")
@@ -334,7 +429,7 @@ async def texcomp(ctx):
 
 
 async def register_tex_listeners(bot):
-    bot.objects["user_tex_listeners"] = [str(userid) for userid in await bot.data.users.find("tex_listening", True, read=True)]
+    bot.objects["user_tex_listeners"] = set([str(userid) for userid in await bot.data.users.find("tex_listening", True, read=True)])
     bot.objects["server_tex_listeners"] = {}
     for serverid in await bot.data.servers.find("latex_listen_enabled", True, read=True):
         channels = await bot.data.servers.get(serverid, "maths_channels")
