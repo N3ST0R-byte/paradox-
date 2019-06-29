@@ -54,7 +54,7 @@ async def cmd_texlisten(ctx):
 
 
 def _is_tex(msg):
-    return (("$" in msg.clean_content) and 1 - (msg.clean_content.count("$") % 2) and msg.clean_content.strip("$")) or ("\\begin{" in msg.clean_content) or ("\\[" in msg.clean_content and "\\]" in msg.clean_content)
+    return (("$" in msg.clean_content) and 1 - (msg.clean_content.count("$") % 2) and msg.clean_content.strip("$")) or ("\\begin{" in msg.clean_content) or ("\\[" in msg.clean_content and "\\]" in msg.clean_content) or ("\\(" in msg.clean_content and "\\)" in msg.clean_content)
 
 
 @cmds.cmd("preamblepreset",
@@ -262,7 +262,8 @@ async def cmd_tex(ctx):
         return
 
     if ctx.arg_str == "":
-        await ctx.reply("Please give me something to compile! See `{0}help` and `{0}help tex` for usage!".format(ctx.used_prefix))
+        if ctx.used_cmd_name != ",":
+            await ctx.reply("Please give me something to compile! See `{0}help` and `{0}help tex` for usage!".format(ctx.used_prefix))
         return
     ctx.objs["latex_listening"] = False
     ctx.objs["latex_source_deleted"] = False
@@ -560,7 +561,7 @@ async def cmd_serverpreamble(ctx):
           category="Maths",
           short_help="Change how your LaTeX compiles",
           aliases=["texconfig"])
-@cmds.execute("flags", flags=["reset", "replace", "add", "approve==", "remove", "retract", "deny=="])
+@cmds.execute("flags", flags=["reset", "replace", "add", "a==", "remove", "retract", "d=="])
 async def cmd_preamble(ctx):
     """
     Usage:
@@ -575,12 +576,12 @@ async def cmd_preamble(ctx):
         remove:: Removes all lines from your preamble containing the given text.
         retract:: Retract a pending preamble.
     """
-    user_id = ctx.flags["approve"] or ctx.flags["deny"]
+    user_id = ctx.flags["a"] or ctx.flags["d"]
     if user_id:
         (code, msg) = await cmds.checks["manager_perm"](ctx)
         if code != 0:
             return
-        if ctx.flags["approve"]:
+        if ctx.flags["a"]:
             new_preamble = await ctx.data.users.get(user_id, "limbo_preamble")
             if not new_preamble:
                 await ctx.reply("Nothing to approve. Perhaps this preamble was already approved?")
@@ -589,8 +590,8 @@ async def cmd_preamble(ctx):
             await ctx.data.users.set(user_id, "latex_preamble", new_preamble)
             await ctx.reply("The preamble change has been approved.")
         await ctx.data.users.set(user_id, "limbo_preamble", "")
-        if ctx.flags["deny"]:
-            await ctx.reply("The preamble change has been denied.")
+        if ctx.flags["d"]:
+            await ctx.reply("The preamble change has been denied")
         return
 
     if ctx.flags["reset"]:
@@ -650,9 +651,9 @@ async def cmd_preamble(ctx):
         .set_author(name="{} ({})".format(ctx.author, ctx.authid),
                     icon_url=ctx.author.avatar_url) \
         .add_field(name="Requested preamble", value=preamble_message, inline=False) \
-        .add_field(name="To Approve", value="`preamble --approve {}`".format(ctx.authid), inline=False) \
+        .add_field(name="To Approve", value="`{}preamble --a {}`".format(ctx.bot.prefix, ctx.authid), inline=False) \
         .set_footer(text=datetime.utcnow().strftime("Sent from {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
-    await ctx.bot.send_message(ctx.bot.objects["preamble_channel"], embed=embed)
+    await ctx.bot.send_message(ctx.bot.objects["preamble_channel"], ctx.authid, embed=embed)
     if in_file:
         temp_file.seek(0)
         await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], fp=temp_file, filename=file_name)
@@ -691,7 +692,7 @@ async def register_tex_listeners(bot):
 
 
 async def tex_listener(ctx):
-    if ctx.author.bot:
+    if ctx.author.bot and int(ctx.authid) not in ctx.bot.bot_conf.getintlist("whitelisted_bots"):
         return
     if "ready" not in ctx.bot.objects or not ctx.bot.objects["ready"]:
         return

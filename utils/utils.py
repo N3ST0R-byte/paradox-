@@ -35,10 +35,10 @@ def load_into(bot):
         Runs a command asynchronously in a subproccess shell.
         """
         process = await asyncio.create_subprocess_shell(to_run, stdout=asyncio.subprocess.PIPE)
-        if ctx.bot.DEBUG > 1:
+        if ctx.bot.DEBUG > 2:
             await ctx.log("Running the shell command:\n{}\nwith pid {}".format(to_run, str(process.pid)))
         stdout, stderr = await process.communicate()
-        if ctx.bot.DEBUG > 1:
+        if ctx.bot.DEBUG > 2:
             await ctx.log("Completed the shell command:\n{}\n{}".format(to_run, "with errors." if process.returncode != 0 else ""))
         return stdout.decode().strip()
 
@@ -326,3 +326,36 @@ def load_into(bot):
                     await ctx.bot.delete_message(msg)
                 except Exception:
                     pass
+
+    @bot.util
+    async def find_message(ctx, msgid, chlist=None, ignore=[]):
+        message = None
+        chlist = ctx.server.channels if chlist is None else chlist
+
+        for channel in chlist:
+            if channel in ignore:
+                continue
+            if channel.type != discord.ChannelType.text:
+                continue
+            try:
+                message = await ctx.bot.get_message(channel, msgid)
+            except Exception:
+                pass
+            if message:
+                break
+        return message
+
+    @bot.util
+    def aemoji_mention(ctx, emoji):
+        return "<a:{}:{}>".format(emoji.name, emoji.id)
+
+    @bot.util
+    async def safe_delete_msgs(ctx, msgs):
+        try:
+            await asyncio.gather(*[ctx.bot.delete_message(msg) for msg in msgs])
+        except discord.Forbidden:
+            pass
+        except discord.NotFound:
+            pass
+        except Exception:
+            pass

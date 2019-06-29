@@ -92,10 +92,14 @@ async def cmd_notifyme(ctx):
             check_strs = []
             for check in checks:
                 check_strs.append(await check_to_str(ctx, check, markdown=False))
-            selected = await ctx.selector("Select a pounce to remove!", check_strs)
+            selected = await ctx.multi_selector("Select pounces to remove!", check_strs)
             if selected is None:
                 return
-            checks.remove(checks[selected])
+            to_remove = []
+            for item in selected:
+                to_remove.append(checks[item])
+            for item in to_remove:
+                checks.remove(item)
             await update_checks(ctx, checks)
             await ctx.reply("The selected pounce has been removed!")
         return
@@ -138,8 +142,9 @@ async def cmd_notifyme(ctx):
         if ctx.flags["from"] == "me":
             user = ctx.author
         else:
-            user = await ctx.find_user(ctx.flags["from"], interactive=True)
+            user = await ctx.find_user(ctx.flags["from"], interactive=True, in_server=True)
             if not user:
+                await ctx.reply("I couldn't find this user!")
                 return
         check["from"] = {"id": user.id}
     if ctx.flags["rolementions"]:

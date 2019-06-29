@@ -1,5 +1,5 @@
 import discord
-
+import re
 
 def load_into(bot):
     @bot.util
@@ -95,6 +95,90 @@ def load_into(bot):
         return int(result_msg.content) - 1
 
     @bot.util
+    async def multi_selector(ctx, message: discord.Message, select_from: list, timeout=120, max_len=20,
+                             silent=False) -> list:
+        """
+        Interactive method to ask the user to select an entry from a list.
+        Returns the index of the list which was selected,
+        or None if the request timed out or was cancelled.
+
+        :arg select_from: list of options to select from
+
+        :returns list of selected indices of select_from.
+        """
+        if select_from is None or len(select_from) == 0:
+            # nothing given, so return empty selection
+            return []
+        # paginate possible choices (indexes become +1 here!)
+        pages = ["{}\n{}\nType the numbers of your selection or `c` to cancel.".format(message, page) for page in
+                 ctx.paginate_list(select_from, block_length=max_len)]
+        # send pages off to discord
+        sent_message = await ctx.pager(pages)
+        # get answer
+        user_answer = await ctx.bot.wait_for_message(author=ctx.author, timeout=timeout)
+        try:
+            # delete answer
+            await ctx.bot.delete_message(sent_message)
+        except discord.NotFound:
+            pass
+        # abort if no reply
+        if not user_answer:
+            if not silent:
+                await ctx.reply("Question timed out, aborting...")
+            ctx.cmd_err = (-1, "")  # User cancelled or didn't respond
+            return []
+        # otherwise get message string
+        result = user_answer.content
+        try:
+            # delete user answer
+            await ctx.bot.delete_message(user_answer)
+        except Exception:
+            pass
+        # if user cancels selection, reply and return
+        if result == "c":
+            if not silent:
+                await ctx.reply("Cancelled selection.")
+            ctx.cmd_err = (-1, "")  # User cancelled or didn't respond
+            return []
+        # parse selection
+        try:
+            return parse_multi_select_message(result, len(select_from))
+        except Exception as error:
+            await ctx.reply(error.args)
+        return []
+
+
+    def parse_multi_select_message(text: str, size: int) -> list:
+        if text is None or len(text) == 0:
+            return []
+        # if text begins with ! recursively call and invert the result
+        if text[0] == '!':
+            normal = parse_multi_select_message(text[1:], size)
+            inverted = []
+            for i in range(1, size):
+                if not i in normal:
+                    inverted.append(i)
+            return inverted
+
+        # split the string by all non-digits
+        items_to_parse = re.findall(r"[\d-]+", text)
+        selected = []
+
+        # go through each item and add them to the list of selected items
+        for item in items_to_parse:
+            if '-' in item:
+                numbers = item.split('-')
+                selected += range(int(numbers[0]), int(numbers[1]) + 1)
+            else:
+                selected.append(int(item))
+
+        # deduplicate output
+        selected = list(set(selected))
+        # decrement each item and make sure they are within range, since it was increased for user friendliness
+        selected = [x - 1 for x in selected if 0 < x <= size]
+        return selected
+
+    @bot.util
     async def silent_selector(ctx, message, select_from, timeout=120, use_msg=None):
         if len(select_from) == 0:
             return None
@@ -152,7 +236,7 @@ def load_into(bot):
             # Listen for a valid reply
             listening = [str(i + 1) for i in range(0, len(items))]
             listening.append("c")
-            result = await ctx.listen_for(listening, timeout=60)
+            result = await ctx.listen_for(listening, timeout=600)
 
             if result is not None:
                 # Attempt to delete the user message
