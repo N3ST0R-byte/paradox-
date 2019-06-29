@@ -142,8 +142,9 @@ async def cmd_notifyme(ctx):
         if ctx.flags["from"] == "me":
             user = ctx.author
         else:
-            user = await ctx.find_user(ctx.flags["from"], interactive=True)
+            user = await ctx.find_user(ctx.flags["from"], interactive=True, in_server=True)
             if not user:
+                await ctx.reply("I couldn't find this user!")
                 return
         check["from"] = {"id": user.id}
     if ctx.flags["rolementions"]:
@@ -175,7 +176,7 @@ async def update_checks(ctx, checks):
 
 
 async def notify_user(user, ctx, check):
-    await ctx.log("Notifying user {} with check {}".format(user, check))
+    await ctx.log("Notifying user {} ({}) with check {}".format(user, user.id, check))
     prior_msgs = [ctx.msg]
     async for msg in ctx.bot.logs_from(ctx.ch, limit=5, before=ctx.msg):
         prior_msgs.append(msg)
