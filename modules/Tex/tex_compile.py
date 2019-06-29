@@ -25,7 +25,7 @@ async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="defaul
     fn = "{}/{}.tex".format(path, userid)
 
     with open(fn, 'w') as work:
-        work.write(to_compile.format(header, preamble, source))
+        work.write(to_compile.format(header=header, preamble=preamble, source=source))
         work.close()
 
     return await ctx.run_sh("tex/texcompile.sh {} {}".format(userid, colour))

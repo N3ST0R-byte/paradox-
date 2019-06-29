@@ -1,14 +1,17 @@
+import os
 import discord
-from datetime import datetime
-
-from io import StringIO
 import aiohttp
+
+from datetime import datetime
+from io import StringIO
 
 from paraCH import paraCH
 
 cmds = paraCH()
 
-with open("preamble.tex", 'r') as preamble:
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+with open(os.path.join(__location__, "preamble.tex"), 'r') as preamble:
     default_preamble = preamble.read()
 
 
