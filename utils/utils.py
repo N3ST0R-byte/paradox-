@@ -90,7 +90,7 @@ def load_into(bot):
         If -- is present in the input as a word, all flags afterwards are ignored.
         TODO: Make this more efficient
         """
-        params = args.split(' ')
+        params = args.split()
         final_params = []
         final_flags = {}
         indexes = []
@@ -285,6 +285,22 @@ def load_into(bot):
     async def has_mod(ctx, user):
         (code, msg) = await ctx.CH.checks["in_server_has_mod"](ctx)
         return (code == 0)
+
+    @bot.util
+    def is_master(ctx, user):
+        return user.id in ctx.bot.bot_conf.getintlist("masters")
+
+    @bot.util
+    def is_exec(ctx, user):
+        return ctx.is_master(user) or (user.id in ctx.bot.bot_conf.getintlist("execWhiteList"))
+
+    @bot.util
+    def is_dev(ctx, user):
+        return ctx.is_exec(user) or (user.id in ctx.bot.bot_conf.getintlist("developers"))
+
+    @bot.util
+    def is_manager(ctx, user):
+        return ctx.is_dev(user) or (user.id in ctx.bot.bot_conf.getintlist("managers"))
 
     @bot.util
     async def offer_delete(ctx, out_msg, to_delete=None):

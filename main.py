@@ -154,7 +154,8 @@ emojis = {"emoji_tex_del": "delete",
           "emoji_more": "More",
           "emoji_delete": "delete",
           "emoji_loading": "loading",
-          "emoji_prev": "Previous"}
+          "emoji_prev": "Previous",
+          "emoji_sendfile": "send_file"}
 
 
 # Initialise bot objects

@@ -7,7 +7,7 @@ Provides a single context utility to compile LaTeX code from a user and return a
 """
 
 
-header = "\\documentclass[preview, border=5pt, 12pt]{standalone}\
+header = "\\documentclass[preview, border=10pt, 12pt]{standalone}\
           \n\\nonstopmode"
 
 to_compile = "{header}\

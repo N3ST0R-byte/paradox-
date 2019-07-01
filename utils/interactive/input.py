@@ -11,8 +11,8 @@ def load_into(bot):
         return msg
 
     @bot.util
-    async def input(ctx, msg, timeout=120):
-        offer_msg = await ctx.reply(msg)
+    async def input(ctx, msg="", timeout=120, prompt_msg=None):
+        offer_msg = prompt_msg if prompt_msg is not None else await ctx.reply(msg)
         result_msg = await ctx.bot.wait_for_message(author=ctx.author, timeout=timeout)
         if result_msg is None:
             return None

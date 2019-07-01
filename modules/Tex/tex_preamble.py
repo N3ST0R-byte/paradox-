@@ -1,5 +1,6 @@
 import os
 import asyncio
+import aiohttp
 from datetime import datetime
 from io import StringIO
 
@@ -100,18 +101,18 @@ async def sendfile_reaction_handler(ctx, out_msg, temp_file, title):
                 pass
 
 
-async def view_preamble(ctx, preamble, title, header=None, file_react=False):
+async def view_preamble(ctx, preamble, title, header=None, file_react=False, file_message=None):
     pages = tex_pagination(preamble, basetitle=title, header=header)
     out_msg = await ctx.pager(pages, embed=True)
 
     if not file_react or out_msg is None:
-        return
+        return out_msg
 
     # Generate file to send to user on reaction press
     with StringIO() as temp_file:
         temp_file.write(preamble)
         temp_file.seek(0)
-        asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, temp_file, title))
+        asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, temp_file, file_message or title))
 
     return out_msg
 
@@ -133,21 +134,308 @@ async def confirm(ctx, question, preamble, **kwargs):
     return True
 
 
+async def preamblelog(ctx, title, user=None, source=None):
+    """
+    Log a message to the preamble log channel
+    """
+    pass
+
+
+async def test_preamble(ctx, preamble):
+    """
+    Test preamble code in a preamble channel
+    """
+    pass
+
+
+async def handled_preamble(ctx, userid, info):
+    """
+    Clean up after a preamble submission request has been handled
+    """
+    pass
+
+
+async def submit_preamble(ctx, user, submission, info):
+    """
+    Make a new preamble submission
+    """
+    # If there is a previous active request, mark it as outdated
+    old_sub = await ctx.data.users.get(user.id, "pending_preamble")
+    if old_sub:
+        await handled_preamble(ctx, user.id, "New preamble request submitted")
+
+    # Set the new pending preamble
+    await ctx.data.users.set(ctx.authid, "pending_preamble", submission)
+
+    # Send the preamble request to the submission channel
+    submission_channel = ctx.bot.objects["latex_preamble_subch"]
+    newctx = ctx.bot.makectx(ch=submission_channel)
+    title = "Preamble submission from {}({}) at {}".format(user, user.id, datetime.utcnow())
+    sub_msg = await view_preamble(newctx, submission, title, header=info)
+
+    # Store the pending preamble info
+    info_pack = (title, info, sub_msg.id)
+    await ctx.data.users.set(ctx.authid, "pending_preamble_info", info_pack)
+
+    # Add or update the pending preamble in the cached list
+    ctx.bot.objects["pending_preambles"][user.id] = (submission, info_pack)
+
+    # Add the approval/denial/testing emojis to the submission
+    asyncio.ensure_future(judgement_reactions(ctx, user.id, sub_msg))
+
+
+async def judgement_reactions(ctx, userid, msg):
+    approve_emo = ctx.bot.objects["emoji_approve"]
+    deny_emo = ctx.bot.objects["emoji_deny"]
+    test_emo = ctx.bot.objects["emoji_test"]
+
+    def judgement_check(reaction, user):
+        return (reaction.emoji in [approve_emo, deny_emo, test_emo]) and ctx.is_manager(user)
+
+    try:
+        await ctx.bot.add_reaction(msg, approve_emo)
+        await ctx.bot.add_reaction(msg, deny_emo)
+        await ctx.bot.add_reaction(msg, test_emo)
+    except discord.Forbidden:
+        return
+
+    while True:
+        res = await ctx.bot.wait_for_reaction(message=msg,
+                                              check=judgement_check,
+                                              timeout=600)
+        if res is None:
+            if userid in ctx.bot.objects["pending_preambles"]:
+                continue
+            try:
+                await ctx.bot.remove_reaction(msg, approve_emo, ctx.me)
+                await ctx.bot.remove_reaction(msg, deny_emo, ctx.me)
+                await ctx.bot.remove_reaction(msg, test_emo, ctx.me)
+            except Exception:
+                pass
+            break
+        if res.reaction.emoji == approve_emo:
+            await approve_submission(ctx, userid)
+            break
+        elif res.reaction.emoji == deny_emo:
+            await deny_submission(ctx, userid)
+            break
+        elif res.reaction.emoji == test_emo:
+            await test_submission(ctx, userid)
+
+
+async def approve_submission(ctx, userid):
+    pass
+
+
+async def deny_submission(ctx, userid):
+    pass
+
+
+async def test_submission(ctx, userid):
+    pass
+
+
 @cmds.cmd("showpreamble",
           category="Maths",
-          short_help="View or modify your LaTeX preamble")
+          short_help="View or modify your LaTeX preamble",
+          flags=['reset', 'retract', 'add', 'remove', 'revert', 'usepackage', 'replace'])
 async def cmd_showpreamble(ctx):
     """
     Usage:
         Magick
     """
+    # Handle resetting the preamble
+    if ctx.flags["reset"]:
+        resp = await ctx.ask("Are you sure you want to reset your preamble to the default?", timeout=60)
+        if resp:
+            # Reset the preamble
+            current_preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+
+            await ctx.data.users.set(ctx.authid, "previous_preamble", current_preamble)
+            await ctx.data.users.set(ctx.authid, "latex_preamble", None)
+            await ctx.data.users.set(ctx.authid, "pending_preamble", None)
+            await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
+            ctx.bot.objects["pending_preambles"].pop(ctx.authid)
+            await ctx.reply("Your preamble has been reset!")
+
+            await handled_preamble(ctx, ctx.authid, "Preamble was reset")
+            await preamblelog(ctx, "Preamble has been reset to the default")
+        else:
+            await ctx.reply("Aborting...")
+        return
+
+    # Handle retracting a preamble request
+    if ctx.flags["retract"]:
+        await ctx.data.users.set(ctx.authid, "pending_preamble", None)
+        await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
+        ctx.bot.objects["pending_preambles"].pop(ctx.authid)
+
+        await ctx.reply("Your preamble request has been retracted!")
+        await handled_preamble(ctx, ctx.authid, "Request retracted")
+        await preamblelog(ctx, "Preamble request was retracted")
+        return
+
+    # Handle reverting to the previous version of the preamble
+    if ctx.flags["revert"]:
+        resp = await ctx.ask("Are you sure you want to revert your preamble to the previous version?", timeout=60)
+        if resp:
+            previous_preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+            if not previous_preamble:
+                await ctx.reply("Your previous preamble doesn't exist or wasn't recorded!")
+            else:
+                current_preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+
+                await ctx.data.users.set(ctx.authid, "previous_preamble", current_preamble)
+                await ctx.data.users.set(ctx.authid, "latex_preamble", previous_preamble)
+
+                await ctx.reply("Your preamble has been reverted.")
+                await preamblelog(ctx, "Preamble was reverted to the previous version")
+        else:
+            await ctx.reply("Aborting...")
+        return
+
     header = None
+
+    # Get the current active preamble and set the header for viewing
     preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+    if not preamble and ctx.server:
+        preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+        header = "No custom user preamble set, server preamble."
     if not preamble:
         preamble = default_preamble
-        header = "No custom preamble set or server preamble found, using the default preamble!"
+        header = "No custom user preamble set, using default preamble."
 
-    await view_preamble(ctx, preamble, "Your current preamble", header=header, file_react=True)
+    # Get any input, including the contents of any attached files if they exist
+    if ctx.msg.attachments:
+        file_info = ctx.msg.attachments[0]
+
+        # If the file is over 1MB, it probably isn't a valid preamble.
+        if file_info['size'] >= 1000000:
+            await ctx.reply("Attached file is too large to process.")
+            return
+
+        async with aiohttp.get(file_info['url']) as r:
+            new_source = await r.text()
+    else:
+        new_source = ctx.arg_str
+
+    # Handle a request to remove material from the preamble
+    if ctx.flags['remove']:
+        to_remove = []  # List of line indicies to remove
+        new_preamble = None
+        lines = preamble.splitlines()
+
+        # If arguments were given, search the current preamble for this string
+        if new_source:
+            if new_source not in preamble:
+                await ctx.reply("The requested text doesn't appear in any line of your preamble!")
+                return
+            if '\n' in new_source:
+                # If the requested string has multiple lines and appears, just remove all of them
+                new_preamble = preamble.replace(new_source, "")
+            else:
+                # Otherwise, make a list of matching lines to remove
+                to_remove = [i for i, line in enumerate(lines) if new_source in line]
+        else:
+            # If we aren't given anything to remove, prompt the user for which lines they want to remove
+            # Generate a version of the current preamble with line numbers
+            lined_preamble = "\n".join(("{:>2}. {}".format(i, line) for i, line in enumerate(lines)))
+
+            # Show this to the user and prompt them
+            prompt = "Please enter the line numbers to remove, separated by commas, or type `c` now to cancel."
+            prompt_msg = await view_preamble(ctx, lined_preamble, prompt)
+            response = await ctx.input(prompt_msg=prompt_msg)
+            if response is None:
+                await ctx.reply("Query timed out, aborting.")
+                return
+            if response.lower == "c":
+                await ctx.reply("User cancelled, aborting.")
+                return
+            nums = [num.strip() for num in response.split(',')]
+            if not all(num.isdigit() for num in nums):
+                await ctx.reply("Couldn't understand your selection, aborting.")
+                return
+            nums = [int(num) - 1 for num in nums]
+            if not all(0 <= num < len(lines) for num in nums):
+                await ctx.reply("This line doesn't exist! Aborting.")
+                return
+
+            to_remove = nums
+
+        if to_remove:
+            # Prompt the user to confirm they want to remove these lines
+            for_removal = "\n".join([lines[i] for i in to_remove])
+            prompt = "Please confirm removal of the following lines from your preamble."
+            result = await confirm(ctx, prompt, for_removal)
+            if result is None:
+                await ctx.reply("Query timed out, aborting.")
+                return
+            if not result:
+                await ctx.reply("User cancelled, aborting.")
+                return
+
+            new_preamble = "\n".join([line for i, line in enumerate(lines) if i not in to_remove])
+
+        if new_preamble is not None:
+            # Finally, update the preamble
+            await ctx.data.users.set(ctx.authid, "previous_preamble", preamble)
+            await ctx.data.users.set(ctx.authid, "latex_preamble", new_preamble)
+
+            await ctx.reply("Your preamble has been updated!")
+            await preamblelog(ctx, "Material was removed from the preamble", source=new_preamble)
+            return
+
+    # At this point, the user wants to view, replace, or add to their preamble.
+
+    # Handle a request to replace the preamble
+    if ctx.flags['replace']:
+        if not new_source:
+            # Prompt the user for the new preamble
+            prompt = "Please enter your new preamble, or `c` to cancel.\
+                \nIf you wish to upload a file as your preamble, cancel now and rerun this command with the file attached."
+            result = await ctx.input(prompt, timeout=600)
+            if not result:
+                await ctx.reply("Query timed out, aborting.")
+                return
+            if result.lower() == 'c':
+                await ctx.reply("User cancelled, aborting.")
+                return
+            new_submission = result
+        else:
+            new_submission = new_source
+
+        # Confirm submission
+
+        await submit_preamble(ctx, ctx.author, new_submission, "User wishes to replace their preamble")
+        return
+
+    # Handle a request to add a new package to the preamble, possibly from the whitelist
+    if ctx.flags['usepackage']:
+        # Not yet implemented
+        pass
+
+    # Handle a request to add material to the preamble
+    if ctx.flags['add'] or new_source:
+        if not new_source:
+            # Prompt the user for the material they want to add
+            prompt = "Please enter the lines you wish to add to your preamble."
+            new_source = await ctx.input(prompt, timeout=600)
+            if not new_source:
+                await ctx.reply("Query timed out, aborting.")
+                return
+            if new_source.lower() == 'c':
+                await ctx.reply("User cancelled, aborting.")
+                return
+
+        # Confirm submission
+
+        new_submission = "{}\n{}".format(preamble, new_source)
+        await submit_preamble(ctx, ctx.author, new_submission, "User wishes to add {} lines to their preamble".format(len(new_source)))
+        return
+
+    # If the user doesn't want to edit their preamble, they must just want to view it
+    title = "Your current preamble. Use texconfig to see other LaTeX config options!"
+    await view_preamble(ctx, preamble, title, header=header, file_react=True, file_message="Current Preamble")
 
 
 def load_into(bot):
