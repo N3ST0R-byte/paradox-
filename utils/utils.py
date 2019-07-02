@@ -288,19 +288,19 @@ def load_into(bot):
 
     @bot.util
     def is_master(ctx, user):
-        return user.id in ctx.bot.bot_conf.getintlist("masters")
+        return int(user.id) in ctx.bot.bot_conf.getintlist("masters")
 
     @bot.util
     def is_exec(ctx, user):
-        return ctx.is_master(user) or (user.id in ctx.bot.bot_conf.getintlist("execWhiteList"))
+        return ctx.is_master(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("execWhiteList"))
 
     @bot.util
     def is_dev(ctx, user):
-        return ctx.is_exec(user) or (user.id in ctx.bot.bot_conf.getintlist("developers"))
+        return ctx.is_exec(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("developers"))
 
     @bot.util
     def is_manager(ctx, user):
-        return ctx.is_dev(user) or (user.id in ctx.bot.bot_conf.getintlist("managers"))
+        return ctx.is_dev(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("managers"))
 
     @bot.util
     async def offer_delete(ctx, out_msg, to_delete=None):

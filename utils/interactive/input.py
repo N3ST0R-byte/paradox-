@@ -25,12 +25,17 @@ def load_into(bot):
         return result
 
     @bot.util
-    async def ask(ctx, msg, timeout=30, use_msg=None):
+    async def ask(ctx, msg, timeout=30, use_msg=None, del_on_timeout=False):
         out = "{} {}".format(msg, "`y(es)`/`n(o)`")
         offer_msg = await ctx.bot.edit_message(use_msg, out) if use_msg else await ctx.reply(out)
         result_msg = await ctx.listen_for(["y", "yes", "n", "no"], timeout=timeout)
 
         if result_msg is None:
+            if del_on_timeout:
+                try:
+                    await ctx.bot.delete_message(offer_msg)
+                except Exception:
+                    pass
             return None
         result = result_msg.content.lower()
         try:

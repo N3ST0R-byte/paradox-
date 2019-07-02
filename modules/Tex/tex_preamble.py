@@ -103,7 +103,7 @@ async def sendfile_reaction_handler(ctx, out_msg, temp_file, title):
 
 async def view_preamble(ctx, preamble, title, header=None, file_react=False, file_message=None):
     pages = tex_pagination(preamble, basetitle=title, header=header)
-    out_msg = await ctx.pager(pages, embed=True)
+    out_msg = await ctx.pager(pages, embed=True, locked=False)
 
     if not file_react or out_msg is None:
         return out_msg
@@ -169,7 +169,7 @@ async def submit_preamble(ctx, user, submission, info):
 
     # Send the preamble request to the submission channel
     submission_channel = ctx.bot.objects["latex_preamble_subch"]
-    newctx = ctx.bot.makectx(ch=submission_channel)
+    newctx = ctx.bot.make_msgctx(channel=submission_channel)
     title = "Preamble submission from {}({}) at {}".format(user, user.id, datetime.utcnow())
     sub_msg = await view_preamble(newctx, submission, title, header=info)
 
@@ -181,7 +181,7 @@ async def submit_preamble(ctx, user, submission, info):
     ctx.bot.objects["pending_preambles"][user.id] = (submission, info_pack)
 
     # Add the approval/denial/testing emojis to the submission
-    asyncio.ensure_future(judgement_reactions(ctx, user.id, sub_msg))
+    asyncio.ensure_future(judgement_reactions(newctx, user.id, sub_msg))
 
 
 async def judgement_reactions(ctx, userid, msg):
@@ -214,24 +214,102 @@ async def judgement_reactions(ctx, userid, msg):
                 pass
             break
         if res.reaction.emoji == approve_emo:
-            await approve_submission(ctx, userid)
-            break
+            if await approve_submission(ctx, userid, res.user):
+                break
         elif res.reaction.emoji == deny_emo:
-            await deny_submission(ctx, userid)
-            break
+            if await deny_submission(ctx, userid, res.user):
+                break
         elif res.reaction.emoji == test_emo:
-            await test_submission(ctx, userid)
+            await test_submission(ctx, userid, res.user)
 
 
-async def approve_submission(ctx, userid):
-    pass
+async def approve_submission(ctx, userid, manager):
+    ctx.author = manager  # Hack so that ask and input work properly
+
+    # First update the preamble
+    current_preamble = await ctx.data.users.get(userid, "latex_preamble")
+    await ctx.data.users.set(userid, "previous_preamble", current_preamble)
+
+    new_preamble = await ctx.data.users.get(userid, "pending_preamble")
+    await ctx.data.users.set(userid, "latex_preamble", new_preamble)
+
+    await ctx.data.users.set(userid, "pending_preamble", None)
+    await ctx.data.users.set(userid, "pending_preamble_info", None)
+    ctx.bot.objects["pending_preambles"].pop(userid)
+
+    # Then mark the case as handled
+    await handled_preamble(ctx, userid, "Preamble approved by {}".format(manager.mention))
+
+    # Find the user
+    user = await ctx.find_user(userid, in_server=False, interactive=True)
+    if not user:
+        await ctx.reply("Couldn't find the user to DM them!")
+    else:
+        # Create default approval message
+        default_msg = "{}, your recent request for a LaTeX preamble submission has been approved!\
+            \nYour preamble has been modified and may be seen using the `preamble` command.\
+            \nShould you wish to revert these changes, please use `preamble --revert`.".format(user.name)
+        embed = discord.Embed(title="Preamble request approval", description=default_msg)
+        embed.timestamp = datetime.utcnow()
+
+        # Check whether this needs editing
+        default_reply = await ctx.reply(embed=embed)
+        result = await ctx.ask("Do you wish to edit the approval message? (Auto-sending in 20s)", timeout=20, del_on_timeout=True)
+        if result:
+            result = await ctx.input("Please enter the new approval message!", timeout=600)
+            if not result:
+                await ctx.reply("Query timed out, sending default message.")
+            else:
+                embed.description = result
+        await ctx.bot.delete_message(default_reply)
+
+        # Try and DM the user with their happy news
+        try:
+            await ctx.send(user, embed=embed)
+        except discord.Forbidden:
+            await ctx.reply("I wasn't allowed to DM this user.. they might have me blocked")
+        except Exception:
+            await ctx.reply("Something unknown went wrong while DMMing this user!")
 
 
-async def deny_submission(ctx, userid):
-    pass
+async def deny_submission(ctx, userid, manager):
+    ctx.author = manager  # Hack so that ask and input work properly
+
+    # Find the user
+    user = await ctx.find_user(userid, in_server=False, interactive=True)
+    if not user:
+        await ctx.reply("Couldn't find the user to DM them!")
+    else:
+        # Query for the denial message
+        result = await ctx.input("Please enter the reason this request was denied, or `c` to cancel", timeout=600)
+        if not result:
+            await ctx.reply("Timed out waiting for a rejection reason, aborting preamble request rejection!")
+            return
+        if result.lower() == 'c':
+            await ctx.reply("Aborting preamble rejection on manager request!")
+            return
+        embed = discord.Embed(title="Unfortunately, your preamble request was denied!", description=result)
+        embed.timestamp = datetime.utcnow()
+
+        # Try and DM the user
+        try:
+            await ctx.send(user, embed=embed)
+        except discord.Forbidden:
+            await ctx.reply("I wasn't allowed to DM this user.. they might have me blocked")
+        except Exception:
+            await ctx.reply("Something unknown went wrong while DMMing this user!")
+
+    # Deny the submission
+    await ctx.data.users.set(userid, "pending_preamble", None)
+    await ctx.data.users.set(userid, "pending_preamble_info", None)
+    ctx.bot.objects["pending_preambles"].pop(userid)
+
+    # Then mark the case as handled
+    await handled_preamble(ctx, userid, "Preamble denied by {}".format(manager.mention))
 
 
 async def test_submission(ctx, userid):
+    # Not implemented
     pass
 
 
@@ -393,20 +471,29 @@ async def cmd_showpreamble(ctx):
             # Prompt the user for the new preamble
             prompt = "Please enter your new preamble, or `c` to cancel.\
                 \nIf you wish to upload a file as your preamble, cancel now and rerun this command with the file attached."
-            result = await ctx.input(prompt, timeout=600)
-            if not result:
+            new_source = await ctx.input(prompt, timeout=600)
+            if not new_source:
                 await ctx.reply("Query timed out, aborting.")
                 return
-            if result.lower() == 'c':
+            if new_source.lower() == 'c':
                 await ctx.reply("User cancelled, aborting.")
                 return
-            new_submission = result
-        else:
-            new_submission = new_source
+
+        new_submission = new_source
 
         # Confirm submission
+        prompt = "Please confirm your submission of the following preamble."
+        result = await confirm(ctx, prompt, new_submission)
+        if result is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if not result:
+            await ctx.reply("User cancelled, aborting.")
+            return
 
         await submit_preamble(ctx, ctx.author, new_submission, "User wishes to replace their preamble")
+        await ctx.reply("Your preamble submission has been sent to my managers for review!\
+                        \nIf you wish to retract your submission, please use `preamble --retract`.")
         return
 
     # Handle a request to add a new package to the preamble, possibly from the whitelist
@@ -427,10 +514,21 @@ async def cmd_showpreamble(ctx):
                 await ctx.reply("User cancelled, aborting.")
                 return
 
-        # Confirm submission
-
         new_submission = "{}\n{}".format(preamble, new_source)
+
+        # Confirm submission
+        prompt = "Please confirm your submission of the following preamble."
+        result = await confirm(ctx, prompt, new_submission)
+        if result is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if not result:
+            await ctx.reply("User cancelled, aborting.")
+            return
+
         await submit_preamble(ctx, ctx.author, new_submission, "User wishes to add {} lines to their preamble".format(len(new_source)))
+        await ctx.reply("Your preamble submission has been sent to my managers for review!\
+                        \nIf you wish to retract your submission, please use `preamble --retract`.")
         return
 
     # If the user doesn't want to edit their preamble, they must just want to view it
@@ -438,5 +536,19 @@ async def cmd_showpreamble(ctx):
     await view_preamble(ctx, preamble, title, header=header, file_react=True, file_message="Current Preamble")
 
 
+async def load_channels(bot):
+    bot.objects["latex_preamble_subch"] = discord.utils.get(bot.get_all_channels(), id=bot.bot_conf.get("preamble_ch"))
+    bot.objects["latex_preamble_logch"] = discord.utils.get(bot.get_all_channels(), id=bot.bot_conf.get("preamble_logch"))
+
+
+async def cache_pending_preambles(bot):
+    bot.objects["pending_preambles"] = {}
+    for userid in await bot.data.users.find_not_empty("pending_preamble"):
+        info = await bot.data.users.get(userid, "pending_preamble_info")
+        bot.objects["pending_preambles"][str(userid)] = info
+
+
 def load_into(bot):
-    pass
+    bot.add_after_event("ready", load_channels, priority=10)
+    bot.add_after_event("ready", cache_pending_preambles, priority=10)
+    bot.data.users.ensure_exists("pending_preamble", "pending_preamble_info", "previous_preamble", "latex_preamble", shared=True)
