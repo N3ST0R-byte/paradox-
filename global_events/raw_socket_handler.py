@@ -1,4 +1,3 @@
-
 import os
 
 cest_une_pipe = None
@@ -9,8 +8,9 @@ async def handle_raw_socket(bot, msg):
     if (cest_une_pipe == None):
         app = os.getcwd().split(os.sep)[-1]
         cest_une_pipe = open("/home/paradox/pipe/"+app,"w")
-    cest_une_pipe.write(msg)
-    cest_une_pipe.write('\n')
+    if isinstance(msg,str):
+        cest_une_pipe.write(msg)
+        cest_une_pipe.write('\n')
 
 
 def load_into(bot):
