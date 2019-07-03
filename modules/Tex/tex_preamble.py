@@ -68,7 +68,7 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True, author=None,
                               description=blocks[0],
                               timestamp=time or datetime.utcnow())
         if author is not None:
-            embed.set_author(author)
+            embed.set_author(name=author)
 
     embeds = []
     for i, block in enumerate(blocks):
@@ -80,7 +80,7 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True, author=None,
                               timestamp=time or datetime.utcnow())
         embed.set_footer(text="Page {}/{}".format(i+1, blocknum))
         if author is not None:
-            embed.set_author(author)
+            embed.set_author(name=author)
         embeds.append(embed)
 
     return embeds
