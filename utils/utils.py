@@ -81,7 +81,7 @@ def load_into(bot):
         Parses flags in args from the flags given in flags.
         Flag formats:
             'a': boolean flag, checks if present.
-            'a=': Eats one "word", which may be in quotes
+            'a=': Eats one "word"
             'a==': Eats all words up until next flag
         Returns a tuple (params, args, flags_present).
         flags_present is a dictionary {flag: value} with value being:
@@ -90,53 +90,80 @@ def load_into(bot):
         If -- is present in the input as a word, all flags afterwards are ignored.
         TODO: Make this more efficient
         """
-        params = args.split()
-        final_params = []
-        final_flags = {}
-        indexes = []
-        end_params = []
+        # Split across whitespace, keeping the whitespace
+        params = re.split(r'(\S+)', args)
+
+        final_params = []  # Final list of command parameters, excluding flags and flag arguments
+        final_flags = {}  # Dictionary of flags and flag values
+        indexes = []  # Indices in the params list where the flags appear
+        end_params = []  # The tail of the parameter list, after -- appears
+
+        # Handle appearence of the flag terminator
         if "--" in params:
-            end_params = params[params.index("--") + 1:]
-            params = params[:params.index("--")]
+            i = params.index('--')
+            end_params = params[i + 1:] if i < len(params) - 1 else []
+            params = params[:i]
+
+        # Find the param indicies of the flags
         for flag in flags:
             clean_flag = flag.strip("=")
-            index = None
-            if (("-" + clean_flag) in params):
-                index = params.index("-" + clean_flag)
-            elif (("--" + clean_flag) in params):
-                index = params.index("--" + clean_flag)
-            elif (("—" + clean_flag) in params):
-                index = params.index("—" + clean_flag)
 
-            if index is None:
+            if ("-" + clean_flag) in params:
+                index = params.index("-" + clean_flag)
+            elif ("--" + clean_flag) in params:
+                index = params.index("--" + clean_flag)
+            elif ("—" + clean_flag) in params:
+                index = params.index("—" + clean_flag)
+            else:
                 final_flags[clean_flag] = False
                 continue
             indexes.append((index, flag))
+
+        # Sort the indicies to ensure we step through the flags in order of appearance
         indexes = sorted(indexes)
+
+        # Add any parameters that appear before the first flag
         if len(indexes) > 0:
             final_params = params[0:indexes[0][0]]
         else:
             final_params = params
-        for (i, index) in enumerate(indexes):
-            if i == len(indexes) - 1:
-                flag_arg = " ".join(params[index[0] + 1:])
+
+        # Build the parameters and flag arguments
+        for (i, (index, flag)) in enumerate(indexes):
+            # Get the parameters between this flag and the next, or the end
+            if len(params) > index + 1:
+                if len(indexes) > i + 1:
+                    flag_params = params[index + 1:indexes[i + 1][0]]
+                else:
+                    flag_params = params[index + 1:]
             else:
-                flag_arg = " ".join(params[index[0] + 1:indexes[i + 1][0]])
-            flag_arg = flag_arg.strip()
-            if index[1].endswith("=="):
-                final_flags[index[1][:-2]] = flag_arg
-            elif index[1].endswith("="):
-                flag_split_arg = flag_arg.split(" ")
-                final_flags[index[1][:-1]] = flag_split_arg[0]
-                if len(flag_split_arg) > 1:
-                    final_params += flag_split_arg[1:]
+                flag_params = []
+
+            # Split these into flag arguments and final parameters depending on flag type
+            if flag.endswith('=='):
+                flag_arg = ''.join(flag_params).strip()
+            elif flag.endswith('='):
+                # Find the first non-whitespace param, if it exists
+                j, arg = next(((j, arg) for j, arg in enumerate(flag_params) if arg.strip()), (len(flag_params), None))
+
+                flag_arg = arg or ''
+
+                # Note that the next param in the list must be whitespace
+                final_params += flag_params[j+2:] if j + 2 < len(flag_params) else []
             else:
-                final_flags[index[1]] = True
-                final_params += flag_arg.split(" ")
+                flag_arg = True
+                final_params += flag_params
+
+            # Set the flag arguments
+            final_flags[flag.strip('=')] = flag_arg
+
+        # Add any tail parameters
         final_params += end_params
-        final_args = " ".join(final_params).strip()
-        final_params = final_args.split(" ")
-        return (final_params, " ".join(final_params), final_flags)
+
+        # Turn the parameter list into what we usually use, i.e. space split, and make the args
+        final_args = ''.join(final_params)
+        final_params = final_args.split(' ')
+        return (final_params, final_args, final_flags)
 
     @bot.util
     async def emb_add_fields(ctx, embed, emb_fields):
