@@ -2,7 +2,7 @@ import os
 import asyncio
 import aiohttp
 from datetime import datetime
-from io import StringIO
+from io import BytesIO
 
 import discord
 
@@ -27,8 +27,10 @@ with open(os.path.join(__location__, "preamble.tex"), 'r') as preamble:
 
 
 def split_text(text, blocksize, code=True, syntax="", maxheight=50):
-    # Break the text into blocks of maximum length blocksize
-    # If possible, break across nearby newlines. Otherwise just break at blocksize chars
+    """
+    Break the text into blocks of maximum length blocksize
+    If possible, break across nearby newlines. Otherwise just break at blocksize chars
+    """
     blocks = []
     while True:
         if len(text) <= blocksize:
@@ -48,35 +50,52 @@ def split_text(text, blocksize, code=True, syntax="", maxheight=50):
     return blocks
 
 
-def tex_pagination(text, basetitle="", header=None, timestamp=True, colour=discord.Colour.dark_blue()):
-    blocks = split_text(text, 1000, code=True, syntax="tex")
+def tex_pagination(text, basetitle="", header=None, timestamp=True, author=None, time=None, colour=discord.Colour.dark_blue()):
+    """
+    Break up source LaTeX code into a number of embedded pages,
+    with the code in codeblocks of mximum 1k chars
+    """
+    if text:
+        blocks = split_text(text, 1000, code=True, syntax="tex")
+    else:
+        blocks = [None]
 
     blocknum = len(blocks)
 
     if blocknum == 1:
-        return [discord.Embed(title=basetitle,
+        embed = discord.Embed(title=basetitle,
                               color=colour,
                               description=blocks[0],
-                              timestamp=datetime.utcnow())]
+                              timestamp=time or datetime.utcnow())
+        if author is not None:
+            embed.set_author(author)
 
     embeds = []
     for i, block in enumerate(blocks):
         desc = "{}\n{}".format(header, block) if header else block
         embed = discord.Embed(title=basetitle,
                               colour=colour,
+                              author=author,
                               description=desc,
-                              timestamp=datetime.utcnow())
+                              timestamp=time or datetime.utcnow())
         embed.set_footer(text="Page {}/{}".format(i+1, blocknum))
+        if author is not None:
+            embed.set_author(author)
         embeds.append(embed)
 
     return embeds
 
 
-async def sendfile_reaction_handler(ctx, out_msg, temp_file, title):
+async def sendfile_reaction_handler(ctx, out_msg, contents, title):
     try:
         await ctx.bot.add_reaction(out_msg, ctx.bot.objects["emoji_sendfile"])
     except discord.Forbidden:
         return
+
+    # Generate file
+    temp_file = BytesIO()
+    temp_file.write(contents.encode())
+    temp_file.seek(0)
 
     while True:
         res = await ctx.bot.wait_for_reaction(message=out_msg,
@@ -92,7 +111,7 @@ async def sendfile_reaction_handler(ctx, out_msg, temp_file, title):
             try:
                 await ctx.bot.send_file(res.user, fp=temp_file, filename="preamble.tex", content=title)
             except discord.Forbidden:
-                await ctx.reply("Sorry, I tried to DM the preamble file, but couldn't reach you!")
+                pass
             except discord.HTTPException:
                 pass
             try:
@@ -100,19 +119,17 @@ async def sendfile_reaction_handler(ctx, out_msg, temp_file, title):
             except Exception:
                 pass
 
+    temp_file.close()
 
-async def view_preamble(ctx, preamble, title, header=None, file_react=False, file_message=None):
-    pages = tex_pagination(preamble, basetitle=title, header=header)
-    out_msg = await ctx.pager(pages, embed=True, locked=False)
 
-    if not file_react or out_msg is None:
-        return out_msg
+async def view_preamble(ctx, preamble, title, header=None,
+                        file_react=False, file_message=None, destination=None, author=None, time=None):
+    pages = tex_pagination(preamble, basetitle=title, header=header, author=author, time=time)
+    out_msg = await ctx.pager(pages, embed=True, locked=False, destination=destination)
 
-    # Generate file to send to user on reaction press
-    with StringIO() as temp_file:
-        temp_file.write(preamble)
-        temp_file.seek(0)
-        asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, temp_file, file_message or title))
+    if file_react and out_msg is not None:
+        # Add the sendfile reaction if required
+        asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title))
 
     return out_msg
 
@@ -138,7 +155,20 @@ async def preamblelog(ctx, title, user=None, source=None):
     """
     Log a message to the preamble log channel
     """
-    pass
+    logch = ctx.bot.objects["latex_preamble_logch"]
+
+    user = user or ctx.author
+
+    author = "{} ({})".format(user, user.id)
+    pages = tex_pagination(source, basetitle=title, author=author)
+
+    if source is None:
+        await ctx.pager(pages, embed=True, locked=False, destination=logch)
+    else:
+        with BytesIO() as temp_file:
+            temp_file.write(source.encode())
+            temp_file.seek(0)
+            await ctx.pager(pages, embed=True, locked=False, destination=logch, file_data=temp_file, file_name="source.tex")
 
 
 async def test_preamble(ctx, preamble):
@@ -151,8 +181,34 @@ async def test_preamble(ctx, preamble):
 async def handled_preamble(ctx, userid, info):
     """
     Clean up after a preamble submission request has been handled
+    Involves finding the message in the submission log,
+    clearing the reactions and editing it.
     """
-    pass
+    # If the user doesn't have a pending preamble, there isn't anything to do
+    if userid not in ctx.bot.objects["pending_preambles"]:
+        return
+
+    # Retrieve the message id of the submision message
+    msgid = ctx.bot.objects["pending_preambles"][userid][1][2]
+
+    # Find the message in the submission channel
+    subch = ctx.bot.objects["latex_preamble_subch"]
+    try:
+        msg = await ctx.bot.get_message(subch, msgid)
+    except discord.NotFound:
+        # The message wasn't found, just return silently, nothing to do
+        return
+    except Exception:
+        # Various things could go wrong here
+        # This step isn't crucial and we don't want to expose it to the user, so fail silently for now
+        # TODO: Log this
+        return
+
+    # Remove all the reactions on the message
+    await ctx.bot.clear_reactions(msg)
+
+    # Edit the message with the provided info
+    await ctx.bot.edit_message(msg, new_content=info)
 
 
 async def submit_preamble(ctx, user, submission, info):
@@ -160,27 +216,32 @@ async def submit_preamble(ctx, user, submission, info):
     Make a new preamble submission
     """
     # If there is a previous active request, mark it as outdated
-    old_sub = await ctx.data.users.get(user.id, "pending_preamble")
-    if old_sub:
+    if user.id in ctx.bot.objects["pending_preambles"]:
         await handled_preamble(ctx, user.id, "New preamble request submitted")
 
     # Set the new pending preamble
     await ctx.data.users.set(ctx.authid, "pending_preamble", submission)
 
     # Send the preamble request to the submission channel
+    title = "New preamble submission!"
+    author = "{} ({})".format(user, user.id)
+    time = datetime.utcnow()
+
     submission_channel = ctx.bot.objects["latex_preamble_subch"]
-    newctx = ctx.bot.make_msgctx(channel=submission_channel)
-    title = "Preamble submission from {}({}) at {}".format(user, user.id, datetime.utcnow())
-    sub_msg = await view_preamble(newctx, submission, title, header=info)
+    sub_msg = await view_preamble(ctx, submission, title,
+                                  author=author, time=time, header=info,
+                                  destination=submission_channel)
 
     # Store the pending preamble info
-    info_pack = (title, info, sub_msg.id)
+    info_pack = (datetime.timestamp(time), info, sub_msg.id)
     await ctx.data.users.set(ctx.authid, "pending_preamble_info", info_pack)
 
     # Add or update the pending preamble in the cached list
     ctx.bot.objects["pending_preambles"][user.id] = (submission, info_pack)
 
     # Add the approval/denial/testing emojis to the submission
+    # Create a new context so the judgement process doesn't interfere with the original user
+    newctx = ctx.bot.make_msgctx(channel=submission_channel)
     asyncio.ensure_future(judgement_reactions(newctx, user.id, sub_msg))
 
 
@@ -213,6 +274,9 @@ async def judgement_reactions(ctx, userid, msg):
             except Exception:
                 pass
             break
+        if userid not in ctx.bot.objects["pending_preambles"]:
+            await ctx.reply("Submission no longer exists!")
+            break
         if res.reaction.emoji == approve_emo:
             if await approve_submission(ctx, userid, res.user):
                 break
@@ -226,7 +290,10 @@ async def judgement_reactions(ctx, userid, msg):
 async def approve_submission(ctx, userid, manager):
     ctx.author = manager  # Hack so that ask and input work properly
 
-    # First update the preamble
+    # Mark the case as handled
+    await handled_preamble(ctx, userid, "Preamble approved by {}".format(manager.mention))
+
+    # Then update the preamble
     current_preamble = await ctx.data.users.get(userid, "latex_preamble")
     await ctx.data.users.set(userid, "previous_preamble", current_preamble)
 
@@ -235,10 +302,7 @@ async def approve_submission(ctx, userid, manager):
 
     await ctx.data.users.set(userid, "pending_preamble", None)
     await ctx.data.users.set(userid, "pending_preamble_info", None)
-    ctx.bot.objects["pending_preambles"].pop(userid)
-
-    # Then mark the case as handled
-    await handled_preamble(ctx, userid, "Preamble approved by {}".format(manager.mention))
+    ctx.bot.objects["pending_preambles"].pop(userid, None)
 
     # Find the user
     user = await ctx.find_user(userid, in_server=False, interactive=True)
@@ -288,7 +352,8 @@ async def deny_submission(ctx, userid, manager):
         if result.lower() == 'c':
             await ctx.reply("Aborting preamble rejection on manager request!")
             return
-        embed = discord.Embed(title="Unfortunately, your preamble request was denied!", description=result)
+        embed = discord.Embed(title="Unfortunately, your preamble request was denied!")
+        embed.add_field(name="Reason", value=result)
         embed.timestamp = datetime.utcnow()
 
         # Try and DM the user
@@ -299,16 +364,16 @@ async def deny_submission(ctx, userid, manager):
         except Exception:
             await ctx.reply("Something unknown went wrong while DMMing this user!")
 
+    # Mark the case as handled
+    await handled_preamble(ctx, userid, "Preamble denied by {}".format(manager.mention))
+
     # Deny the submission
     await ctx.data.users.set(userid, "pending_preamble", None)
     await ctx.data.users.set(userid, "pending_preamble_info", None)
-    ctx.bot.objects["pending_preambles"].pop(userid)
-
-    # Then mark the case as handled
-    await handled_preamble(ctx, userid, "Preamble denied by {}".format(manager.mention))
+    ctx.bot.objects["pending_preambles"].pop(userid, None)
 
 
-async def test_submission(ctx, userid):
+async def test_submission(ctx, userid, manager):
     # Not implemented
     pass
 
@@ -333,10 +398,11 @@ async def cmd_showpreamble(ctx):
             await ctx.data.users.set(ctx.authid, "latex_preamble", None)
             await ctx.data.users.set(ctx.authid, "pending_preamble", None)
             await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
-            ctx.bot.objects["pending_preambles"].pop(ctx.authid)
-            await ctx.reply("Your preamble has been reset!")
 
             await handled_preamble(ctx, ctx.authid, "Preamble was reset")
+            ctx.bot.objects["pending_preambles"].pop(ctx.authid, None)
+            await ctx.reply("Your preamble has been reset!")
+
             await preamblelog(ctx, "Preamble has been reset to the default")
         else:
             await ctx.reply("Aborting...")
@@ -346,10 +412,11 @@ async def cmd_showpreamble(ctx):
     if ctx.flags["retract"]:
         await ctx.data.users.set(ctx.authid, "pending_preamble", None)
         await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
-        ctx.bot.objects["pending_preambles"].pop(ctx.authid)
 
         await ctx.reply("Your preamble request has been retracted!")
+
         await handled_preamble(ctx, ctx.authid, "Request retracted")
+        ctx.bot.objects["pending_preambles"].pop(ctx.authid, None)
         await preamblelog(ctx, "Preamble request was retracted")
         return
 
@@ -460,7 +527,7 @@ async def cmd_showpreamble(ctx):
             await ctx.data.users.set(ctx.authid, "latex_preamble", new_preamble)
 
             await ctx.reply("Your preamble has been updated!")
-            await preamblelog(ctx, "Material was removed from the preamble", source=new_preamble)
+            await preamblelog(ctx, "Material was removed from the preamble. New preamble below.", source=new_preamble)
             return
 
     # At this point, the user wants to view, replace, or add to their preamble.
@@ -526,7 +593,7 @@ async def cmd_showpreamble(ctx):
             await ctx.reply("User cancelled, aborting.")
             return
 
-        await submit_preamble(ctx, ctx.author, new_submission, "User wishes to add {} lines to their preamble".format(len(new_source)))
+        await submit_preamble(ctx, ctx.author, new_submission, "User wishes to add {} lines to their preamble".format(len(new_source.splitlines())))
         await ctx.reply("Your preamble submission has been sent to my managers for review!\
                         \nIf you wish to retract your submission, please use `preamble --retract`.")
         return
@@ -545,7 +612,8 @@ async def cache_pending_preambles(bot):
     bot.objects["pending_preambles"] = {}
     for userid in await bot.data.users.find_not_empty("pending_preamble"):
         info = await bot.data.users.get(userid, "pending_preamble_info")
-        bot.objects["pending_preambles"][str(userid)] = info
+        if info is not None:
+            bot.objects["pending_preambles"][str(userid)] = info
 
 
 def load_into(bot):
