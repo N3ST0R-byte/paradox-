@@ -378,14 +378,28 @@ async def test_submission(ctx, userid, manager):
     pass
 
 
-@cmds.cmd("showpreamble",
+@cmds.cmd("preamble",
           category="Maths",
           short_help="View or modify your LaTeX preamble",
           flags=['reset', 'retract', 'add', 'remove', 'revert', 'usepackage', 'replace'])
 async def cmd_showpreamble(ctx):
     """
     Usage:
-        Magick
+        {prefix}preamble [code] [--reset] [--revert] [--retract] [--replace] [--remove] [--add]
+    Description:
+        With no arguments or flags, displays the preamble used to compile your LaTeX.
+        The flags may be used to modify or replace your preamble.
+        This command supports file uploads, the contents of which are treated as [code].
+
+        If [code] is provided without a flag, it is added to your preamble.
+        Note that most preamble modifications must be reviewed by a bot manager.
+    Flags:8
+        add:: Add [code] to your preamble, or prompt for new lines to add.
+        retract:: Retract a previously submitted preamble.
+        revert:: Switch to your previous preamble
+        reset::  Resets your preamble to the default.
+        replace:: Replaces your preamble with [code], or prompt for the new preamble.
+        remove:: Removes all lines from your preamble containing the given text, or prompt for line numbers to remove.
     """
     # Handle resetting the preamble
     if ctx.flags["reset"]:
@@ -605,7 +619,10 @@ async def cmd_showpreamble(ctx):
 
 async def load_channels(bot):
     bot.objects["latex_preamble_subch"] = discord.utils.get(bot.get_all_channels(), id=bot.bot_conf.get("preamble_ch"))
-    bot.objects["latex_preamble_logch"] = discord.utils.get(bot.get_all_channels(), id=bot.bot_conf.get("preamble_logch"))
+    if bot.bot_conf.get("preamble_logch"):
+        bot.objects["latex_preamble_logch"] = discord.utils.get(bot.get_all_channels(), id=bot.bot_conf.get("preamble_logch"))
+    else:
+        bot.objects["latex_preamble_logch"] = bot.objects["latex_preamble_subch"]
 
 
 async def cache_pending_preambles(bot):
