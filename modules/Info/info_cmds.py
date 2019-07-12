@@ -300,7 +300,7 @@ async def cmd_secho(ctx):
     ch = await ctx.find_channel(ctx.arg_str, interactive=True)
     if not ch:
         return
-    name = "{} [{}]".format(ch.name, ch.mention)
+    name = "{} [{}]".format(ch.name, ch.mention) if type == "text" else "{}".format(ch.name)
     #category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
     id = ch.id
     type = str(ch.type)
