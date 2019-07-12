@@ -106,3 +106,43 @@ def load_into(bot):
                 role = discord.utils.get(ctx.server.roles, id=role.id)
                 return role
             return None
+
+
+    @bot.util
+    async def find_channel(ctx, userstr, create=False, interactive=False, collection=None):
+        if not ctx.server:
+            ctx.cmd_err = (1, "This is not valid outside of a server!")
+            return None
+        if userstr == "":
+            await ctx.reply("No channel name was provided. Please try again.")
+            ctx.cmd_err = (-1, "")
+            return None
+
+        collection = collection if collection else ctx.server.channels
+
+        channelid = userstr.strip('<#@>')
+        if interactive:
+            def check(channel):
+                return (channel.id == channelid) or (userstr.lower() in channel.name.lower())
+            channels = list(filter(check, collection))
+            if len(channels) == 0:
+                channel = None
+            else:
+                selected = await ctx.selector("Multiple channels found matching `{}`! Please select one.".format(userstr),
+                                              [channel.name for channel in channels])
+                if selected is None:
+                    return None
+                channel = channels[selected]
+        else:
+            if channelid.isdigit():
+                def is_channel(channel):
+                    return channel.id == channelid
+            else:
+                def is_channel(channel):
+                    return userstr.lower() in channel.name.lower()
+            channel = discord.utils.find(is_channel, collection)
+        if channel:
+            return channel
+        else:
+            await ctx.reply("Couldn't find a channel matching `{}`!".format(userstr))
+            return None
