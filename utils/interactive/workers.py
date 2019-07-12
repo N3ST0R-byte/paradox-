@@ -133,8 +133,8 @@ def load_into(bot):
             if len(channels) == 0:
                 channel = None
             else:
-                selected = await ctx.selector("Multiple channels found matching `{}`! Please select one.".format(userstr),
-                                              [channel.name for channel in channels])
+                msg = "{} | {}"
+                selected = await ctx.selector("Multiple channels found matching `{}`! Please select one.".format(userstr, msg.format(channel.name, channel.type)))
                 if selected is None:
                     return None
                 channel = channels[selected]
