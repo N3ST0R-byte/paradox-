@@ -133,7 +133,7 @@ def load_into(bot):
             if len(channels) == 0:
                 channel = None
             else:
-                prettylist = "{} | {}".format(channel.name, channel.type)
+                prettylist = "{} | {}".format(channels.name, channels.type)
                 selected = await ctx.selector("Multiple channels found matching `{}`! Please select one.".format(userstr),
                                               [prettylist for channel in channels])
                 if selected is None:
