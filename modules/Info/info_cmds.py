@@ -300,10 +300,10 @@ async def cmd_secho(ctx):
     ch = await ctx.find_channel(ctx.arg_str, interactive=True)
     if not ch:
         return
+    type = str(ch.type)
     name = "{} [{}]".format(ch.name, ch.mention) if type == "text" else "{}".format(ch.name)
     #category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
     id = ch.id
-    type = str(ch.type)
     createdat = ch.created_at.strftime("%d/%m/%Y")
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - ch.created_at, minutes=False))
     atgo = "{} {}".format(createdat, created_ago)
