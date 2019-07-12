@@ -121,6 +121,11 @@ def load_into(bot):
         collection = collection if collection else ctx.server.channels
 
         channelid = userstr.strip('<#@>')
+        tv = {
+        "text": "Text",
+        "voice": "Voice",
+        "4": "Category"
+        }
         if interactive:
             def check(channel):
                 return (channel.id == channelid) or (userstr.lower() in channel.name.lower())
@@ -129,7 +134,7 @@ def load_into(bot):
                 channel = None
             else:
                 selected = await ctx.selector("Multiple channels found matching `{}`! Please select one.".format(userstr),
-                                              [channel.name for channel in channels])
+                                              [channel.name for channel in channels, " | {}".format(tv for channel in channels)])
                 if selected is None:
                     return None
                 channel = channels[selected]

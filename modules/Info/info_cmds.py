@@ -334,6 +334,7 @@ async def cmd_secho(ctx):
         desc = ctx.prop_tabulate(prop_list, value_list)
         embed = discord.Embed(type="rich", color=discord.Colour.green(), description=desc)
         embed.set_author(name="Text channel info")
+        embed.set_footer(text="Text channel information limited due to Discord.py version")
         await ctx.reply(embed=embed)
         return
     elif str(ch.type) == "voice":
