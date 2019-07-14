@@ -1,4 +1,4 @@
-from paradata import BotData as old_botdata
+from paradata_sqlite import BotData as old_botdata
 from paradata_mysql import BotData as new_botdata
 
 from botconf import Conf
@@ -14,6 +14,11 @@ print("Establishing old and new data objects")
 # Create sqlite connector
 old_data = old_botdata(data_file=conf.get("bot_data_file"), app="")
 old_conn = old_data.conn
+
+# Fixup
+print("Removing strange user mention in userid column")
+old_conn.execute("DELETE FROM users WHERE userid LIKE '<%'")
+old_conn.commit()
 
 """
 # Dictionary factory for formatting output cursor rows
@@ -33,7 +38,7 @@ dbopts = {
     'database': conf.get('database')
 }
 new_data = new_botdata(app="", **dbopts)
-new_conn = new_botdata.conn
+new_conn = new_data.conn
 
 # Explicitly list the keys we want to move to the long tables in the process
 print("Creating lists of keys to move to the long tables")
@@ -57,6 +62,7 @@ def migrate(name, numkeys, long_props):
 
     sql = "SELECT * FROM {}_props".format(name)
     cursor = old_conn.execute(sql)
+    new_cursor = new_conn.cursor()
     for row in cursor.fetchall():
         # Check whether the property needs to be moved to the long table
         is_long = any(row[0].endswith(tail) for tail in long_props)
@@ -65,7 +71,7 @@ def migrate(name, numkeys, long_props):
         table = ("{}_long_props" if is_long else "{}_props").format(name)
 
         # Add the row to this table
-        new_conn.execute("INSERT INTO {} VALUES (%s, %s)".format(table), tuple(row))
+        new_cursor.execute("INSERT INTO {} VALUES (%s, %s)".format(table), tuple(row))
         props_moved += 1
 
     print("> Moved {} rows into the {} property tables, with {} long props".format(props_moved, name, len(long_props)))
@@ -86,7 +92,7 @@ def migrate(name, numkeys, long_props):
         table = ("{}_long" if is_long else "{}").format(name)
 
         # Add the row to this table
-        new_conn.execute("INSERT INTO {} VALUES {}".format(table, data_format), tuple(row))
+        new_cursor.execute("INSERT INTO {} VALUES {}".format(table, data_format), tuple(row))
         entries_moved += 1
         longs_moved += 1 if is_long else 0
 

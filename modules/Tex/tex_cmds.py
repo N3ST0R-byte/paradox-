@@ -320,7 +320,7 @@ async def show_config(ctx):
     # Initialise the embed
     embed = discord.Embed(title="Personal LaTeX Configuration", color=discord.Colour.light_grey(), description=desc)
 
-    preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+    preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
     header = ""
     if not preamble:
         header = "No custom user preamble set, using default preamble."
