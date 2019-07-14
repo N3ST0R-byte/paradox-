@@ -326,7 +326,7 @@ async def show_config(ctx):
         header = "No custom user preamble set, using default preamble."
         preamble = default_preamble
         if ctx.server:
-            server_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+            server_preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
             if server_preamble:
                 header = "No custom user preamble set, using server preamble."
                 preamble = server_preamble
@@ -387,11 +387,11 @@ async def cmd_serverpreamble(ctx):
         remove:: Removes all lines from your preamble containing the given text.
     """
     if ctx.flags["reset"]:
-        await ctx.data.servers.set(ctx.server.id, "server_latex_preamble", None)
+        await ctx.data.servers_long.set(ctx.server.id, "server_latex_preamble", None)
         await ctx.reply("The server preamble has been reset to the default!")
         return
 
-    current_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+    current_preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
     current_preamble = current_preamble if current_preamble else default_preamble
 
     if not ctx.arg_str and not ctx.msg.attachments:
@@ -425,7 +425,7 @@ async def cmd_serverpreamble(ctx):
             return
         new_preamble = "\n".join([line for line in current_preamble.split("\n") if ctx.arg_str not in line])
 
-    await ctx.data.servers.set(ctx.server.id, "server_latex_preamble", new_preamble)
+    await ctx.data.servers_long.set(ctx.server.id, "server_latex_preamble", new_preamble)
 
     in_file = (len(new_preamble) > 1000)
     if in_file:
@@ -473,26 +473,26 @@ async def cmd_preamble(ctx):
         if code != 0:
             return
         if ctx.flags["a"]:
-            new_preamble = await ctx.data.users.get(user_id, "limbo_preamble")
+            new_preamble = await ctx.data.users_long.get(user_id, "limbo_preamble")
             if not new_preamble:
                 await ctx.reply("Nothing to approve. Perhaps this preamble was already approved?")
                 return
             new_preamble = new_preamble if new_preamble.strip() else default_preamble
-            await ctx.data.users.set(user_id, "latex_preamble", new_preamble)
+            await ctx.data.users_long.set(user_id, "latex_preamble", new_preamble)
             await ctx.reply("The preamble change has been approved")
-        await ctx.data.users.set(user_id, "limbo_preamble", "")
+        await ctx.data.users_long.set(user_id, "limbo_preamble", "")
         if ctx.flags["d"]:
             await ctx.reply("The preamble change has been denied")
         return
 
     if ctx.flags["reset"]:
-        await ctx.data.users.set(ctx.authid, "latex_preamble", None)
-        await ctx.data.users.set(ctx.authid, "limbo_preamble", "")
+        await ctx.data.users_long.set(ctx.authid, "latex_preamble", None)
+        await ctx.data.users_long.set(ctx.authid, "limbo_preamble", "")
         await ctx.reply("Your LaTeX preamble has been reset to the default!")
         return
 
     if ctx.flags["retract"]:
-        await ctx.data.users.set(ctx.authid, "limbo_preamble", "")
+        await ctx.data.users_long.set(ctx.authid, "limbo_preamble", "")
         await ctx.reply("You have retracted your preamble request.")
         return
 
@@ -511,11 +511,11 @@ async def cmd_preamble(ctx):
     else:
         new_preamble = ctx.arg_str
 
-    current_preamble = await ctx.data.users.get(ctx.authid, "limbo_preamble")
+    current_preamble = await ctx.data.users_long.get(ctx.authid, "limbo_preamble")
     if not current_preamble:
-        current_preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+        current_preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
         if not current_preamble and ctx.server:
-            current_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+            current_preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
         if not current_preamble:
             current_preamble = default_preamble
 
@@ -529,7 +529,7 @@ async def cmd_preamble(ctx):
             return
         new_preamble = "\n".join([line for line in current_preamble.split("\n") if ctx.arg_str not in line])
 
-    await ctx.data.users.set(ctx.authid, "limbo_preamble", new_preamble)
+    await ctx.data.users_long.set(ctx.authid, "limbo_preamble", new_preamble)
 
     in_file = (len(new_preamble) > 1000)
     if in_file:
@@ -555,9 +555,9 @@ async def texcomp(ctx):
     fn = "tex/{}.tex".format(ctx.authid)
     shutil.copy('tex/preamble.tex', fn)
 
-    preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+    preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
     if not preamble and ctx.server:
-        preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+        preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
     if not preamble:
         preamble = default_preamble
 
@@ -638,8 +638,9 @@ async def tex_edit_listener(bot, before, after):
 
 def load_into(bot):
     bot.data.users.ensure_exists("tex_listening", "latex_keepmsg", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname", shared=False)
-    bot.data.users.ensure_exists("latex_preamble", "limbo_preamble", shared=True)
+    bot.data.users_long.ensure_exists("latex_preamble", "limbo_preamble", shared=True)
     bot.data.servers.ensure_exists("maths_channels", "latex_listen_enabled", shared=False)
+    bot.data.servers_long.ensure_exists("server_latex_preamble", shared=True)
 
     bot.add_after_event("ready", register_tex_listeners)
     bot.add_after_event("message_edit", tex_edit_listener)

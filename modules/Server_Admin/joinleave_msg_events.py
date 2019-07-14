@@ -37,7 +37,8 @@ async def send_leave_msg(bot, member):
 
 
 def load_into(bot):
-    bot.data.servers.ensure_exists("join_ch", "join_msgs_msg", "leave_ch", "leave_msgs_msg", shared=False)
+    bot.data.servers.ensure_exists("join_ch", "leave_ch", shared=False)
+    bot.data.servers_long.ensure_exists("join_msgs_msg", "leave_msgs_msg", shared=False)
 
     bot.add_after_event("member_join", send_join_msg)
     bot.add_after_event("member_remove", send_leave_msg)
