@@ -190,7 +190,7 @@ async def field_edit(ctx):
 
 @menu_item(root_menu, "Save and Exit")
 async def save_and_exit(ctx):
-    server_embeds = await ctx.data.servers.get(ctx.server.id, "server_embeds")
+    server_embeds = await ctx.data.servers_long.get(ctx.server.id, "server_embeds")
     server_embeds = server_embeds if server_embeds else {}
     if "embed_name" in ctx.objs and ctx.objs["embed_name"]:
         embed_name = ctx.objs["embed_name"]
@@ -206,7 +206,7 @@ async def save_and_exit(ctx):
             if resp is None or resp == 0:
                 return None
         server_embeds[embed_name] = ctx.objs["embed_embed"].to_dict()
-        await ctx.data.servers.set(ctx.server.id, "server_embeds", server_embeds)
+        await ctx.data.servers_long.set(ctx.server.id, "server_embeds", server_embeds)
         await ctx.reply("The embed has been saved!\n To view the embed use `{prefix}embed {name}`, and reopen the Embed Editor with `{prefix}editembed {name}`.".format(prefix=ctx.used_prefix, name=embed_name))
         await ctx.bot.edit_message(ctx.objs["embed_preview_msg"], " ")
         asyncio.ensure_future(ctx.offer_delete(ctx.objs["embed_preview_msg"]))
@@ -293,7 +293,7 @@ async def init_embed(ctx):
 
 
 async def get_server_embed(ctx, emb_name):
-    server_embeds = await ctx.data.servers.get(ctx.server.id, "server_embeds")
+    server_embeds = await ctx.data.servers_long.get(ctx.server.id, "server_embeds")
     if not server_embeds:
         await ctx.reply("There are no saved embeds in this server! Moderators may create embeds using `{}buildembed`".format(ctx.used_prefix))
         return
@@ -399,3 +399,7 @@ async def cmd_embed(ctx):
     if fetch_embed is None:
         return
     await ctx.offer_delete(await ctx.reply(embed=fetch_embed[1]))
+
+
+def load_into(bot):
+    bot.data.servers_long.ensure_exists("server_embeds", shared=True)

@@ -8,9 +8,13 @@ server_conf = Conf("s_conf")
 
 
 class Server_Setting(paraSetting):
+    long_setting = False  # Whether the setting is stored as a long string or not
     @classmethod
     async def read(cls, ctx):
-        value = await ctx.data.servers.get(ctx.server.id, cls.name)
+        if cls.long_setting:
+            value = await ctx.data.servers_long.get(ctx.server.id, cls.name)
+        else:
+            value = await ctx.data.servers.get(ctx.server.id, cls.name)
         return value
 
     @classmethod
@@ -19,7 +23,10 @@ class Server_Setting(paraSetting):
         if code != 0:
             ctx.cmd_err = (code, msg)
             return
-        return await ctx.data.servers.set(ctx.server.id, cls.name, value)
+        if cls.long_setting:
+            return await ctx.data.servers_long.set(ctx.server.id, cls.name, value)
+        else:
+            return await ctx.data.servers.set(ctx.server.id, cls.name, value)
 
 
 @server_conf.setting
@@ -124,6 +131,7 @@ class Server_Setting_selfroles(Server_Setting, settingTypes.ROLELIST):
     desc = "Roles which users can give themselves with giveme command"
     default = None
     category = "Guild settings"
+    long_setting = True
 
 
 @server_conf.setting
@@ -232,6 +240,7 @@ class Server_Setting_Join_Msg(Server_Setting, settingTypes.FMTSTR):
     desc = "Join message"
     default = "Give a warm welcome to $mention$!"
     category = "Join message"
+    long_setting = True
 
 
 @server_conf.setting
@@ -250,6 +259,7 @@ class Server_Setting_Leave_Msg(Server_Setting, settingTypes.FMTSTR):
     desc = "Leave message"
     default = "Goodbye $username$, we hope you had a nice stay!"
     category = "Leave message"
+    long_setting = True
 
 
 @server_conf.setting

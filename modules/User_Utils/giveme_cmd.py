@@ -28,7 +28,7 @@ async def cmd_giveme(ctx):
         {prefix}giveme Homotopy
         {prefix}selfrole Homotopy --remove
     """
-    roles = await ctx.data.servers.get(ctx.server.id, "self_roles")
+    roles = await ctx.data.servers_long.get(ctx.server.id, "self_roles")
     self_roles = []
     roles = roles if roles else []
     for role in roles:
@@ -86,7 +86,7 @@ async def cmd_giveme(ctx):
                     self_roles.remove(role)
         else:
             self_roles.extend([role for role in msg_roles if role not in self_roles])
-        await ctx.data.servers.set(ctx.server.id, "self_roles", [role.id for role in self_roles])
+        await ctx.data.servers_long.set(ctx.server.id, "self_roles", [role.id for role in self_roles])
         await ctx.reply("Server self roles updated!")
         return
 
@@ -110,4 +110,4 @@ async def cmd_giveme(ctx):
 
 
 def load_into(bot):
-    bot.data.servers.ensure_exists("self_roles", shared=True)
+    bot.data.servers_long.ensure_exists("self_roles", shared=True)
