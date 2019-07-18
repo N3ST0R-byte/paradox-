@@ -11,13 +11,19 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 
 # Dictionary of valid colours and the associated transformation commands
 colourschemes = {}
-colourschemes["transparent"] = r"convert {image}-negate -fuzz 5% -transparent 'rgb(20, 20, 20)' {image}"
+colourschemes["transparent_white"] = r"convert {image} -negate -fuzz 5% -transparent 'rgb(20, 20, 20)' {image}"
+colourschemes["transparent_black"] = r"convert {image} -fuzz 5% -transparent 'rgb(223, 223, 223)' {image}"
+
+colourschemes["white"] = r"convert {image} -fuzz 5% -fill white -opaque 'rgb(223, 223, 223)' {image}"
 colourschemes["black"] = r"convert {image} -negate -fuzz 5% -fill black -opaque 'rgb(20, 20, 20)' {image}"
-colourschemes["dark"] = r"convert {image} -negate -fuzz 5% -fill 'rgb(35, 39, 42)' -opaque 'rgb(20, 20, 20)' {image}"
+colourschemes["darkgrey"] = r"convert {image} -negate -fuzz 5% -fill 'rgb(35, 39, 42)' -opaque 'rgb(20, 20, 20)' {image}"
+
 colourschemes["grey"] = r"convert {image} -negate -fuzz 5% -fill 'rgb(54, 57, 63)' -opaque 'rgb(20, 20, 20)' {image}"
 colourschemes["gray"] = colourschemes["grey"]
 colourschemes["default"] = colourschemes["grey"]
-colourschemes["white"] = None
+
+colourschemes["light"] = None
+colourschemes["dark"] = r"convert {image} -negate {image}"
 
 # Script which pads images to a minimum width of 1000
 pad_script = r"""

@@ -6,6 +6,7 @@ import os
 from contextBot.Context import MessageContext as MCtx
 
 from tex_config import show_config
+from tex_compile import colourschemes
 
 from paraCH import paraCH
 
@@ -153,13 +154,13 @@ async def cmd_tex(ctx):
         \\begin{{align*}}<code>\\end{{align*}}.
 
         Use the reactions to delete the message and show your code, respectively.
-    Flags:2
-        --config:: Shows you your current config.
-        --colour:: Changes your colourscheme. One of default, white, black, or grey.
-        --keepmsg:: Toggles whether I delete your source message or not.
-        --alwaysmath:: Toggles whether {prefix}tex always renders in math mode.
-        --allowother:: Toogles whether other users may use the reaction to show your message source.
-        --name:: Toggles whether your name appears on the output message. Note the name of the image is your userid.
+    Flags:10
+        config:: Shows you your current config.
+        colour:: Changes your colourscheme. Run this as `--colour show` to see valid schemes
+        keepmsg:: Toggles whether I delete your source message or not.
+        alwaysmath:: Toggles whether {prefix}tex always renders in math mode.
+        allowother:: Toggles whether other users may use the reaction to show your message source.
+        name:: Toggles whether your name appears on the output message. Note the name of the image is your userid.
     Examples:
         {prefix}tex This is a fraction: $\\frac{{1}}{{2}}$
         {prefix}$ \\int^\\infty_0 f(x)~dx
@@ -183,8 +184,8 @@ async def cmd_tex(ctx):
         return
     elif ctx.flags["colour"] or ctx.flags["color"]:
         colour = ctx.flags["colour"] if ctx.flags["colour"] else ctx.flags["color"]
-        if colour not in ["default", "white", "black", "grey", "gray", "dark"]:
-            await ctx.reply("Unknown colour scheme. Known colours are `default`, `white`, `black`, `dark` and `grey`.")
+        if colour.lower() not in colourschemes.keys():
+            await ctx.reply("Valid colour schemes are: `{}`".format("`, `".join(colourschemes.keys())))
             return
         await ctx.data.users.set(ctx.authid, "latex_colour", colour)
         await ctx.reply("Your colour scheme has been changed to {}".format(colour))
@@ -235,6 +236,7 @@ async def cmd_tex(ctx):
     ctx.objs["latex_out_deleted"] = False
     ctx.objs["latex_handled"] = True
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
+    ctx.objs["latex_wide"] = (ctx.used_cmd_name == "texw")
 
     # Compile and send the final output message
     out_msg = await make_latex(ctx)
@@ -288,7 +290,7 @@ async def parse_tex(ctx, source):
 
     # Different compilation commands require different source wrappers
     always = await ctx.bot.data.users.get(ctx.authid, "latex_alwaysmath")
-    if ctx.used_cmd_name == "latex" or (ctx.used_cmd_name == "tex" and not always):
+    if ctx.used_cmd_name in ["latex", "texw"] or (ctx.used_cmd_name == "tex" and not always):
         return source
     if ctx.used_cmd_name in ["$", ","] or (ctx.used_cmd_name == "tex" and always):
         return "\\begin{{gather*}}\n{}\n\\end{{gather*}}".format(source.strip(","))
@@ -296,8 +298,6 @@ async def parse_tex(ctx, source):
         return "$${}$$".format(source)
     elif ctx.used_cmd_name == "align":
         return "\\begin{{align*}}\n{}\n\\end{{align*}}".format(source)
-    elif ctx.used_cmd_name == "texw":
-        return "{{\\color{{white}}\\rule{{\\textwidth}}{{1pt}}}}\n{}".format(source)
     else:
         return source
 
@@ -428,7 +428,7 @@ async def texcomp(ctx):
     colour = await ctx.data.users.get(ctx.authid, "latex_colour")
     colour = colour if colour else "default"
 
-    return await ctx.makeTeX(source, ctx.authid, preamble, colour)
+    return await ctx.makeTeX(source, ctx.authid, preamble, colour, pad=not ctx.objs["latex_wide"])
 
 
 async def register_tex_listeners(bot):
