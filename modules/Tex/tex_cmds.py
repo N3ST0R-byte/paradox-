@@ -442,29 +442,45 @@ async def register_tex_listeners(bot):
 
 
 async def tex_listener(ctx):
-    if ctx.author.bot:
+    # Handle exit conditions
+    if ctx.author.bot and int(ctx.authid) not in ctx.bot.bot_conf.getintlist("whitelisted_bots"):
+        # No listening to non whitelisted bots
         return
     if "ready" not in ctx.bot.objects or not ctx.bot.objects["ready"]:
+        # If we aren't initialised, fail silently
         return
     if "latex_handled" in ctx.objs and ctx.objs["latex_handled"]:
+        # Message context already has had any latex processed
         return
-    if not (ctx.authid in ctx.bot.objects["user_tex_listeners"] or (ctx.server and ctx.server.id in ctx.bot.objects["server_tex_listeners"])):
+    if ctx.server and (ctx.authid not in ctx.bot.objects["user_tex_listeners"]) and (ctx.server.id not in ctx.bot.objects["server_tex_listeners"]):
+        # We are in a server, the user is not a listener, and the server is not a listener
         return
     if not _is_tex(ctx.msg):
+        # The message doesn't contain any tex anyway
         return
     if ctx.server and (ctx.server.id in ctx.bot.objects["server_tex_listeners"]) and ctx.bot.objects["server_tex_listeners"][ctx.server.id] and not (ctx.ch.id in ctx.bot.objects["server_tex_listeners"][ctx.server.id]):
+        # The current channel isn't in the list of math channels for the server
         return
-    await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\" in server \"{ctx.server.name}\":\n{ctx.cntnt}".format(ctx=ctx))
+
+    # Log the listening tex message
+    if ctx.server:
+        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\" in server \"{ctx.server.name}\":\n{ctx.cntnt}".format(ctx=ctx))
+    else:
+        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\" in DMS:\n{ctx.cntnt}".format(ctx=ctx))
+
+    # Set the LaTeX compilation flags
     ctx.objs["latex_handled"] = True
     ctx.objs["latex_listening"] = True
     ctx.objs["latex_source_deleted"] = False
     ctx.objs["latex_out_deleted"] = False
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
 
+    # Generate the LaTeX
     out_msg = await make_latex(ctx)
 
     ctx.objs["latex_out_msg"] = out_msg
 
+    # Start the reaction handler
     asyncio.ensure_future(reaction_edit_handler(ctx, out_msg), loop=ctx.bot.loop)
     if not ctx.objs["latex_source_deleted"]:
         ctx.objs["latex_edit_renew"] = False
