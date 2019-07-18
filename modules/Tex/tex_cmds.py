@@ -427,8 +427,9 @@ async def texcomp(ctx):
     preamble = await ctx.get_preamble()
     colour = await ctx.data.users.get(ctx.authid, "latex_colour")
     colour = colour if colour else "default"
+    wide = ctx.objs.get("latex_wide", False)
 
-    return await ctx.makeTeX(source, ctx.authid, preamble, colour, pad=not ctx.objs["latex_wide"])
+    return await ctx.makeTeX(source, ctx.authid, preamble, colour, pad=not wide)
 
 
 async def register_tex_listeners(bot):
