@@ -60,7 +60,7 @@ def load_into(bot):
         """
 
     @bot.util
-    async def selector(ctx, message, select_from, timeout=120, max_len=20, silent=False):
+    async def selector(ctx, message, select_from, timeout=120, max_len=20, silent=False, allow_single=False):
         """
         Interactive method to ask the user to select an entry from a list.
         Returns the index of the list which was selected,
@@ -71,7 +71,7 @@ def load_into(bot):
         """
         if len(select_from) == 0:
             return None
-        if len(select_from) == 1:
+        if not allow_single and len(select_from) == 1:
             return 0
         pages = ["{}\n{}\nType the number of your selection or `c` to cancel.".format(message, page) for page in ctx.paginate_list(select_from, block_length=max_len)]
         out_msg = await ctx.pager(pages)
