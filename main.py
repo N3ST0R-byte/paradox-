@@ -3,7 +3,6 @@ import shutil
 import os
 from datetime import datetime
 
-from paradata import BotData
 from botconf import Conf
 
 from contextBot.Context import Context
@@ -36,10 +35,25 @@ EMOJI_SERVER = conf.get("EMOJI_SERVER")
 
 # ------------------------------
 # Initialise data
-BOT_DATA_FILE = conf.get("BOT_DATA_FILE")
 CURRENT_APP = conf.get("APP")
 
-botdata = BotData(BOT_DATA_FILE, app=CURRENT_APP)
+# Conditional import and setting of opts depending on the type of db
+DB_TYPE = conf.get("DB_TyPE")
+if not DB_TYPE or DB_TYPE.lower() == "sqlite":
+    from paradata_sqlite import BotData
+    dbopts = {'data_file': conf.get("bot_data_file")}
+elif DB_TYPE == "mysql":
+    from paradata_mysql import BotData
+    dbopts = {
+        'username': conf.get('username'),
+        'password': conf.get('password'),
+        'host': conf.get('host'),
+        'database': conf.get('database')
+    }
+else:
+    raise Exception("Unknown data storage type {} in configuration".format(DB_TYPE))
+
+botdata = BotData(app=CURRENT_APP, **dbopts)
 
 # Initialise logs
 LOGNAME = conf.get("LOGFILE")

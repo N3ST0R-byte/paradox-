@@ -29,12 +29,12 @@ async def cmd_tag(ctx):
         if tag_info is None:
             return
 
-        current_tags = await ctx.bot.data.servers.get(ctx.server.id, "tags")
+        current_tags = await ctx.bot.data.servers_long.get(ctx.server.id, "tags")
         current_tags = current_tags if current_tags else {}
         current_tags[tag_info["name"]] = tag_info
-        await ctx.bot.data.servers.set(ctx.server.id, "tags", current_tags)
+        await ctx.bot.data.servers_long.set(ctx.server.id, "tags", current_tags)
         return
-    current_tags = await ctx.bot.data.servers.get(ctx.server.id, "tags")
+    current_tags = await ctx.bot.data.servers_long.get(ctx.server.id, "tags")
     current_tags = current_tags if current_tags else {}
     if ctx.arg_str == "":
         if current_tags:
@@ -54,10 +54,10 @@ async def cmd_tag(ctx):
                 if tag_info is None:
                     return
 
-                current_tags = await ctx.bot.data.servers.get(ctx.server.id, "tags")
+                current_tags = await ctx.bot.data.servers_long.get(ctx.server.id, "tags")
                 current_tags = current_tags if current_tags else {}
                 current_tags[tag_info["name"]] = tag_info
-                await ctx.bot.data.servers.set(ctx.server.id, "tags", current_tags)
+                await ctx.bot.data.servers_long.set(ctx.server.id, "tags", current_tags)
             return
     tag = current_tags[ctx.arg_str]
 
@@ -67,7 +67,7 @@ async def cmd_tag(ctx):
             await ctx.reply("Sorry, you must be a moderator to delete tags")
             return None
         current_tags.pop(ctx.arg_str, None)
-        await ctx.bot.data.servers.set(ctx.server.id, "tags", current_tags)
+        await ctx.bot.data.servers_long.set(ctx.server.id, "tags", current_tags)
         await ctx.reply("The tag was successfully deleted.")
         return
 
@@ -185,4 +185,4 @@ async def create_tag(ctx):
 
 
 def load_into(bot):
-    bot.data.servers.ensure_exists("tags")
+    bot.data.servers_long.ensure_exists("tags")
