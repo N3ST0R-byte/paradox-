@@ -9,21 +9,33 @@ Provides a single context utility to compile LaTeX code from a user and return a
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
+
+def gencolour(colour, negate=True):
+    """
+    Build the colour conversion command for the provided colour, negating black text if required
+    """
+    return r"convert {{image}} {} -bordercolor transparent -border 40 \
+        -background {} -flatten {{image}}".format("+negate" if negate else "", colour)
+
+
 # Dictionary of valid colours and the associated transformation commands
 colourschemes = {}
-colourschemes["transparent_white"] = r"convert {image} -negate -fuzz 5% -transparent 'rgb(20, 20, 20)' {image}"
-colourschemes["transparent_black"] = r"convert {image} -fuzz 5% -transparent 'rgb(223, 223, 223)' {image}"
 
-colourschemes["white"] = r"convert {image} -fuzz 5% -fill white -opaque 'rgb(223, 223, 223)' {image}"
-colourschemes["black"] = r"convert {image} -negate -fuzz 5% -fill black -opaque 'rgb(20, 20, 20)' {image}"
-colourschemes["darkgrey"] = r"convert {image} -negate -fuzz 5% -fill 'rgb(35, 39, 42)' -opaque 'rgb(20, 20, 20)' {image}"
+colourschemes["white"] = gencolour("white", False)
+colourschemes["black"] = gencolour("black")
 
-colourschemes["grey"] = r"convert {image} -negate -fuzz 5% -fill 'rgb(54, 57, 63)' -opaque 'rgb(20, 20, 20)' {image}"
-colourschemes["gray"] = colourschemes["grey"]
+colourschemes["light"] = gencolour("'rgb(223, 223, 233)'", False)
+colourschemes["dark"] = gencolour("'rgb(20, 20, 20)'")
+
+colourschemes["gray"] = colourschemes["grey"] = gencolour("'rgb(54, 57, 63)'")
+colourschemes["darkgrey"] = gencolour("'rgb(35, 39, 42)'")
+
+colourschemes["trans_white"] = r"convert {image} +negate -bordercolor transparent -border 40 {image}"
+colourschemes["trans_black"] = None
+colourschemes["transparent"] = colourschemes["trans_white"]
+
 colourschemes["default"] = colourschemes["grey"]
 
-colourschemes["light"] = None
-colourschemes["dark"] = r"convert {image} -negate {image}"
 
 # Script which pads images to a minimum width of 1000
 pad_script = r"""

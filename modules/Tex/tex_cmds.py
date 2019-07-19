@@ -304,7 +304,7 @@ async def parse_tex(ctx, source):
 
 async def make_latex(ctx):
     """
-    Compile LaTeX, send the outpu, and handle cleanup
+    Compile LaTeX, send the output, and handle cleanup
     """
     # Strip the command header off the message if required
     source = ctx.msg.clean_content if ctx.objs["latex_listening"] else ctx.msg.clean_content.partition(ctx.used_cmd_name)[2].strip()

@@ -23,4 +23,4 @@ then
   exit
 fi
 
-convert -density 500 -quality 8 -trim +repage -border 40 $1.pdf $1.png;
+convert -density 500 -quality 8 -trim +repage $1.pdf $1.png;
