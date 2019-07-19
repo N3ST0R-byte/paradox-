@@ -418,7 +418,7 @@ async def test_submission(ctx, userid, manager):
         # Generate file data
         with open(file_name, 'rb') as im:
             out_msg = await ctx.send(ctx.ch, message=message, file_data=im, file_name="out.png", embed=embed)
-    await ctx.offer_delete(out_msg)
+    asyncio.ensure_future(ctx.offer_delete(out_msg))
 
 
 @cmds.cmd("preamble",
