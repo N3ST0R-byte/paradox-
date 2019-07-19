@@ -379,7 +379,6 @@ async def deny_submission(ctx, userid, manager):
             await ctx.reply("I wasn't allowed to DM this user.. they might have me blocked")
         except Exception:
             await ctx.reply("Something unknown went wrong while DMMing this user!")
-        return True
 
     # Mark the case as handled
     await handled_preamble(ctx, userid, "Preamble denied by {}".format(manager.mention))
@@ -388,6 +387,7 @@ async def deny_submission(ctx, userid, manager):
     await ctx.data.users.set(userid, "pending_preamble", None)
     await ctx.data.users.set(userid, "pending_preamble_info", None)
     ctx.bot.objects["pending_preambles"].pop(userid, None)
+    return True
 
 
 async def test_submission(ctx, userid, manager):
@@ -672,7 +672,7 @@ async def approval_queue(ctx):
 
         # Quit if there is nothing to approve
         if len(userids) == 0:
-            await ctx.reply("All the preambles have been judged!")
+            await ctx.reply("All the preambles have been assessed!")
             return
 
         # Otherwise, find each of the users and make a pretty approval list
