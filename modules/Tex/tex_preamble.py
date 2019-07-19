@@ -19,8 +19,16 @@ Commands:
     preambleadmin: Bot admin command to manage preamble submissions and individual preambles
 """
 
-
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+preamble_test_code = r"""
+ABCDEFGHIJKLMNOPQRSTUVWXYZ\\
+
+Here is a fraction: \(\frac{1}{2}\).
+
+Here is a display equation: \[(a+b)^2 = a^2 + b^2\]
+(in fields of order $2$)
+"""
 
 with open(os.path.join(__location__, "preamble.tex"), 'r') as preamble:
     default_preamble = preamble.read()
@@ -175,13 +183,6 @@ async def preamblelog(ctx, title, user=None, header=None, source=None):
             temp_file.write(source.encode())
             temp_file.seek(0)
             await ctx.pager(pages, embed=True, locked=False, destination=logch, file_data=temp_file, file_name="source.tex")
-
-
-async def test_preamble(ctx, preamble):
-    """
-    Test preamble code in a preamble channel
-    """
-    pass
 
 
 async def handled_preamble(ctx, userid, info):
@@ -390,8 +391,34 @@ async def deny_submission(ctx, userid, manager):
 
 
 async def test_submission(ctx, userid, manager):
-    # Not implemented
-    pass
+    """
+    Compile a piece of test LaTeX to test the provided userid's preamble.
+    Replies with the compiled LaTeX output, and any error that occurs.
+    """
+    if userid not in ctx.bot.objects["pending_preambles"]:
+        # The user no longer has a current submission. Quit silently
+        return
+
+    # Get the pending preamble
+    preamble = ctx.bot.objects["pending_preambles"][userid][0]
+
+    # Compile the latex with this preamble
+    log = await ctx.makeTeX(preamble_test_code, manager.id, preamble=preamble)
+
+    file_name = "tex/staging/{id}/{id}.png".format(id=manager.id)
+
+    if not log:
+        message = "Test compile for pending preamble of {}.\
+            \nNo errors during compile. Please check compiled image below.".format(userid)
+        out_msg = await ctx.reply(message=message, file_name=file_name)
+    else:
+        message = "Test compile for pending preamble of {}.\
+            \nSee the error log and output image below.".format(userid)
+        embed = discord.Embed(description="```\n{}\n```".format(log))
+        # Generate file data
+        with open(file_name, 'rb') as im:
+            out_msg = await ctx.send(ctx.ch, message=message, file_data=im, file_name="out.png", embed=embed)
+    await ctx.offer_delete(out_msg)
 
 
 @cmds.cmd("preamble",

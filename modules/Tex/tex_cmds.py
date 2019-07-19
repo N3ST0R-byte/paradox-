@@ -336,7 +336,6 @@ async def make_latex(ctx):
 
     # Send the final output, or a failure image if there is no output
     file_name = "tex/staging/{id}/{id}.png".format(id=ctx.authid)
-    print(file_name)
     exists = True if os.path.isfile(file_name) else False
     out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
                               message="{}{}".format(ctx.objs["latex_name"],
