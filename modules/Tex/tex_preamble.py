@@ -30,8 +30,17 @@ Here is a display equation: \[(a+b)^2 = a^2 + b^2\]
 (in fields of order $2$)
 """
 
+# Load default preamble from file
 with open(os.path.join(__location__, "preamble.tex"), 'r') as preamble:
     default_preamble = preamble.read()
+
+# Load list of whitelisted packages from file
+with open(os.path.join(__location__, "package_whitelist.txt"), 'r') as pw:
+    whitelisted_packages = [line.strip() for line in pw]
+
+# Load list of preamble presets from directory
+preset_dir = os.path.join(__location__, "presets")
+presets = [os.path.splitext(fn)[0] for fn in os.listdir(preset_dir) if fn.endswith('.tex')]
 
 
 def split_text(text, blocksize, code=True, syntax="", maxheight=50):
@@ -437,7 +446,7 @@ async def cmd_preamble(ctx):
         If [code] is provided without a flag, it is added to your preamble.
         Note that most preamble modifications must be reviewed by a bot manager.
     Flags:8
-        add:: Add [code] to your preamble, or prompt for new lines to add.
+        add:: Add [code ] to your preamble, or prompt for new lines to add.
         retract:: Retract a previously submitted preamble.
         revert:: Switch to your previous preamble
         reset::  Resets your preamble to the default.
@@ -521,6 +530,8 @@ async def cmd_preamble(ctx):
     else:
         new_source = ctx.arg_str
 
+    new_source = new_source.strip()
+
     # Handle a request to remove material from the preamble
     if ctx.flags['remove']:
         to_remove = []  # List of line indicies to remove
@@ -585,7 +596,7 @@ async def cmd_preamble(ctx):
 
             await ctx.reply("Your preamble has been updated!")
             await preamblelog(ctx, "Material was removed from the preamble. New preamble below.", source=new_preamble)
-            return
+        return
 
     # At this point, the user wants to view, replace, or add to their preamble.
 
@@ -620,11 +631,6 @@ async def cmd_preamble(ctx):
                         \nIf you wish to retract your submission, please use `preamble --retract`.")
         return
 
-    # Handle a request to add a new package to the preamble, possibly from the whitelist
-    if ctx.flags['usepackage']:
-        # Not yet implemented
-        pass
-
     # Handle a request to add material to the preamble
     if ctx.flags['add'] or new_source:
         if not new_source:
@@ -639,6 +645,21 @@ async def cmd_preamble(ctx):
                 return
 
         new_submission = "{}\n{}".format(preamble, new_source)
+
+        # Check if the addition is a one line usepackage containing whitelisted packages
+        new_source = new_source.strip()
+        if "\n" not in new_source and new_source.startswith("\\usepackage"):
+            packages = new_source[11:].strip(' {}').split(",")
+            if all(not package.strip() or (package.strip() in whitelisted_packages) for package in packages):
+                # All the requested packages are whitelisted
+                # Update the preamble, log the changes, and notify the user
+                await ctx.data.users.set(ctx.authid, "previous_preamble", preamble)
+                await ctx.data.users.set(ctx.authid, "latex_preamble", new_submission)
+
+                await ctx.reply("Your preamble has been updated!")
+                await preamblelog(ctx, "Whitelisted packages were added to the preamble. New preamble below.",
+                                  source=new_submission)
+                return
 
         # Confirm submission
         prompt = "Please confirm your submission of the following preamble."
@@ -718,10 +739,11 @@ async def user_admin(ctx, userid):
     Menu:
         1. Show current preamble
         2. Set preamble
-        3. Approve/Deny pending preamble (Only appears if user has a pending submission.)
+        3. Reset preamble
+        4. Approve/Deny pending preamble (Only appears if user has a pending submission.)
     """
     # Setup the menu options and menu
-    menu_items = ["Show current preamble", "Set preamble"]
+    menu_items = ["Show current preamble", "Set preamble", "Reset preamble"]
     menu_message = "Preamble management menu for user {}".format(userid)
 
     # Add the judgement option if there is a pending preamble
@@ -745,7 +767,7 @@ async def user_admin(ctx, userid):
         pass
     elif result == 0:
         # Show the preamble
-        preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+        preamble = await ctx.data.users.get(userid, "latex_preamble")
         if not preamble:
             await ctx.reply("This user doesn't have a custom preamble set!")
         else:
@@ -805,9 +827,9 @@ async def user_admin(ctx, userid):
             return
 
         # Finally, set the preamble
-        current_preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
-        await ctx.data.users.set(ctx.authid, "previous_preamble", current_preamble)
-        await ctx.data.users.set(ctx.authid, "latex_preamble", preamble)
+        current_preamble = await ctx.data.users.get(userid, "latex_preamble")
+        await ctx.data.users.set(userid, "previous_preamble", current_preamble)
+        await ctx.data.users.set(userid, "latex_preamble", preamble)
 
         await ctx.reply("The preamble was updated.")
         await preamblelog(ctx, "Manual preamble update",
@@ -815,6 +837,23 @@ async def user_admin(ctx, userid):
                           user=user,
                           source=preamble)
     elif result == 2:
+        # Reset the current preamble to the default
+        current_preamble = await ctx.data.users.get(userid, "latex_preamble")
+
+        await ctx.data.users.set(userid, "previous_preamble", current_preamble)
+        await ctx.data.users.set(userid, "latex_preamble", None)
+        await ctx.data.users.set(userid, "pending_preamble", None)
+        await ctx.data.users.set(userid, "pending_preamble_info", None)
+
+        await handled_preamble(ctx, userid, "Preamble was reset")
+        ctx.bot.objects["pending_preambles"].pop(userid, None)
+        await ctx.reply("The preamble was reset to the default!")
+
+        await preamblelog(ctx, "Manual preamble reset",
+                          header="{} ({}) manually reset the preamble".format(ctx.author, ctx.author.id),
+                          user=user)
+
+    elif result == 3:
         # Judge the pending preamble
         # Show the preamble and add judgement reactions
         title = "Preamble submission!"
@@ -855,9 +894,9 @@ async def cmd_preambleadmin(ctx):
     """
     Usage:
         {prefix}pa
+        {prefix}pa --menu
         {prefix}pa --user <userid>
         {prefix}pa --server <serverid>
-        {prefix}pa --menu
         {prefix}pa (--approve|--a) [userid]
         {prefix}pa (--deny|-d) [userid]
     Description:
@@ -894,6 +933,358 @@ async def cmd_preambleadmin(ctx):
 
     # Handle default action, i.e. showing approval queue
     await approval_queue(ctx)
+
+
+@cmds.cmd("preamblepreset",
+          category="Maths",
+          short_help="Set your LaTeX preamble to a pre-built preset",
+          aliases=["ppr"])
+@cmds.execute("flags", flags=["use", "add", "remove", "show", 'modify'])
+async def cmd_ppr(ctx):
+    """
+    Usage:
+        {prefix}ppr
+        {prefix}ppr --use [preset]
+        {prefix}ppr --show [preset]
+    Description:
+        Set your LaTeX preamble to one of our pre-built preamble presets.
+        If you wish to submit a new preset, please contact a bot manager on the support server!
+
+        Use of a preamble preset doesn't require bot manager approval.
+        Warning: This will completely overwrite your current preamble.
+    Flags:4
+        use:: Overwrites your LaTeX preamble with the selected preset.
+        show:: View the selected preset, or list the available presets.
+    Examples:
+        {prefix}ppr --use
+        {prefix}ppr --show funandgames
+        {prefix}ppr --use physics
+    """
+    args = ctx.arg_str
+
+    # Preset administration
+
+    # Handle adding a new preset
+    if ctx.flags['add']:
+        # Check for managerial permissions
+        (code, msg) = await cmds.checks["manager_perm"](ctx)
+        if code != 0:
+            return
+
+        # Retrieve the name of the new preset
+        name = args.strip()
+
+        # If the name wasn't given, ask for it politely
+        if not name:
+            result = await ctx.input("Please enter a name for the preset.")
+            if not result:
+                return
+            name = result.strip()
+
+        # Now we have a name, ask for the source
+        prompt = "Please enter or upload the new preset, or type `c` now to cancel."
+
+        preset = None
+        offer_msg = await ctx.reply(prompt)
+        result_msg = await ctx.bot.wait_for_message(author=ctx.author, timeout=600)
+
+        # Grab response content, using the contents of the first attachment if it exists
+        if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
+            pass
+        else:
+            preset = result_msg.content
+            if not preset:
+                if result_msg.attachments:
+                    file_info = result_msg.attachments[0]
+
+                    # Limit filesize to 16k
+                    if file_info['size'] >= 16000:
+                        await ctx.reply("Attached file is too large to process.")
+                        return
+
+                    async with aiohttp.get(file_info['url']) as r:
+                        preset = await r.text()
+
+        # Remove the prompt and response messages
+        try:
+            await ctx.bot.delete_message(offer_msg)
+            if result_msg is not None:
+                await ctx.bot.delete_message(result_msg)
+        except discord.NotFound:
+            pass
+        except discord.Forbidden:
+            pass
+
+        # If out of all that we didn't get any content, return
+        if not preset:
+            return
+
+        # Confirm submission
+        prompt = "Please confirm the contents of the new preset {}.".format(name)
+        result = await confirm(ctx, prompt, preset)
+
+        if result is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if not result:
+            await ctx.reply("User cancelled, aborting.")
+            return
+
+        # Write the preset to a file
+        file_name = os.path.join(preset_dir, name + '.tex')
+        with open(file_name, 'w') as f:
+            f.write(preset)
+
+        # Add the preset name to the local cache
+        presets.append(name)
+
+        # Tell the manager that all is done
+        await ctx.reply("Your new preset has been created!")
+        return
+
+    # Handle removing a preset
+    if ctx.flags['remove']:
+        # Check for managerial permissions
+        (code, msg) = await cmds.checks["manager_perm"](ctx)
+        if code != 0:
+            return
+
+        # Retrieve the name of the preset to remove
+        name = args.strip()
+
+        # If the name wasn't given, go through an interactive selection process
+        # If it was given, ensure it is a valid preset
+        if not name:
+            # Selection header message
+            message = "Please select a preamble preset to remove!"
+
+            # Run the selector
+            result = await ctx.selector(message, presets, allow_single=True)
+
+            # Catch non-reply or cancellation
+            if result is None:
+                return
+
+            name = presets[result]
+        elif name not in presets:
+            await ctx.reply("This preamble preset doesn't exist!")
+            return
+
+        # Confirm removal of the preset
+        resp = await ctx.ask("Are you sure you wish to remove the preamble preset {}?".format(name))
+        if resp:
+            # Delete the preset from the file system
+            file_name = os.path.join(preset_dir, name + '.tex')
+            os.remove(file_name)
+
+            # Remove the preset from local cache
+            presets.remove(name)
+            await ctx.reply("The preset has been deleted!")
+        else:
+            await ctx.reply("Aborting...")
+        return
+
+    # Handle modification of a preset
+    if ctx.flags['modify']:
+        """
+        This displays a menu with three options:
+            1. Add to preset
+            2. Remove from preset
+            3. Replace preset
+        Add to and remove work as in the user's preamble system. Replace overwrites the preset.
+        """
+        # Check for managerial permissions
+        (code, msg) = await cmds.checks["manager_perm"](ctx)
+        if code != 0:
+            return
+
+        # Retrieve the name of the preset to remove
+        name = args.strip()
+
+        # If the name wasn't given, go through an interactive selection process
+        # If it was given, ensure it is a valid preset
+        if not name:
+            # Selection header message
+            message = "Please select a preamble preset to modify!"
+
+            # Run the selector
+            result = await ctx.selector(message, presets, allow_single=True)
+
+            # Catch non-reply or cancellation
+            if result is None:
+                return
+
+            name = presets[result]
+        elif name not in presets:
+            await ctx.reply("This preamble preset doesn't exist!")
+            return
+
+        # Get the actual contents of the preset
+        preset_file = os.path.join(preset_dir, name + '.tex')
+        with open(preset_file, 'r') as f:
+            preset = f.read()
+
+        # Build menu
+        menu_items = ["Add to preset", "Remove from preset", "Replace preset"]
+        menu_message = "Please select the desired modification"
+
+        # Run the selector
+        result = await ctx.selector(menu_message, menu_items)
+        if result is None:
+            # Menu was cancelled or timed out
+            return
+        elif result == 0:
+            # Adding lines to the preset
+            resp = await ctx.input("Please enter the material you wish to add to the preset", timeout=600)
+            if not resp:
+                await ctx.reply("Query timed out, aborting.")
+                return
+            if resp.lower() == 'c':
+                await ctx.reply("User cancelled, aborting.")
+                return
+
+            new_preset = "{}\n{}".format(preset, resp)
+        elif result == 1:
+            # Remove lines from the preset
+
+            # Generate a lined version of the preset
+            lines = preset.splitlines()
+            lined_preset = "\n".join(("{:>2}. {}".format(i+1, line) for i, line in enumerate(lines)))
+
+            # Prompt for the lines to remove
+            prompt = "Please enter the line numbers to remove, separated by commas, or type `c` now to cancel."
+            prompt_msg = await view_preamble(ctx, lined_preset, prompt)
+            response = await ctx.input(prompt_msg=prompt_msg)
+            if response is None:
+                await ctx.reply("Query timed out, aborting.")
+                return
+            if response.lower() == "c":
+                await ctx.reply("User cancelled, aborting.")
+                return
+            nums = [num.strip() for num in response.split(',')]
+            if not all(num.isdigit() for num in nums):
+                await ctx.reply("Couldn't understand your selection, aborting.")
+                return
+            nums = [int(num) - 1 for num in nums]
+            if not all(0 <= num < len(lines) for num in nums):
+                await ctx.reply("This line doesn't exist! Aborting.")
+                return
+
+            to_remove = list(set(nums))
+            new_preset = "\n".join([line for i, line in enumerate(lines) if i not in to_remove])
+        elif result == 2:
+            # Completely replace preamble preset
+            prompt = "Please enter or upload the new preset, or type `c` now to cancel."
+
+            preset = None
+            offer_msg = await ctx.reply(prompt)
+            result_msg = await ctx.bot.wait_for_message(author=ctx.author, timeout=600)
+
+            # Grab response content, using the contents of the first attachment if it exists
+            if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
+                pass
+            else:
+                new_preset = result_msg.content
+                if not new_preset:
+                    if result_msg.attachments:
+                        file_info = result_msg.attachments[0]
+
+                        # Limit filesize to 16k
+                        if file_info['size'] >= 16000:
+                            await ctx.reply("Attached file is too large to process.")
+                            return
+
+                        async with aiohttp.get(file_info['url']) as r:
+                            preset = await r.text()
+
+            # Remove the prompt and response messages
+            try:
+                await ctx.bot.delete_message(offer_msg)
+                if result_msg is not None:
+                    await ctx.bot.delete_message(result_msg)
+            except discord.NotFound:
+                pass
+            except discord.Forbidden:
+                pass
+
+        if new_preset:
+            # Confirm new content
+            prompt = "Please confirm the following udate for the preset {}".format(name)
+            result = await confirm(ctx, prompt, new_preset)
+            if result is None:
+                await ctx.reply("Query timed out, aborting.")
+                return
+            if not result:
+                await ctx.reply("User cancelled, aborting.")
+                return
+
+            # Update the preset
+            file_name = os.path.join(preset_dir, name + '.tex')
+            with open(file_name, 'w') as f:
+                f.write(new_preset)
+
+            # Notify the manager
+            await ctx.reply("The preset has been updated!")
+        return
+
+    # End of manager level preset administration
+    # Whether we are applying or showing the presets
+    showing = not ctx.flags['use']  # We always want to show unless the use flag has been applied
+
+    if not args:
+        # Run through an interactive selection process
+
+        # Selection header message
+        message = "Please select a preamble preset to {}!".format('view' if showing else 'apply')
+
+        # Run the selector
+        result = await ctx.selector(message, presets, allow_single=True)
+
+        # Catch non-reply or cancellation
+        if result is None:
+            return
+
+        selected = presets[result]  # Name of the preset selected by the user
+    else:
+        # Check that the preset name entered with the command is a valid preset
+        # If it is, set selected to this
+        selected = args.strip().lower()
+
+        if selected not in presets:
+            await ctx.reply("This isn't a valid preset! Use {}ppr --view to see the current list of presets!".format(ctx.used_prefix))
+            return
+
+    # selected now contains the name of a preset
+    # Grab the actual preset from the preset directory
+    preset_file = os.path.join(preset_dir, selected + '.tex')
+    with open(preset_file, 'r') as f:
+        preset = f.read()
+
+    if showing:
+        # View the preamble preset, with paging and a sendfile reaction
+        title = "Preamble preset {}".format(selected)
+        await view_preamble(ctx, preset, title, file_react=True)
+    else:
+        # Confirm that the user wishes to overwrite their current preamble with the preset
+        prompt = "Are you sure you want to overwrite your current LaTeX preamble with the following preset?"
+        result = await confirm(ctx, prompt, preset)
+
+        # Handle empty results
+        if result is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if not result:
+            await ctx.reply("User cancelled, aborting.")
+            return
+
+        # Set the preamble
+        current_preamble = await ctx.data.users.get(ctx.authid, 'latex_preamble')
+        await ctx.data.users.set(ctx.authid, 'previous_preamble', current_preamble)
+        await ctx.data.users.set(ctx.authid, 'latex_preamble', preset)
+
+        await ctx.reply("The preset has been applied!\
+                        \nTo revert to your previous preamble, use `{}preamble --revert`".format(ctx.used_prefix))
+        await preamblelog(ctx, "Preamble preset {} was applied".format(selected))
 
 
 async def load_channels(bot):
