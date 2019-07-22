@@ -434,11 +434,19 @@ async def test_submission(ctx, userid, manager):
 @cmds.cmd("preamble",
           category="Maths",
           short_help="View or modify your LaTeX preamble",
-          flags=['reset', 'retract', 'add', 'remove', 'revert', 'usepackage', 'replace'])
+          flags=['reset', 'retract', 'add', 'remove', 'revert', 'usepackage', 'replace', 'preset'])
 async def cmd_preamble(ctx):
     """
     Usage:
         {prefix}preamble [code] [--reset] [--revert] [--retract] [--replace] [--remove] [--add]
+        {prefix}preamble
+        {prefix}preamble --revert
+        {prefix}preamble --retract
+        {prefix}preamble --reset
+        {prefix}preamble --preset [presetname]
+        {prefix}preamble --replace [code]
+        {prefix}preamble [--add] [code]
+        {prefix}preamble --remove [code]
     Description:
         With no arguments or flags, displays the preamble used to compile your LaTeX.
         The flags may be used to modify or replace your preamble.
@@ -451,6 +459,7 @@ async def cmd_preamble(ctx):
         retract:: Retract a previously submitted preamble.
         revert:: Switch to your previous preamble
         reset::  Resets your preamble to the default.
+        preset:: Replace your preamble with one of our pre-built presets
         replace:: Replaces your preamble with [code], or prompt for the new preamble.
         remove:: Removes all lines from your preamble containing the given text, or prompt for line numbers to remove.
     """
@@ -599,6 +608,59 @@ async def cmd_preamble(ctx):
             await preamblelog(ctx, "Material was removed from the preamble. New preamble below.", source=new_preamble)
         return
 
+    # Handle setting the preamble to a preset
+    if ctx.flags['preset']:
+        # Get the name of the preset to use
+        if not ctx.arg_str:
+            # Run through an interactive selection process
+            # Selection header message
+            message = "Please select a preamble preset to apply!"
+
+            # Run the selector
+            result = await ctx.selector(message, presets, allow_single=True)
+
+            # Catch non-reply or cancellation
+            if result is None:
+                return
+
+            selected = presets[result]  # Name of the preset selected by the user
+        else:
+            # Check that the preset name entered with the command is a valid preset
+            # If it is, set selected to this
+            selected = ctx.arg_str.strip().lower()
+
+            if selected not in presets:
+                await ctx.reply("This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
+                return
+
+        # selected now contains the name of a preset
+        # Grab the actual preset from the preset directory
+        preset_file = os.path.join(preset_dir, selected + '.tex')
+        with open(preset_file, 'r') as f:
+            preset = f.read()
+
+        # Confirm that the user wishes to overwrite their current preamble with the preset
+        prompt = "Are you sure you want to overwrite your current LaTeX preamble with the following preset?"
+        result = await confirm(ctx, prompt, preset)
+
+        # Handle empty results
+        if result is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if not result:
+            await ctx.reply("User cancelled, aborting.")
+            return
+
+        # Set the preamble
+        current_preamble = await ctx.data.users.get(ctx.authid, 'latex_preamble')
+        await ctx.data.users.set(ctx.authid, 'previous_preamble', current_preamble)
+        await ctx.data.users.set(ctx.authid, 'latex_preamble', preset)
+
+        await ctx.reply("The preset has been applied!\
+                        \nTo revert to your previous preamble, use `{}preamble --revert`".format(ctx.used_prefix))
+        await preamblelog(ctx, "Preamble preset {} was applied".format(selected))
+        return
+
     # At this point, the user wants to view, replace, or add to their preamble.
 
     # Handle a request to replace the preamble
@@ -686,7 +748,7 @@ async def cmd_preamble(ctx):
 @cmds.cmd("serverpreamble",
           category="Maths",
           short_help="Change the server's default LaTeX preamble",
-          flags=['reset', 'set', 'remove', 'add'])
+          flags=['reset', 'set', 'remove', 'add', 'preset'])
 @cmds.require("in_server")
 @cmds.require("in_server_has_mod")
 async def cmd_serverpreamble(ctx):
@@ -696,6 +758,7 @@ async def cmd_serverpreamble(ctx):
         {prefix}serverpreamble --reset
         {prefix}serverpreamble --set [code]
         {prefix}serverpreamble --remove
+        {prefix}serverpreamble --preset [presetname]
     Description:
         Modifies or displays the current server preamble.
         The server preamble is used as the default preamble for users who haven't set their own custom preamble
@@ -752,7 +815,36 @@ async def cmd_serverpreamble(ctx):
         new_source = ctx.arg_str
 
     new_preamble = None
-    if ctx.flags['remove']:  # Handle removing lines from the preamble
+    if ctx.flags['preset']:  # Handle setting the server preamble to a preset
+        # Get the name of the preset to use
+        name = ctx.arg_str.strip()
+        if not name:
+            # Run through an interactive selection process
+            # Selection header message
+            message = "Please select a preamble preset to use!"
+
+            # Run the selector
+            result = await ctx.selector(message, presets, allow_single=True)
+
+            # Catch non-reply or cancellation
+            if result is None:
+                return
+
+            name = presets[result]  # Name of the preset selected by the user
+        else:
+            # Check that the preset name entered with the command is a valid preset
+            # If it is, set selected to this
+            name = name.strip().lower()
+
+            if name not in presets:
+                await ctx.reply("This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
+                return
+
+        # Grab the actual preset from the preset directory
+        preset_file = os.path.join(preset_dir, name + '.tex')
+        with open(preset_file, 'r') as f:
+            new_preamble = f.read()
+    elif ctx.flags['remove']:  # Handle removing lines from the preamble
         # Generate a lined version of the preamble
         lines = current_preamble.splitlines()
         lined_preamble = "\n".join(("{:>2}. {}".format(i+1, line) for i, line in enumerate(lines)))
