@@ -174,15 +174,16 @@ async def confirm(ctx, question, preamble, **kwargs):
     return True
 
 
-async def preamblelog(ctx, title, user=None, header=None, source=None):
+async def preamblelog(ctx, title, user=None, author=None, header=None, source=None):
     """
     Log a message to the preamble log channel
     """
     logch = ctx.bot.objects["latex_preamble_logch"]
 
-    user = user or ctx.author
+    if author is None:
+        user = user or ctx.author
+        author = "{} ({})".format(user, user.id)
 
-    author = "{} ({})".format(user, user.id)
     pages = tex_pagination(source, basetitle=title, header=header, author=author)
 
     if source is None:
@@ -680,6 +681,155 @@ async def cmd_preamble(ctx):
     title = "Your current preamble. Use texconfig to see other LaTeX config options!"
     await view_preamble(ctx, preamble, title, header=header,
                         file_react=True, file_message="Current Preamble for {}".format(ctx.author))
+
+
+@cmds.cmd("serverpreamble",
+          category="Maths",
+          short_help="Change the server's default LaTeX preamble",
+          flags=['reset', 'set', 'remove', 'add'])
+@cmds.require("in_server")
+@cmds.require("in_server_has_mod")
+async def cmd_serverpreamble(ctx):
+    """
+    Usage:
+        {prefix}serverpreamble
+        {prefix}serverpreamble --reset
+        {prefix}serverpreamble --set [code]
+        {prefix}serverpreamble --remove
+    Description:
+        Modifies or displays the current server preamble.
+        The server preamble is used as the default preamble for users who haven't set their own custom preamble
+
+        Without any flags, the command adds the provided code to the server preamble
+    Flags:6
+        set:: Set the preamble to the provided code, or prompt for the new preamble
+        reset:: Removes the server preamble
+        remove:: Remove selected lines from the preamble
+    """
+    # Human readable server line for logs
+    server_str = "{} ({})".format(ctx.server.name, ctx.server.id)
+
+    # Handle resetting the server preamble
+    if ctx.flags["reset"]:
+        # Confirm reset with user
+        resp = await ctx.ask("Are you sure you want to reset the server preamble?")
+
+        # Handle timeout and cancellation
+        if resp is None:
+            await ctx.reply("Request timed out, aborting.")
+            return
+        elif not resp:
+            await ctx.reply("User cancelled, aborting.")
+            return
+
+        # Reset the preamble
+        await ctx.data.servers.set(ctx.server.id, "server_latex_preamble", None)
+
+        # Log the preamble reset
+        await preamblelog(ctx, "Server preamble reset", author=server_str)
+
+        # Notify the server admin
+        await ctx.reply("Your server preamble has been reset!")
+        return
+
+    # Grab the current server preamble, or the default preamble if none is set
+    current_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+    header = None if current_preamble else "No custom server preamble set, using default preamble!"
+    current_preamble = current_preamble if current_preamble else default_preamble
+
+    # Get any arguments given with the command, using the attached file if it exists
+    if ctx.msg.attachments:
+        file_info = ctx.msg.attachments[0]
+
+        # If the file is over 1MB, it probably isn't a valid preamble.
+        if file_info['size'] >= 1000000:
+            await ctx.reply("Attached file is too large to process.")
+            return
+
+        async with aiohttp.get(file_info['url']) as r:
+            new_source = await r.text()
+    else:
+        new_source = ctx.arg_str
+
+    new_preamble = None
+    if ctx.flags['remove']:  # Handle removing lines from the preamble
+        # Generate a lined version of the preamble
+        lines = current_preamble.splitlines()
+        lined_preamble = "\n".join(("{:>2}. {}".format(i+1, line) for i, line in enumerate(lines)))
+
+        # Prompt for the lines to remove
+        prompt = "Please enter the line numbers to remove, separated by commas, or type `c` now to cancel."
+        prompt_msg = await view_preamble(ctx, lined_preamble, prompt)
+        response = await ctx.input(prompt_msg=prompt_msg)
+        if response is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if response.lower() == "c":
+            await ctx.reply("User cancelled, aborting.")
+            return
+        nums = [num.strip() for num in response.split(',')]
+        if not all(num.isdigit() for num in nums):
+            await ctx.reply("Couldn't understand your selection, aborting.")
+            return
+        nums = [int(num) - 1 for num in nums]
+        if not all(0 <= num < len(lines) for num in nums):
+            await ctx.reply("This line doesn't exist! Aborting.")
+            return
+
+        to_remove = list(set(nums))
+        new_preamble = "\n".join([line for i, line in enumerate(lines) if i not in to_remove])
+    elif ctx.flags['set']:
+        # If no new source was provided, ask for it
+        if not new_source:
+            resp = await ctx.input("Please enter the new server preamble.\
+                                   \nIf you wish to upload a file, please re-run this command with the file attached.", timeout=600)
+            # Handle timeouts and cancels
+            if resp is None:
+                await ctx.reply("Request timed out, aborting.")
+            elif resp.lower() == 'c':
+                await ctx.reply("User cancelled, aborting.")
+            else:
+                new_source = resp
+
+        new_preamble = new_source or None
+    elif ctx.flags['add'] or new_source:  # Handle adding material to the preamble
+        # If no new source was given with the command, ask for it interactively
+        if not new_source and ctx.flags['add']:
+            resp = await ctx.input("Please enter the new content to add to the server preamble", timeout=600)
+
+            # Handle timeouts and cancels
+            if resp is None:
+                await ctx.reply("Request timed out, aborting.")
+            elif resp.lower() == 'c':
+                await ctx.reply("User cancelled, aborting.")
+            else:
+                new_source = resp
+
+        if new_source:
+            # Add the new source to the preamble
+            new_preamble = "{}\n{}".format(current_preamble, new_source)
+
+    # If new preamble is set, then confirm the change
+    if new_preamble:
+        # Confirm submission
+        prompt = "Please confirm the following update to the server preamble"
+        result = await confirm(ctx, prompt, new_preamble)
+        if result is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if not result:
+            await ctx.reply("User cancelled, aborting.")
+            return
+
+        # Change the preamble
+        await ctx.data.servers.set(ctx.server.id, 'server_latex_preamble', new_preamble)
+
+        # Log this, and notify the user
+        await preamblelog(ctx, "Server preamble was updated!", source=new_preamble, author=server_str)
+        await ctx.reply("Your server preamble has been updated!")
+    else:
+        # Otherwise, just view the preamble
+        await view_preamble(ctx, current_preamble, "Current Server Preamble", header=header)
 
 
 async def approval_queue(ctx):
@@ -1251,7 +1401,7 @@ async def cmd_ppr(ctx):
         selected = args.strip().lower()
 
         if selected not in presets:
-            await ctx.reply("This isn't a valid preset! Use {}ppr --view to see the current list of presets!".format(ctx.used_prefix))
+            await ctx.reply("This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
             return
 
     # selected now contains the name of a preset

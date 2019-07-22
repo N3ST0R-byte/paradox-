@@ -1,8 +1,6 @@
 import os
 import discord
-import aiohttp
 
-from datetime import datetime
 from io import StringIO
 
 from paraCH import paraCH
@@ -81,87 +79,6 @@ async def show_config(ctx):
         embed.add_field(name="Awaiting approval", value=new_preamble_message, inline=False)
 
     await ctx.reply(embed=embed)
-
-
-@cmds.cmd("serverpreamble",
-          category="Maths",
-          short_help="Change the server LaTeX preamble",
-          flags=["reset", "replace", "remove"])
-@cmds.require("in_server")
-@cmds.require("in_server_has_mod")
-async def cmd_serverpreamble(ctx):
-    """
-    Usage:
-        {prefix}serverpreamble [code] [--reset] [--replace] [--remove]
-    Description:
-        Modifies or displays the current server preamble.
-        The server preamble is used for compilation when a user in the server has no personal preamble.
-        If [code] is provided, adds this to the server preamble, or replaces it with --replace
-    Flags:2
-        reset::  Resets your preamble to the default.
-        replace:: replaces your preamble with this code
-        remove:: Removes all lines from your preamble containing the given text.
-    """
-    if ctx.flags["reset"]:
-        await ctx.data.servers.set(ctx.server.id, "server_latex_preamble", None)
-        await ctx.reply("The server preamble has been reset to the default!")
-        return
-
-    current_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
-    current_preamble = current_preamble if current_preamble else default_preamble
-
-    if not ctx.arg_str and not ctx.msg.attachments:
-        if len(current_preamble) > 1000:
-            temp_file = StringIO()
-            temp_file.write(current_preamble)
-
-            temp_file.seek(0)
-            await ctx.reply(file_data=temp_file, file_name="server_preamble.tex", message="Current server preamble")
-        else:
-            await ctx.reply("Current server preamble:\n```tex\n{}```".format(current_preamble))
-        return
-
-    ctx.objs["latex_handled"] = True
-
-    file_name = "preamble.tex"
-    if ctx.msg.attachments:
-        file_info = ctx.msg.attachments[0]
-        async with aiohttp.get(file_info['url']) as r:
-            new_preamble = await r.text()
-        file_name = file_info['filename']
-    else:
-        new_preamble = ctx.arg_str
-
-    if not ctx.flags["replace"]:
-        new_preamble = "{}\n{}".format(current_preamble, new_preamble)
-
-    if ctx.flags["remove"]:
-        if ctx.arg_str not in current_preamble:
-            await ctx.reply("Couldn't find this string in any line of the server preamble!")
-            return
-        new_preamble = "\n".join([line for line in current_preamble.split("\n") if ctx.arg_str not in line])
-
-    await ctx.data.servers.set(ctx.server.id, "server_latex_preamble", new_preamble)
-
-    in_file = (len(new_preamble) > 1000)
-    if in_file:
-        temp_file = StringIO()
-        temp_file.write(new_preamble)
-
-    preamble_message = "See file below!" if in_file else "```tex\n{}\n```".format(new_preamble)
-
-    embed = discord.Embed(title="New Server Preamble", color=discord.Colour.blue()) \
-        .set_author(name="{} ({})".format(ctx.author, ctx.authid),
-                    icon_url=ctx.author.avatar_url) \
-        .add_field(name="Preamble", value=preamble_message, inline=False) \
-        .add_field(name="Server", value="{} ({})".format(ctx.server.name, ctx.server.id), inline=False) \
-        .set_footer(text=datetime.utcnow().strftime("Sent from {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
-
-    await ctx.bot.send_message(ctx.bot.objects["preamble_channel"], embed=embed)
-    if in_file:
-        temp_file.seek(0)
-        await ctx.bot.send_file(ctx.bot.objects["preamble_channel"], fp=temp_file, filename=file_name)
-    await ctx.reply("Your server preamble has been updated!")
 
 
 async def get_preamble(ctx):
