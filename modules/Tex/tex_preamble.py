@@ -86,12 +86,16 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True, author=None,
     blocknum = len(blocks)
 
     if blocknum == 1:
+        block = blocks[0] if blocks[0] else None
+        desc = "{}\n{}".format(header, block or "") if header else (block if block else None)
+
         embed = discord.Embed(title=basetitle,
                               color=colour,
-                              description=blocks[0],
+                              description=desc,
                               timestamp=time)
         if author is not None:
             embed.set_author(name=author)
+        return [embed]
 
     embeds = []
     for i, block in enumerate(blocks):
@@ -438,7 +442,6 @@ async def test_submission(ctx, userid, manager):
 async def cmd_preamble(ctx):
     """
     Usage:
-        {prefix}preamble [code] [--reset] [--revert] [--retract] [--replace] [--remove] [--add]
         {prefix}preamble
         {prefix}preamble --revert
         {prefix}preamble --retract
@@ -1116,9 +1119,107 @@ async def user_admin(ctx, userid):
             pass
 
 
-async def server_admin(ctx):
-    await ctx.reply("Not implemented yet!")
-    pass
+async def server_admin(ctx, serverid):
+    """
+    Shows a preamble management menu for a single server.
+    Menu:
+        1. Show current server preamble
+        2. Set server preamble
+        3. Reset preamble
+    """
+    # Setup the menu options and menu
+    menu_items = ["Show current server preamble", "Set server preamble", "Reset preamble"]
+    menu_message = "Preamble management menu for server {}".format(serverid)
+
+    # Get the relevant server, if possible
+    server = ctx.bot.get_server(serverid)
+
+    # Author string for the preamble embeds
+    author = "{} ({})".format(server.name, serverid) if server is not None else serverid
+
+    # Run the selector and show the menu
+    result = await ctx.selector(menu_message, menu_items)
+    if result is None:
+        # Menu timed out or was cancelled
+        pass
+    elif result == 0:
+        # Show the preamble
+        preamble = await ctx.data.servers.get(serverid, 'server_latex_preamble')
+        if not preamble:
+            await ctx.reply("This server doesn't have a custom preamble set!")
+        else:
+            title = "Current server preamble"
+            await view_preamble(ctx, preamble, title, author=author, file_react=True)
+    elif result == 1:
+        # Set the preamble. Takes file input as well as message input.
+        # Also asks for confirmation before setting.
+
+        # Prompt for new preamble
+        prompt = "Please enter or upload the new preamble, or type `c` now to cancel."
+
+        preamble = None
+        offer_msg = await ctx.reply(prompt)
+        result_msg = await ctx.bot.wait_for_message(author=ctx.author, timeout=600)
+
+        # Grab response content, using the contents of the first attachment if it exists
+        if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
+            pass
+        else:
+            preamble = result_msg.content
+            if not preamble:
+                if result_msg.attachments:
+                    file_info = result_msg.attachments[0]
+
+                    # Limit filesize to 16k
+                    if file_info['size'] >= 16000:
+                        await ctx.reply("Attached file is too large to process.")
+                        return
+
+                    async with aiohttp.get(file_info['url']) as r:
+                        preamble = await r.text()
+
+        # Remove the prompt and response messages
+        try:
+            await ctx.bot.delete_message(offer_msg)
+            if result_msg is not None:
+                await ctx.bot.delete_message(result_msg)
+        except discord.NotFound:
+            pass
+        except discord.Forbidden:
+            pass
+
+        # If out of all that we didn't get a preamble, return
+        if not preamble:
+            return
+
+        # Confirm submission
+        prompt = "Please confirm the following preamble modification."
+        result = await confirm(ctx, prompt, preamble)
+
+        if result is None:
+            await ctx.reply("Query timed out, aborting.")
+            return
+        if not result:
+            await ctx.reply("User cancelled, aborting.")
+            return
+
+        # Finally, set the preamble
+        await ctx.data.servers.set(serverid, 'server_latex_preamble', preamble)
+
+        await ctx.reply("The preamble was updated.")
+        await preamblelog(ctx, "Manual server preamble update",
+                          header="{} ({}) manually updated the preamble".format(ctx.author, ctx.author.id),
+                          author=author,
+                          source=preamble)
+    elif result == 2:
+        # Reset the current preamble to the default
+        await ctx.data.servers.set(serverid, 'server_latex_preamble', None)
+
+        await ctx.reply("The preamble was reset to the default!")
+
+        await preamblelog(ctx, "Manual server preamble reset",
+                          header="{} ({}) manually reset the preamble".format(ctx.author, ctx.author.id),
+                          author=author)
 
 
 async def general_menu(ctx):
@@ -1153,7 +1254,7 @@ async def cmd_preambleadmin(ctx):
 
     # Handle server flag
     if ctx.flags["server"]:
-        await server_admin(ctx)
+        await server_admin(ctx, ctx.flags['server'])
         return
 
     # Handle menu flag
