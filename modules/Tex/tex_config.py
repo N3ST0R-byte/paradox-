@@ -1,7 +1,6 @@
 import os
+from datetime import datetime
 import discord
-
-from io import StringIO
 
 from paraCH import paraCH
 
@@ -12,83 +11,69 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 with open(os.path.join(__location__, "preamble.tex"), 'r') as preamble:
     default_preamble = preamble.read()
 
+# The stored names of the LaTeX configuration values
+grab = ["latex_keep_msg", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname"]
 
-async def show_config(ctx):
+# The option names, used for display and setting
+grab_names = ["keepmsg", "colour", "alwaysmath", "allowother", "showname"]
+
+
+async def show_config(ctx, user=None):
+    """
+    Send an embed containing the current LaTeX configuration of user or ctx.author
+    """
+    user = user or ctx.author
+
     # Grab the config values
-    grab = ["latex_keep_msg", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname"]
-    grab_names = ["keepmsg", "colour", "alwaysmath", "allowother", "showname"]
-
     values = []
     for to_grab in grab:
         values.append(await ctx.data.users.get(ctx.authid, to_grab))
 
-    value_lines = []
-    value_lines.append("Keeping your message after compilation" if values[0] or values[0] is None else "Deleting your message after compilation")
-    value_lines.append("Using colourscheme `{}`".format(values[1] if values[1] is not None else "default"))
-    value_lines.append(("`{}tex` renders in mathmode" if values[2] else "`{}tex` renders in textmode").format(ctx.used_prefix))
-    value_lines.append("Other uses may view your source and errors" if values[3] else "Other users may not view your source and errors")
-    value_lines.append("Your name shows on the compiled output" if values[4] or values[4] is None else "Your name is hidden on the compiled output")
+    # List of lines to display, depending on the option values, corresponding to grab
+    value_lines = [
+        "Keeping your message after compilation" if values[0] or values[0] is None else "Deleting your message after compilation",
+        "Using colourscheme `{}`".format(values[1] if values[1] is not None else "default"),
+        "`{}tex` renders in mathmode" if values[2] else "`{}tex` renders in textmode".format(ctx.used_prefix),
+        "Other uses may view your source and errors" if values[3] else "Other users may not view your source and errors",
+        "Your name shows on the compiled output" if values[4] or values[4] is None else "Your name is hidden on the compiled output"
+    ]
 
-    desc = "**Config Option Values:**\n{}".format(ctx.prop_tabulate(grab_names, value_lines))
+    # Description for the configuration embed
+    desc = "**Settings:**\
+    \n{values}\
+    \n\nUse `{prefix}tex --option value` to set an option, e.g. `{prefix}tex --colour white`".format(
+        values=ctx.prop_tabulate(grab_names, value_lines), prefix=ctx.used_prefix
+    )
 
     # Initialise the embed
-    embed = discord.Embed(title="Personal LaTeX Configuration", color=discord.Colour.light_grey(), description=desc)
+    embed = discord.Embed(title="Personal LaTeX Configuration",
+                          color=discord.Colour.light_grey(),
+                          description=desc,
+                          timestamp=datetime.utcnow())
+    field_lines = []  # List of lines to go into the preamble field
 
+    # Identify what type of preamble the user is using, and construct the first line of the preamble field
     preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
-    header = ""
-    if not preamble:
+    if preamble:
+        header = "Using a custom preamble with {} lines!".format(len(preamble.splitlines()))
+    else:
         header = "No custom user preamble set, using default preamble."
-        preamble = default_preamble
         if ctx.server:
             server_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
             if server_preamble:
                 header = "No custom user preamble set, using server preamble."
-                preamble = server_preamble
+    field_lines.append(header)
 
-    preamble_message = "{}```tex\n{}\n```".format(header, preamble)
+    # Add the command hint for showing the preamble
+    field_lines.append("Use `{}preamble` to see or modify the current preamble.".format(ctx.used_prefix))
 
-    if len(preamble) > 1000:
-        temp_file = StringIO()
-        temp_file.write(preamble)
+    # Identify whether the user has a pending preamble, and if so add it as the last line
+    pending = ctx.bot.objects['pending_preambles'].get(user.id, None)
+    if pending is not None:
+        field_lines.append("New custom preamble submitted and awaiting approval.")
 
-        preamble_message = "{}\nSent via direct message".format(header)
+    # Add the preamble field
+    embed.add_field(name="Custom preamble", value='\n'.join(field_lines))
 
-        temp_file.seek(0)
-        try:
-            await ctx.bot.send_file(ctx.author, fp=temp_file, filename="current_preamble.tex", content="Current active preamble")
-        except discord.Forbidden:
-            preamble_message = "Attempted to send your preamble file by direct message, but couldn't reach you."
-
-    embed.add_field(name="Current preamble", value=preamble_message)
-
-    new_preamble = await ctx.data.users.get(ctx.authid, "limbo_preamble")
-    new_preamble_message = "```tex\n{}\n```".format(new_preamble)
-    if new_preamble and len(new_preamble) > 1000:
-        temp_file = StringIO()
-        temp_file.write(new_preamble)
-
-        new_preamble_message = "Sent via direct message"
-
-        temp_file.seek(0)
-        try:
-            await ctx.bot.send_file(ctx.author, fp=temp_file, filename="new_preamble.tex", content="Preamble awaiting approval.")
-        except discord.Forbidden:
-            new_preamble_message = "Attempted to send your preamble file by direct message, but couldn't reach you."
-
-    if new_preamble:
-        embed.add_field(name="Awaiting approval", value=new_preamble_message, inline=False)
-
+    # Finally, send the config info to the user
     await ctx.reply(embed=embed)
-
-
-async def get_preamble(ctx):
-    preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
-    if not preamble and ctx.server:
-        preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
-    if not preamble:
-        preamble = default_preamble
-    return preamble
-
-
-def load_into(bot):
-    bot.add_to_ctx(get_preamble)

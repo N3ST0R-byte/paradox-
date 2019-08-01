@@ -743,7 +743,7 @@ async def cmd_preamble(ctx):
         return
 
     # If the user doesn't want to edit their preamble, they must just want to view it
-    title = "Your current preamble. Use texconfig to see other LaTeX config options!"
+    title = "Your current preamble. Use {}tex --config to see the other LaTeX config options!".format(ctx.used_prefix)
     await view_preamble(ctx, preamble, title, header=header,
                         file_react=True, file_message="Current Preamble for {}".format(ctx.author))
 
@@ -1647,7 +1647,20 @@ async def cache_pending_preambles(bot):
             bot.objects["pending_preambles"][str(userid)] = (submission, info)
 
 
+async def get_preamble(ctx):
+    """
+    Retrieve the correct current preamble for ctx.author
+    """
+    preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+    if not preamble and ctx.server:
+        preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+    if not preamble:
+        preamble = default_preamble
+    return preamble
+
+
 def load_into(bot):
     bot.add_after_event("ready", load_channels, priority=10)
     bot.add_after_event("ready", cache_pending_preambles, priority=10)
     bot.data.users.ensure_exists("pending_preamble", "pending_preamble_info", "previous_preamble", "latex_preamble", shared=True)
+    bot.add_to_ctx(get_preamble)
