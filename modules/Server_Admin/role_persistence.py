@@ -6,7 +6,7 @@ async def recall_roles(bot, member):
     if persist is not None and not persist:
         return
 
-    stored = await bot.data.members.get(member.server.id, member.id, "persistent_roles")
+    stored = await bot.data.members_long.get(member.server.id, member.id, "persistent_roles")
     if stored is None or not stored:
         return
 
@@ -23,12 +23,12 @@ async def recall_roles(bot, member):
 
 async def store_roles(bot, member):
     role_list = [role.id for role in member.roles]
-    await bot.data.members.set(member.server.id, member.id, "persistent_roles", role_list)
+    await bot.data.members_long.set(member.server.id, member.id, "persistent_roles", role_list)
 
 
 def load_into(bot):
     bot.data.servers.ensure_exists("role_persistence")
-    bot.data.members.ensure_exists("persistent_roles")
+    bot.data.members_long.ensure_exists("persistent_roles")
 
     bot.add_after_event("member_join", recall_roles)
     bot.add_after_event("member_remove", store_roles)

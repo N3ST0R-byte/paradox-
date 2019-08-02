@@ -137,10 +137,10 @@ async def cmd_userinfo(ctx):
     joined = user.joined_at.strftime("%-I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - user.created_at, minutes=False))
     created = user.created_at.strftime("%-I:%M %p, %d/%m/%Y")
-    usernames = await ctx.bot.data.users.get(user.id, "name_history")
+    usernames = await ctx.bot.data.users_long.get(user.id, "name_history")
     name_list = "{}{}".format("..., " if len(usernames) > 10 else "",
                               ", ".join(usernames[-10:])) if usernames else "No recent past usernames."
-    nicknames = await ctx.bot.data.members.get(ctx.server.id, user.id, "nickname_history")
+    nicknames = await ctx.bot.data.members_long.get(ctx.server.id, user.id, "nickname_history")
     nickname_list = "{}{}".format("..., " if len(nicknames) > 10 else "",
                                   ", ".join(nicknames[-10:])) if nicknames else "No recent past nicknames."
     last_status = await ctx.bot.data.users.get(user.id, "old_status")

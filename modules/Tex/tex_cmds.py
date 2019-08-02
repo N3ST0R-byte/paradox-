@@ -619,8 +619,9 @@ async def tex_edit_listener(bot, before, after):
 
 def load_into(bot):
     bot.data.users.ensure_exists("tex_listening", "latex_keepmsg", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname", shared=False)
-    bot.data.users.ensure_exists("latex_preamble", "limbo_preamble", shared=True)
+    bot.data.users_long.ensure_exists("latex_preamble", "limbo_preamble", shared=True)
     bot.data.servers.ensure_exists("maths_channels", "latex_listen_enabled", shared=False)
+    bot.data.servers_long.ensure_exists("server_latex_preamble", shared=True)
 
     bot.add_after_event("ready", register_tex_listeners)
     bot.add_after_event("message_edit", tex_edit_listener)
