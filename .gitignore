@@ -13,11 +13,7 @@ contextBot/*
 # Tex files
 **.aux
 **.out
-tex/*.dvi
-tex/*.tex
-tex/*.pdf
-tex/*.png
-tex/*.log
+tex/**
 
 **.synctex*
 

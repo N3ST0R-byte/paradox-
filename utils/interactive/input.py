@@ -11,8 +11,8 @@ def load_into(bot):
         return msg
 
     @bot.util
-    async def input(ctx, msg, timeout=120):
-        offer_msg = await ctx.reply(msg)
+    async def input(ctx, msg="", timeout=120, prompt_msg=None):
+        offer_msg = prompt_msg if prompt_msg is not None else await ctx.reply(msg)
         result_msg = await ctx.bot.wait_for_message(author=ctx.author, timeout=timeout)
         if result_msg is None:
             return None
@@ -25,12 +25,17 @@ def load_into(bot):
         return result
 
     @bot.util
-    async def ask(ctx, msg, timeout=30, use_msg=None):
+    async def ask(ctx, msg, timeout=30, use_msg=None, del_on_timeout=False):
         out = "{} {}".format(msg, "`y(es)`/`n(o)`")
         offer_msg = await ctx.bot.edit_message(use_msg, out) if use_msg else await ctx.reply(out)
         result_msg = await ctx.listen_for(["y", "yes", "n", "no"], timeout=timeout)
 
         if result_msg is None:
+            if del_on_timeout:
+                try:
+                    await ctx.bot.delete_message(offer_msg)
+                except Exception:
+                    pass
             return None
         result = result_msg.content.lower()
         try:
@@ -55,7 +60,7 @@ def load_into(bot):
         """
 
     @bot.util
-    async def selector(ctx, message, select_from, timeout=120, max_len=20, silent=False):
+    async def selector(ctx, message, select_from, timeout=120, max_len=20, silent=False, allow_single=False):
         """
         Interactive method to ask the user to select an entry from a list.
         Returns the index of the list which was selected,
@@ -66,7 +71,7 @@ def load_into(bot):
         """
         if len(select_from) == 0:
             return None
-        if len(select_from) == 1:
+        if not allow_single and len(select_from) == 1:
             return 0
         pages = ["{}\n{}\nType the number of your selection or `c` to cancel.".format(message, page) for page in ctx.paginate_list(select_from, block_length=max_len)]
         out_msg = await ctx.pager(pages)
