@@ -126,6 +126,112 @@ def _is_tex(msg):
     return is_tex
 
 
+@cmds.cmd("preamblepreset",
+          category="Maths",
+          short_help="Instantly changes your preamble to the requested preset.",
+          aliases=["ppr"])
+@cmds.execute("flags", flags=["list", "set", "add", "remove", "view"])
+async def cmd_ppr(ctx):
+    """
+    Usage:
+        {prefix}preamblepreset
+        {prefix}preamblepreset --list
+        {prefix}preamblepreset --set funandgames
+        {prefix}preamblepreset --set physics
+        {prefix}preamblepreset --view funandgames
+    Description:
+        Updates your preamble to a preset preamble, giving you the choice of what you want. 
+        Presets are currently manually submitted but will be changed in the future.
+        Doesn't require bot manager approval!
+        **NOTE!** This __overwrites__ your current preamble.
+    Flags:
+        --list: Lists all presets that are currently available.
+        --view: Views the content of a preset.
+        --set: Sets your preamble to the specified preset.
+
+    """
+    # Get the preset list
+    l=os.listdir('tex/presets')
+    li=[x.split('.')[0] for x in l]
+    args = ctx.arg_str
+    if ctx.flags["list"]:
+        await ctx.reply("Available presets:\n```{}```".format(", ".join(li)))
+        return
+    if ctx.flags["set"]:
+        if args == "":
+            await ctx.reply("Please provide a preset to set! Use `{0.used_prefix}preamblepreset --list` to obtain the list of presets.".format(ctx))
+            return
+        if args not in li:
+            await ctx.reply("Invalid preset.\nAvailable presets:`{}`".format(", ".join(li)))
+            return        
+        # Open the preset then set it
+        path = "tex/presets/{}.tex".format(name)
+        with open(path, 'r') as preset:
+            data = preset.read()
+            await ctx.data.users.set(ctx.authid, "latex_preamble", data)
+            await ctx.reply("You have applied the preset `{}`.".format(args))
+            return
+    if ctx.flags["remove"]:
+        (code, msg) = await cmds.checks["manager_perm"](ctx)
+        if code != 0:
+            return
+        if ctx.arg_str == "":
+            await ctx.reply("I can't delete nothing!")
+            return
+        whatdelete = "tex/presets/{}.tex".format(ctx.arg_str)
+        if os.path.isfile(whatdelete):
+            os.remove(whatdelete)
+            await ctx.reply("Successfully removed the preset `{}`.".format(ctx.arg_str))
+            return
+        else:
+            await ctx.reply("Unknown file: `{}`".format(ctx.arg_str))
+            return
+    if ctx.flags["add"]:
+        (code, msg) = await cmds.checks["manager_perm"](ctx)
+        if code != 0:
+            return
+        if (ctx.arg_str == "") and len(ctx.msg.attachments) == 0:
+            await ctx.reply('Please provide arguments or attach a file!')
+            return
+        if len(ctx.arg_str.split(" ", 1)) == 2 and len(ctx.msg.attachments) >= 1:
+            await ctx.reply("Too many arguments!")
+            return
+        if len(ctx.arg_str.split(" ", 1)) == 1 and len(ctx.msg.attachments) == 0:
+            await ctx.reply("Please provide content for the file.")
+            return
+        if ctx.msg.attachments:
+            file_info = ctx.msg.attachments[0]
+            async with aiohttp.get(file_info['url']) as r:
+                content = await r.text()
+            if (ctx.arg_str != ""): 
+                name = ctx.arg_str
+            else:
+                name = file_info['filename']
+        else:      
+            name = ctx.arg_str.split(" ", 1)[0] 
+            content = ctx.arg_str.split(" ", 1)[1]
+        file = "tex/presets/{}.tex".format(name)
+        with open(he, "w") as pf:
+            pf.write(content)
+            pf.close()
+        await ctx.reply("Successfully added preset `{}`.".format(name))
+        return
+    if(ctx.flags["view"]):
+        path = "tex/presets/{}.tex".format(args)
+        if args == "":
+            await ctx.reply("Please provide a preset to view! Use `{0.used_prefix}preamblepreset --list` to obtain the list of presets.".format(ctx))
+            return
+        if args not in li:
+            await ctx.reply("Invalid preset.\nAvailable presets:`{}`".format(", ".join(li)))
+            return
+        with open(path, 'r') as preset:
+            data = preset.read()
+            msg = "Viewing preset {}:""\n{}".format(args, data)
+            await ctx.reply(msg, split=True, code=True)
+            return
+    await ctx.reply("Preamble presets don't require bot manager approval to apply. Presets will be added or updated regularly!\nUse `{0.used_prefix}preamblepreset --list` to view the list, and `{0.used_prefix}preamblepreset --set <preset>` to set your preset.".format(ctx))
+
+
 @cmds.cmd("tex",
           category="Maths",
           short_help="Renders LaTeX code",

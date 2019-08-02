@@ -21,7 +21,7 @@ async def cmd_echo(ctx):
     Description:
         Replies to the message with <text>.
     """
-    await ctx.reply(ctx.arg_str if ctx.arg_str else "I can't send an empty message!")
+    await ctx.reply(ctx.arg_str.clean_content if ctx.arg_str else "I can't send an empty message!")
 
 
 @cmds.cmd("jumpto",
@@ -60,7 +60,7 @@ async def cmd_jumpto(ctx):
 @cmds.cmd("quote",
           category="Utility",
           short_help="Quotes a message by ID")
-@cmds.execute("flags", flags=["a"])
+@cmds.execute("flags", flags=["a", "r"])
 @cmds.require("in_server")
 async def cmd_quote(ctx):
     """
@@ -71,6 +71,7 @@ async def cmd_quote(ctx):
         Note that the message must be from the same server.
     Flags:
         -a:  (anonymous) Removes author information from the quote.
+        -r: (raw) Gives the raw message instead of an embed.
     """
     msgid = ctx.arg_str
     if msgid == "" or not msgid.isdigit():
@@ -88,6 +89,15 @@ async def cmd_quote(ctx):
 
     if not message:
         await ctx.bot.edit_message(out_msg, "Couldn't find the message!")
+        return
+    if ctx.flags["r"]:
+        if message.attachments:
+            await ctx.reply("Cannot get the raw content of an attachment.")
+            return
+        if not message.content.startswith("```"):
+            await ctx.reply("```{}```".format(message.content))
+            return
+        await ctx.reply(message.clean_content)
         return
 
     embed = discord.Embed(colour=discord.Colour.light_grey(),
@@ -118,7 +128,7 @@ async def cmd_secho(ctx):
         await ctx.bot.delete_message(ctx.msg)
     except Exception:
         pass
-    await ctx.reply("{}".format(ctx.arg_str) if ctx.arg_str else "I can't send an empty message!")
+    await ctx.reply("{}".format(ctx.arg_str.clean_content) if ctx.arg_str else "I can't send an empty message!")
 
 
 @cmds.cmd("invitebot",
@@ -238,7 +248,7 @@ async def cmd_piggybank(ctx):
 @cmds.cmd("timezone",
           category="Utility",
           short_help="Searches the timezone list",
-          aliases=["tz"])
+          aliases=["tz", "timein"])
 async def cmd_timezone(ctx):
     """
     Usage:

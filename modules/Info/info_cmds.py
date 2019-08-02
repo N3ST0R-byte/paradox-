@@ -104,7 +104,7 @@ async def cmd_rolemembers(ctx):
 @cmds.cmd("userinfo",
           category="Info",
           short_help="Shows the user's information",
-          aliases=["uinfo", "ui"])
+          aliases=["uinfo", "ui", "user"])
 @cmds.require("in_server")
 @cmds.execute("user_lookup", in_server=True, greedy=True)
 async def cmd_userinfo(ctx):
@@ -120,7 +120,8 @@ async def cmd_userinfo(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     bot_emoji = ctx.bot.objects["emoji_bot"]
     statusdict = {"offline": ("Offline/Invisible", ctx.bot.objects["emoji_offline"]),
                   "dnd": ("Do Not Disturb", ctx.bot.objects["emoji_dnd"]),
@@ -176,9 +177,9 @@ async def cmd_userinfo(ctx):
 
     embed = discord.Embed(type="rich", color=colour, description=desc)
     embed.set_author(name="{user.name} (id: {user.id})".format(user=user),
-                     icon_url=user.avatar_url,
-                     url=user.avatar_url)
-    embed.set_thumbnail(url=user.avatar_url)
+                     icon_url=avlink,
+                     url=avlink)
+    embed.set_thumbnail(url=avlink)
 
     emb_fields = [("Roles", roles, 0), ("Join order", join_seq, 0)]
     await ctx.emb_add_fields(embed, emb_fields)
@@ -259,9 +260,9 @@ async def cmd_serverinfo(ctx):
     status = "{} - **{}**\n{} - **{}**\n{} - **{}**\n{} - **{}**".format(Online, online, Idle, idle, Dnd, dnd, Offline, offline)
     avatar_url = ctx.server.icon_url
     icon = "[Icon Link]({})".format(avatar_url)
-    is_large = "More than 200 members" if ctx.server.large else "Less than 200 members"
+    is_large = "Yes, more than 200 members" if ctx.server.large else "No, less than 200 members"
 
-    prop_list = ["Owner", "Region", "Icon", "Large server", "Verification", "2FA", "Roles", "Members", "Channels", "Created at", ""]
+    prop_list = ["Owner", "Region", "Icon", "Large server?", "Verification", "2FA", "Roles", "Members", "Channels", "Created at", ""]
     value_list = [owner,
                   regions[str(ctx.server.region)],
                   icon,
@@ -283,6 +284,76 @@ async def cmd_serverinfo(ctx):
     if out_msg and ctx.bot.objects["brief"]:
         await ctx.confirm_sent(reply="Serverinfo sent!")
 
+@cmds.cmd("channelinfo",
+          category="Info",
+          short_help="Shows info on a channel.",
+          aliases=["ci"])
+async def cmd_secho(ctx):
+    """
+    Usage:
+        {prefix}channelinfo #electronics
+        {prefix}channelinfo 525457831869284353
+        {prefix}channelinfo general
+    Description:
+        Gives information on a text channel, voice channel, or category.
+    """
+    ch = await ctx.find_channel(ctx.arg_str, interactive=True)
+    if not ch:
+        return
+    name = "{} [{}]".format(ch.name, ch.mention)
+    #category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
+    id = ch.id
+    type = str(ch.type)
+    createdat = ch.created_at.strftime("%d/%m/%Y")
+    created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - ch.created_at, minutes=False))
+    atgo = "{} {}".format(createdat, created_ago)
+    if ch.topic == "":
+        topic = "None"
+    else:
+        topic = ch.topic
+    userlimit = ch.user_limit
+
+    tv = {
+        "text": "Text channel",
+        "voice": "Voice channel",
+        "4": "Category"
+    }
+    if userlimit == 0:
+        reallimit = "Unlimited"
+    else:
+        reallimit = userlimit
+
+    if not ch.voice_members:
+        members = "No members in this channel."
+    else:
+        members = ", ".join([mem.mention for mem in ch.voice_members])
+
+    if str(ch.type) == "text":
+        prop_list = ["Name", "Type", "ID", "Created at", "Topic"]
+        value_list = [name, tv[type], id, atgo, topic]
+        desc = ctx.prop_tabulate(prop_list, value_list)
+        embed = discord.Embed(type="rich", color=discord.Colour.green(), description=desc)
+        embed.set_author(name="Text channel info")
+        await ctx.reply(embed=embed)
+        return
+    elif str(ch.type) == "voice":
+        whore = ["Name", "Type", "ID", "Created at", "User limit", "Current members"]
+        extrawhore = [name, tv[type], id, atgo, reallimit, members]
+        desc = ctx.prop_tabulate(whore, extrawhore)
+        embed = discord.Embed(type="rich", color=discord.Colour.purple(), description=desc)
+        embed.set_author(name="Voice channel info")
+        await ctx.reply(embed=embed)
+        return
+    elif str(ch.type) == "4":
+        prop_list = ["Name", "Type", "ID", "Created at"]
+        value_list = [ch.name, tv[type], id, atgo]
+        desc = ctx.prop_tabulate(prop_list, value_list)
+        embed = discord.Embed(type="rich", color=discord.Colour.blue(), description=desc)
+        embed.set_author(name="Category info")
+        embed.set_footer(text="Category information limited due to Discord.py version")
+        await ctx.reply(embed=embed)
+        return
+
 
 @cmds.cmd("avatar",
           category="Info",
@@ -296,10 +367,11 @@ async def cmd_avatar(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    avatar = user.avatar_url if user.avatar_url else user.default_avatar_url
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     embed = discord.Embed(colour=discord.Colour.green())
     embed.set_author(name="{}'s Avatar".format(user))
-    embed.set_image(url=avatar)
+    embed.set_image(url=avlink)
 
     out_msg = await ctx.reply(embed=embed, dm=ctx.bot.objects["brief"])
     if out_msg and ctx.bot.objects["brief"]:
