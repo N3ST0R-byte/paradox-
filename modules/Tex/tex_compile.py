@@ -52,7 +52,9 @@ compile_path = os.path.join(__location__, "texcompile.sh")
 
 # Header for every LaTeX source file
 header = "\\documentclass[preview, border=10pt, 12pt]{standalone}\
-          \n\\nonstopmode"
+    \n\\usepackage[mathletters]{ucs}\
+    \n\\usepackage[utf8x]{inputenc}\
+    \n\\nonstopmode"
 
 # The format of the source to compile
 to_compile = "{header}\
