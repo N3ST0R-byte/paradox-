@@ -53,13 +53,13 @@ async def show_config(ctx, user=None):
     field_lines = []  # List of lines to go into the preamble field
 
     # Identify what type of preamble the user is using, and construct the first line of the preamble field
-    preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+    preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
     if preamble:
         header = "Using a custom preamble with {} lines!".format(len(preamble.splitlines()))
     else:
         header = "No custom user preamble set, using default preamble."
         if ctx.server:
-            server_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+            server_preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
             if server_preamble:
                 header = "No custom user preamble set, using server preamble."
     field_lines.append(header)
