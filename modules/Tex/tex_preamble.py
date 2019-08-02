@@ -489,6 +489,10 @@ async def cmd_preamble(ctx):
 
     # Handle retracting a preamble request
     if ctx.flags["retract"]:
+        if ctx.authid not in ctx.bot.objects["pending_preambles"]:
+            await ctx.reply("You don't have a pending preamble request to retract!")
+            return
+
         await ctx.data.users_long.set(ctx.authid, "pending_preamble", None)
         await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
 
