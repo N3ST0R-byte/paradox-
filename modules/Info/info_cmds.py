@@ -300,10 +300,10 @@ async def cmd_secho(ctx):
     ch = await ctx.find_channel(ctx.arg_str, interactive=True)
     if not ch:
         return
-    name = "{} [{}]".format(ch.name, ch.mention)
+    type = str(ch.type)
+    name = "{} [{}]".format(ch.name, ch.mention) if type == "text" else "{}".format(ch.name)
     #category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
     id = ch.id
-    type = str(ch.type)
     createdat = ch.created_at.strftime("%d/%m/%Y")
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - ch.created_at, minutes=False))
     atgo = "{} {}".format(createdat, created_ago)
@@ -334,6 +334,7 @@ async def cmd_secho(ctx):
         desc = ctx.prop_tabulate(prop_list, value_list)
         embed = discord.Embed(type="rich", color=discord.Colour.green(), description=desc)
         embed.set_author(name="Text channel info")
+        embed.set_footer(text="Text channel information limited due to Discord.py version")
         await ctx.reply(embed=embed)
         return
     elif str(ch.type) == "voice":
