@@ -54,6 +54,7 @@ compile_path = os.path.join(__location__, "texcompile.sh")
 header = "\\documentclass[preview, border=10pt, 12pt]{standalone}\
     \\usepackage[warnunknown, fasterrors, mathletters]{ucs}\
     \\usepackage[utf8x]{inputenc}\
+    \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
     \n\\nonstopmode"
 
 # The format of the source to compile
