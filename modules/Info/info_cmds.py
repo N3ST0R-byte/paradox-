@@ -362,6 +362,13 @@ async def cmd_secho(ctx):
           aliases=["av"])
 @cmds.execute("user_lookup", in_server=True)
 async def cmd_avatar(ctx):
+    """
+    Usage:
+        {prefix}avatar [user]
+    Description:
+        Replies with the avatar of the provided user,
+        or your own avatar if none was given.
+    """
     user = ctx.author
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
