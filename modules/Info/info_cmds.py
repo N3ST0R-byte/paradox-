@@ -326,7 +326,7 @@ async def cmd_secho(ctx):
     if not ch.voice_members:
         members = "No members in this channel."
     else:
-        members = ", ".join([mem.mention for mem in ch.voice_members])
+        members = " , ".join([mem.mention for mem in ch.voice_members])
 
     if str(ch.type) == "text":
         prop_list = ["Name", "Type", "ID", "Created at", "Topic"]
