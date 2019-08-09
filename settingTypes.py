@@ -70,7 +70,7 @@ class LIMITED_STR(STR):
 
 
 class USEREVENT(LIMITED_STR):
-    acceptable = ["username, nickname, roles, avatar"]
+    acceptable = ["username", "nickname", "roles", "avatar"]
     accept = "One of {}".format(", ".join(acceptable))
 
 

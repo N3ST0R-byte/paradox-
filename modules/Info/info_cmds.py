@@ -218,7 +218,7 @@ async def cmd_serverinfo(ctx):
         "low": "Level 1 (Must have a verified email)",
         "medium": "Level 2 (Registered for more than 5 minutes)",
         "high": "Level 3 (Member for more than 10 minutes)",
-        4: "Level 4 (Verified phone number)"
+        "4": "Level 4 (Verified phone number)"
     }
 
     mfa = {
@@ -326,7 +326,7 @@ async def cmd_secho(ctx):
     if not ch.voice_members:
         members = "No members in this channel."
     else:
-        members = ", ".join([mem.mention for mem in ch.voice_members])
+        members = "{} - ".format(ch.voice_members) + ", ".join([mem.mention for mem in ch.voice_members])
 
     if str(ch.type) == "text":
         prop_list = ["Name", "Type", "ID", "Created at", "Topic"]
