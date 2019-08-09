@@ -368,7 +368,7 @@ async def cmd_hackban(ctx):
         Hackbanning allows you to ban without the user being in the server.
         This is not an interactive command, you provide a userid for the users you wish to ban.
         Multi hackban currently supports up to 20 users.
-        <Required>, [Optional] 
+        <Required>, [Optional]
     Flags:3
         -m::  **multi**, allows mutiple user bans. (20 maximum)
         -r::  **reason**, reason for the ban
@@ -628,7 +628,7 @@ async def cmd_kick(ctx):
                "fail_unknown": "🚨 Encountered an unexpected fatal error kicking `{user.name}`! Aborting kick sequence..."}
     strings["results"] = {0: "✅ Kicked `{user.name}`.",
                           1: "🚨 Failed to kick `{user.name}`, insufficient permissions."}
-    await multi_mod_action(ctx, ctx.params, action_func, strings, reason)
+    await multi_mod_action(ctx, users, action_func, strings, reason)
 
 
 @cmds.cmd("giverole",
