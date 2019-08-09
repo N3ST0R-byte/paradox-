@@ -218,7 +218,7 @@ async def cmd_serverinfo(ctx):
         "low": "Level 1 (Must have a verified email)",
         "medium": "Level 2 (Registered for more than 5 minutes)",
         "high": "Level 3 (Member for more than 10 minutes)",
-        4: "Level 4 (Verified phone number)"
+        "4": "Level 4 (Verified phone number)"
     }
 
     mfa = {
