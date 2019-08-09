@@ -148,11 +148,12 @@ def load_into(bot):
 
                 flag_arg = arg or ''
 
-                # Note that the next param in the list must be whitespace
-                final_params += flag_params[j+2:] if j + 2 < len(flag_params) else []
+                # If there are any more params, add them to the final bunch
+                if len(flag_params) > j + 1:
+                    final_params.append(''.join(flag_params[j+1:]).rstrip())
             else:
                 flag_arg = True
-                final_params += flag_params
+                final_params.append(''.join(flag_params).rstrip())
 
             # Set the flag arguments
             final_flags[flag.strip('=')] = flag_arg
@@ -161,7 +162,7 @@ def load_into(bot):
         final_params += end_params
 
         # Turn the parameter list into what we usually use, i.e. space split, and make the args
-        final_args = ''.join(final_params)
+        final_args = ''.join(final_params).strip()
         final_params = final_args.split(' ')
         return (final_params, final_args, final_flags)
 
