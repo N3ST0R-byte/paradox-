@@ -21,7 +21,7 @@ async def cmd_echo(ctx):
     Description:
         Replies to the message with <text>.
     """
-    await ctx.reply(ctx.arg_str.clean_content if ctx.arg_str else "I can't send an empty message!")
+    await ctx.reply(ctx.arg_str if ctx.arg_str else "I can't send an empty message!")
 
 
 @cmds.cmd("jumpto",
@@ -128,7 +128,7 @@ async def cmd_secho(ctx):
         await ctx.bot.delete_message(ctx.msg)
     except Exception:
         pass
-    await ctx.reply("{}".format(ctx.arg_str.clean_content) if ctx.arg_str else "I can't send an empty message!")
+    await ctx.reply("{}".format(ctx.arg_str) if ctx.arg_str else "I can't send an empty message!")
 
 
 @cmds.cmd("invitebot",
