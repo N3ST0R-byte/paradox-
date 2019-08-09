@@ -1240,8 +1240,8 @@ async def cmd_preambleadmin(ctx):
         {prefix}pa --menu
         {prefix}pa --user <userid>
         {prefix}pa --server <serverid>
-        {prefix}pa (--approve|--a) [userid]
-        {prefix}pa (--deny|-d) [userid]
+        {prefix}pa (--a | --approve) [userid]
+        {prefix}pa (--d | --deny) [userid]
     Description:
         Manage the preamble system.
         With no arguments, opens the preamble approval queue.
