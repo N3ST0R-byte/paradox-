@@ -407,3 +407,27 @@ def load_into(bot):
             pass
         except Exception:
             pass
+
+    @bot.util
+    def split_text(ctx, text, blocksize, code=True, syntax="", maxheight=50):
+        """
+        Break the text into blocks of maximum length blocksize
+        If possible, break across nearby newlines. Otherwise just break at blocksize chars
+        """
+        blocks = []
+        while True:
+            if len(text) <= blocksize:
+                blocks.append(text)
+                break
+
+            split_on = text[0:blocksize].rfind('\n')
+            split_on = blocksize if split_on == -1 else split_on
+
+            blocks.append(text[0:split_on])
+            text = text[split_on:]
+
+        # Add the codeblock ticks and the code syntax header, if required
+        if code:
+            blocks = ["```{}\n{}\n```".format(syntax, block) for block in blocks]
+
+        return blocks

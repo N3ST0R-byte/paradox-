@@ -1,3 +1,20 @@
+"""
+Provides some handlers to save the name and nickname history for users
+
+Handlers:
+    store_names:
+        Listens to member updates for name/nickname changes and stores them
+User data:
+    name_history: list
+        (app independent, automatic)
+        The previous names of a user
+Member data:
+    nickname_history: list
+        (app independent, automatic)
+        The previous nicknames for a membet
+"""
+
+
 async def store_names(bot, before, after):
     if before.name != after.name:
         history = await bot.data.users_long.get(before.id, "name_history")

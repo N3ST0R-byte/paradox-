@@ -57,6 +57,14 @@ header = "\\documentclass[preview, border=10pt, 12pt]{standalone}\
     \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
     \n\\nonstopmode"
 
+"""
+# Alternative header to support discord emoji, but not other unicode
+header = "\\documentclass[preview, border=10pt, 12pt]{standalone}\
+    \\usepackage{discord-emoji}\
+    \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
+    \n\\nonstopmode"
+"""
+
 # The format of the source to compile
 to_compile = "{header}\
     \n{preamble}\
