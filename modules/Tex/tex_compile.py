@@ -44,7 +44,9 @@ minwidth=1000
 extra=$((minwidth-width))
 
 if (( extra > 0 )); then
-    convert {image} -gravity East +antialias -splice ${{extra}}x {image}
+    convert {image} \
+        -gravity East +antialias -splice ${{extra}}x\
+        -alpha set -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image}
 fi
 """
 
@@ -60,8 +62,9 @@ header = "\\documentclass[preview, border=10pt, 13pt]{standalone}\
 
 """
 # Alternative header to support discord emoji, but not other unicode
-header = "\\documentclass[preview, border=10pt, 12pt]{standalone}\
+header = "\\documentclass[preview, border=10pt, 13pt]{standalone}\
     \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
+    \\usepackage{discord-emoji}
     \n\\nonstopmode"
 """
 
