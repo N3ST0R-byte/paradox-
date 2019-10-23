@@ -87,6 +87,6 @@ async def cmd_support(ctx):
     Usage:
         {prefix}support
     Description:
-        Sends the invite link to the my support guild.
+        Sends the invite link to my support guild.
     """
     await ctx.reply("Join my server at <{}>".format(ctx.bot.objects["support_guild"]))
