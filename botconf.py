@@ -31,7 +31,7 @@ class Conf:
         return json.loads(setting)
 
     def getintlist(self, settingName, default=[]):
-        return self.get(settingName, default)
+        return self.get(settingName, str(default))
 
     def getStr(self, settingName, default=""):
         return self.get(settingName, default)

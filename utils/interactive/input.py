@@ -1,5 +1,5 @@
 import discord
-import re
+
 
 def load_into(bot):
     @bot.util
@@ -11,8 +11,8 @@ def load_into(bot):
         return msg
 
     @bot.util
-    async def input(ctx, msg="", timeout=120, prompt_msg=None):
-        offer_msg = prompt_msg if prompt_msg is not None else await ctx.reply(msg)
+    async def input(ctx, msg, timeout=120):
+        offer_msg = await ctx.reply(msg)
         result_msg = await ctx.bot.wait_for_message(author=ctx.author, timeout=timeout)
         if result_msg is None:
             return None
@@ -25,17 +25,12 @@ def load_into(bot):
         return result
 
     @bot.util
-    async def ask(ctx, msg, timeout=30, use_msg=None, del_on_timeout=False):
+    async def ask(ctx, msg, timeout=30, use_msg=None):
         out = "{} {}".format(msg, "`y(es)`/`n(o)`")
         offer_msg = await ctx.bot.edit_message(use_msg, out) if use_msg else await ctx.reply(out)
         result_msg = await ctx.listen_for(["y", "yes", "n", "no"], timeout=timeout)
 
         if result_msg is None:
-            if del_on_timeout:
-                try:
-                    await ctx.bot.delete_message(offer_msg)
-                except Exception:
-                    pass
             return None
         result = result_msg.content.lower()
         try:
@@ -60,7 +55,7 @@ def load_into(bot):
         """
 
     @bot.util
-    async def selector(ctx, message, select_from, timeout=120, max_len=20, silent=False, allow_single=False):
+    async def selector(ctx, message, select_from, timeout=120, max_len=20, silent=False):
         """
         Interactive method to ask the user to select an entry from a list.
         Returns the index of the list which was selected,
@@ -71,7 +66,7 @@ def load_into(bot):
         """
         if len(select_from) == 0:
             return None
-        if not allow_single and len(select_from) == 1:
+        if len(select_from) == 1:
             return 0
         pages = ["{}\n{}\nType the number of your selection or `c` to cancel.".format(message, page) for page in ctx.paginate_list(select_from, block_length=max_len)]
         out_msg = await ctx.pager(pages)
@@ -98,90 +93,6 @@ def load_into(bot):
             ctx.cmd_err = (-1, "")  # User cancelled or didn't respond
             return None
         return int(result_msg.content) - 1
-
-    @bot.util
-    async def multi_selector(ctx, message: discord.Message, select_from: list, timeout=120, max_len=20,
-                             silent=False) -> list:
-        """
-        Interactive method to ask the user to select an entry from a list.
-        Returns the index of the list which was selected,
-        or None if the request timed out or was cancelled.
-
-        :arg select_from: list of options to select from
-
-        :returns list of selected indices of select_from.
-        """
-        if select_from is None or len(select_from) == 0:
-            # nothing given, so return empty selection
-            return []
-        # paginate possible choices (indexes become +1 here!)
-        pages = ["{}\n{}\nType the numbers of your selection or `c` to cancel.".format(message, page) for page in
-                 ctx.paginate_list(select_from, block_length=max_len)]
-        # send pages off to discord
-        sent_message = await ctx.pager(pages)
-        # get answer
-        user_answer = await ctx.bot.wait_for_message(author=ctx.author, timeout=timeout)
-        try:
-            # delete answer
-            await ctx.bot.delete_message(sent_message)
-        except discord.NotFound:
-            pass
-        # abort if no reply
-        if not user_answer:
-            if not silent:
-                await ctx.reply("Question timed out, aborting...")
-            ctx.cmd_err = (-1, "")  # User cancelled or didn't respond
-            return []
-        # otherwise get message string
-        result = user_answer.content
-        try:
-            # delete user answer
-            await ctx.bot.delete_message(user_answer)
-        except Exception:
-            pass
-        # if user cancels selection, reply and return
-        if result == "c":
-            if not silent:
-                await ctx.reply("Cancelled selection.")
-            ctx.cmd_err = (-1, "")  # User cancelled or didn't respond
-            return []
-        # parse selection
-        try:
-            return parse_multi_select_message(result, len(select_from))
-        except Exception as error:
-            await ctx.reply(error.args)
-        return []
-
-
-    def parse_multi_select_message(text: str, size: int) -> list:
-        if text is None or len(text) == 0:
-            return []
-        # if text begins with ! recursively call and invert the result
-        if text[0] == '!':
-            normal = parse_multi_select_message(text[1:], size)
-            inverted = []
-            for i in range(1, size):
-                if not i in normal:
-                    inverted.append(i)
-            return inverted
-
-        # split the string by all non-digits
-        items_to_parse = re.findall(r"[\d-]+", text)
-        selected = []
-
-        # go through each item and add them to the list of selected items
-        for item in items_to_parse:
-            if '-' in item:
-                numbers = item.split('-')
-                selected += range(int(numbers[0]), int(numbers[1]) + 1)
-            else:
-                selected.append(int(item))
-
-        # deduplicate output
-        selected = list(set(selected))
-        # decrement each item and make sure they are within range, since it was increased for user friendliness
-        selected = [x - 1 for x in selected if 0 < x <= size]
-        return selected
 
     @bot.util
     async def silent_selector(ctx, message, select_from, timeout=120, use_msg=None):

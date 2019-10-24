@@ -17,7 +17,7 @@ status_dict = {"online": discord.Status.online,
           aliases=["restart"])
 @cmds.require("manager_perm")
 async def cmd_shutdown(ctx):
-    await ctx.reply("Shutting down...")
+    await ctx.reply("Shutting down, cya another day~")
     await ctx.bot.logout()
 
 
