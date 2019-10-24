@@ -52,7 +52,7 @@ async def log_joined_server(bot, server):
 
     created = server.created_at.strftime("%-I:%M %p, %d/%m/%Y")
 
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.green())
+    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=owner.colour if owner.colour.value else discord.Colour.light_grey())
     embed.set_author(name="Joined server!")
     embed.set_thumbnail(url=icon)
     embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(owner), inline=False)

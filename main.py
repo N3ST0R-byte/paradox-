@@ -151,9 +151,7 @@ bot.objects["regions"] = {
     "eu-west": "Western Europe",
     "vip-amsterdam": "Amsterdam (VIP)",
     "vip-us-east": "Eastern United States (VIP)",
-    "india": "India",
-    "europe": "Europe",
-    "southafrica": "South Africa"
+    "india": "India"
 }
 
 emojis = {"emoji_tex_del": "delete",
@@ -171,11 +169,7 @@ emojis = {"emoji_tex_del": "delete",
           "emoji_more": "More",
           "emoji_delete": "delete",
           "emoji_loading": "loading",
-          "emoji_prev": "Previous",
-          "emoji_approve": "approve",
-          "emoji_deny": "deny",
-          "emoji_test": "test",
-          "emoji_sendfile": "send_file"}
+          "emoji_prev": "Previous"}
 
 
 # Initialise bot objects

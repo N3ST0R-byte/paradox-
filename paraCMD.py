@@ -44,7 +44,7 @@ class paraCMD(Command):
                     if "::" in lines[i]:
                         row = lines[i].strip().split("::")
                         row_name, row_content = row
-                        field += "`​{}{}`: {}\n".format("​ " * (field_len - len(row_name)), row_name, row_content)
+                        field += "`​{}{}`: {}\n".format(" " * (field_len - len(row_name)), row_name, row_content)
                 else:
                     field += lines[i].strip() + "\n"
         if field_name and field:
