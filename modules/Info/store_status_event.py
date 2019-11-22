@@ -11,6 +11,7 @@ async def store_status(bot, before, after):
 
 
 def load_into(bot):
-    bot.data.users.ensure_exists("old_status")
-    bot.objects["user_status"] = {}
-    bot.add_after_event("member_update", store_status)
+    # bot.data.users.ensure_exists("old_status")
+    # bot.objects["user_status"] = {}
+    # bot.add_after_event("member_update", store_status)
+    pass

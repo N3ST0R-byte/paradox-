@@ -1,15 +1,33 @@
 import discord
 from paraCH import paraCH
-from datetime import datetime, timedelta
+from datetime import datetime
 
 cmds = paraCH()
 
 # Provides serverinfo, userinfo, roleinfo, whohas, avatar
+"""
+Provides a number of information providing commands
+
+Commands provided:
+    userinfo:
+        Provides info on the provided user
+    avatar:
+        Displays the avatar for the provided user
+    role:
+        Displays info on the provided role, or displays a list of roles
+    rolemembers:
+        Displays the members of a role
+    serverinfo:
+        Displays info on the current server
+    channelinfo:
+        Displays information about a specified channel
+"""
 
 
 @cmds.cmd(name="roleinfo",
           category="Info",
           short_help="Displays information about a role",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["role", "rinfo", "ri"])
 @cmds.require("in_server")
 async def cmd_role(ctx):
@@ -31,11 +49,9 @@ async def cmd_role(ctx):
     title = "{role.name} (id: {role.id})".format(role=role)
 
     colour = role.colour if role.colour.value else discord.Colour.light_grey()
-#    thumbnail = "http://placehold.it/150x150.png/{}/000000?text={}".format(colour.strip("#"), colour)
     num_users = len([user for user in ctx.server.members if (role in user.roles)])
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - role.created_at, minutes=False))
     created = role.created_at.strftime("%-I:%M %p, %d/%m/%Y")
-#    created_at = "{} ({} ago)".format(created, created_ago)
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
 
@@ -73,6 +89,7 @@ async def cmd_role(ctx):
 @cmds.cmd(name="rolemembers",
           category="Info",
           short_help="Lists members with a particular role.",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["rolemems", "whohas"])
 @cmds.require("in_server")
 async def cmd_rolemembers(ctx):
@@ -104,6 +121,7 @@ async def cmd_rolemembers(ctx):
 @cmds.cmd("userinfo",
           category="Info",
           short_help="Shows the user's information",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["uinfo", "ui", "user"])
 @cmds.require("in_server")
 @cmds.execute("user_lookup", in_server=True, greedy=True)
@@ -143,6 +161,8 @@ async def cmd_userinfo(ctx):
     nicknames = await ctx.bot.data.members_long.get(ctx.server.id, user.id, "nickname_history")
     nickname_list = "{}{}".format("..., " if len(nicknames) > 10 else "",
                                   ", ".join(nicknames[-10:])) if nicknames else "No recent past nicknames."
+    """
+    # Last status stuff is disabled for now
     last_status = await ctx.bot.data.users.get(user.id, "old_status")
     if last_status:
         status_str = "(Was {})".format(statusdict[last_status[0]][0])
@@ -155,9 +175,12 @@ async def cmd_userinfo(ctx):
     else:
         seen_ago = "No status changes seen!"
         status_str = ""
-
     prop_list = ["Full name", "Nickname", "Names", "Nicknames", "Status", "Playing", "Seen in", "Last seen", "", "Joined at", "", "Created at", ""]
     value_list = [name, user.display_name, name_list, nickname_list, status, game, shared, seen_ago, status_str, joined, joined_ago, created, created_ago]
+    """
+
+    prop_list = ["Full name", "Nickname", "Names", "Nicknames", "Status", "Playing", "Seen in", "Joined at", "", "Created at", ""]
+    value_list = [name, user.display_name, name_list, nickname_list, status, game, shared, joined, joined_ago, created, created_ago]
     desc = ctx.prop_tabulate(prop_list, value_list)
 
     roles = [r.name for r in user.roles if r.name != "@everyone"]
@@ -192,6 +215,7 @@ async def cmd_userinfo(ctx):
 @cmds.cmd("serverinfo",
           category="Info",
           short_help="Shows server info.",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["sinfo", "si"])
 @cmds.execute("flags", flags=["icon"])
 @cmds.require("in_server")
@@ -284,10 +308,13 @@ async def cmd_serverinfo(ctx):
     if out_msg and ctx.bot.objects["brief"]:
         await ctx.confirm_sent(reply="Serverinfo sent!")
 
+
 @cmds.cmd("channelinfo",
           category="Info",
-          short_help="Shows info on a channel.",
+          short_help="Displays information about a channel.",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["ci"])
+@cmds.require('in_server')
 async def cmd_secho(ctx):
     """
     Usage:
@@ -297,12 +324,13 @@ async def cmd_secho(ctx):
     Description:
         Gives information on a text channel, voice channel, or category.
     """
-    ch = await ctx.find_channel(ctx.arg_str, interactive=True)
+    valid_channels = [ch for ch in ctx.server.channels if ch.permissions_for(ctx.author).read_messages]
+    ch = await ctx.find_channel(ctx.arg_str, interactive=True, collection=valid_channels)
     if not ch:
         return
     type = str(ch.type)
     name = "{} [{}]".format(ch.name, ch.mention) if type == "text" else "{}".format(ch.name)
-    #category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
+    # category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
     id = ch.id
     createdat = ch.created_at.strftime("%d/%m/%Y")
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - ch.created_at, minutes=False))
@@ -359,9 +387,17 @@ async def cmd_secho(ctx):
 @cmds.cmd("avatar",
           category="Info",
           short_help="Obtains the mentioned user's avatar, or your own.",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["av"])
 @cmds.execute("user_lookup", in_server=True)
 async def cmd_avatar(ctx):
+    """
+    Usage:
+        {prefix}avatar [user]
+    Description:
+        Replies with the avatar of the provided user,
+        or your own avatar if none was given.
+    """
     user = ctx.author
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]

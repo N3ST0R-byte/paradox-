@@ -14,4 +14,5 @@ async def handle_raw_socket(bot, msg):
 
 
 def load_into(bot):
-    bot.add_after_event("socket_raw_receive", handle_raw_socket, priority=5)
+    if os.path.exists("/home/paradox"):
+        bot.add_after_event("socket_raw_receive", handle_raw_socket, priority=5)

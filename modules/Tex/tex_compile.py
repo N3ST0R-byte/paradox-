@@ -39,20 +39,34 @@ colourschemes["default"] = colourschemes["grey"]
 
 # Script which pads images to a minimum width of 1000
 pad_script = r"""
-height=`convert {image} -format "%h" info:`
 width=`convert {image} -format "%[fx:w]" info:`
 minwidth=1000
-newwidth=$(( width > minwidth ? width : minwidth ))
+extra=$((minwidth-width))
 
-convert {image} -background transparent -extent ${{newwidth}}x${{height}} {image}
+if (( extra > 0 )); then
+    convert {image} \
+        -gravity East +antialias -splice ${{extra}}x\
+        -alpha set -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image}
+fi
 """
 
 # Path to the compile script
 compile_path = os.path.join(__location__, "texcompile.sh")
 
 # Header for every LaTeX source file
-header = "\\documentclass[preview, border=10pt, 12pt]{standalone}\
-          \n\\nonstopmode"
+header = "\\documentclass[preview, border=10pt, 13pt]{standalone}\
+    \\usepackage[warnunknown, fasterrors, mathletters]{ucs}\
+    \\usepackage[utf8x]{inputenc}\
+    \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
+    \n\\nonstopmode"
+
+"""
+# Alternative header to support discord emoji, but not other unicode
+header = "\\documentclass[preview, border=10pt, 13pt]{standalone}\
+    \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
+    \\usepackage{discord-emoji}
+    \n\\nonstopmode"
+"""
 
 # The format of the source to compile
 to_compile = "{header}\

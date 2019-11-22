@@ -3,12 +3,16 @@ import aiohttp
 import json
 
 cmds = paraCH()
-# Provides calc
+"""
+Provides the calc command
+"""
 
 API_ADDR = 'http://api.mathjs.org/v4/'
 
+
 @cmds.cmd("calc",
           category="Maths",
+          edit_handler=cmds.edit_handler_rerun,
           short_help="Calculate short mathematical expressions.")
 async def cmd_rotate(ctx):
     """

@@ -241,7 +241,7 @@ async def submit_preamble(ctx, user, submission, info):
         await handled_preamble(ctx, user.id, "New preamble request submitted")
 
     # Set the new pending preamble
-    await ctx.data.users.set(ctx.authid, "pending_preamble", submission)
+    await ctx.data.users_long.set(ctx.authid, "pending_preamble", submission)
 
     # Send the preamble request to the submission channel
     title = "New preamble submission!"
@@ -323,13 +323,13 @@ async def approve_submission(ctx, userid, manager):
     await handled_preamble(ctx, userid, "Preamble approved by {}".format(manager.mention))
 
     # Then update the preamble
-    current_preamble = await ctx.data.users.get(userid, "latex_preamble")
-    await ctx.data.users.set(userid, "previous_preamble", current_preamble)
+    current_preamble = await ctx.data.users_long.get(userid, "latex_preamble")
+    await ctx.data.users_long.set(userid, "previous_preamble", current_preamble)
 
-    new_preamble = await ctx.data.users.get(userid, "pending_preamble")
-    await ctx.data.users.set(userid, "latex_preamble", new_preamble)
+    new_preamble = await ctx.data.users_long.get(userid, "pending_preamble")
+    await ctx.data.users_long.set(userid, "latex_preamble", new_preamble)
 
-    await ctx.data.users.set(userid, "pending_preamble", None)
+    await ctx.data.users_long.set(userid, "pending_preamble", None)
     await ctx.data.users.set(userid, "pending_preamble_info", None)
     ctx.bot.objects["pending_preambles"].pop(userid, None)
 
@@ -398,7 +398,7 @@ async def deny_submission(ctx, userid, manager):
     await handled_preamble(ctx, userid, "Preamble denied by {}".format(manager.mention))
 
     # Deny the submission
-    await ctx.data.users.set(userid, "pending_preamble", None)
+    await ctx.data.users_long.set(userid, "pending_preamble", None)
     await ctx.data.users.set(userid, "pending_preamble_info", None)
     ctx.bot.objects["pending_preambles"].pop(userid, None)
     return True
@@ -471,11 +471,11 @@ async def cmd_preamble(ctx):
         resp = await ctx.ask("Are you sure you want to reset your preamble to the default?", timeout=60)
         if resp:
             # Reset the preamble
-            current_preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+            current_preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
 
-            await ctx.data.users.set(ctx.authid, "previous_preamble", current_preamble)
-            await ctx.data.users.set(ctx.authid, "latex_preamble", None)
-            await ctx.data.users.set(ctx.authid, "pending_preamble", None)
+            await ctx.data.users_long.set(ctx.authid, "previous_preamble", current_preamble)
+            await ctx.data.users_long.set(ctx.authid, "latex_preamble", None)
+            await ctx.data.users_long.set(ctx.authid, "pending_preamble", None)
             await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
 
             await handled_preamble(ctx, ctx.authid, "Preamble was reset")
@@ -489,7 +489,11 @@ async def cmd_preamble(ctx):
 
     # Handle retracting a preamble request
     if ctx.flags["retract"]:
-        await ctx.data.users.set(ctx.authid, "pending_preamble", None)
+        if ctx.authid not in ctx.bot.objects["pending_preambles"]:
+            await ctx.reply("You don't have a pending preamble request to retract!")
+            return
+
+        await ctx.data.users_long.set(ctx.authid, "pending_preamble", None)
         await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
 
         await ctx.reply("Your preamble request has been retracted!")
@@ -503,14 +507,14 @@ async def cmd_preamble(ctx):
     if ctx.flags["revert"]:
         resp = await ctx.ask("Are you sure you want to revert your preamble to the previous version?", timeout=60)
         if resp:
-            previous_preamble = await ctx.data.users.get(ctx.authid, "previous_preamble")
+            previous_preamble = await ctx.data.users_long.get(ctx.authid, "previous_preamble")
             if not previous_preamble:
                 await ctx.reply("Your previous preamble doesn't exist or wasn't recorded!")
             else:
-                current_preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+                current_preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
 
-                await ctx.data.users.set(ctx.authid, "previous_preamble", current_preamble)
-                await ctx.data.users.set(ctx.authid, "latex_preamble", previous_preamble)
+                await ctx.data.users_long.set(ctx.authid, "previous_preamble", current_preamble)
+                await ctx.data.users_long.set(ctx.authid, "latex_preamble", previous_preamble)
 
                 await ctx.reply("Your preamble has been reverted.")
                 await preamblelog(ctx, "Preamble was reverted to the previous version")
@@ -521,9 +525,9 @@ async def cmd_preamble(ctx):
     header = None
 
     # Get the current active preamble and set the header for viewing
-    preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+    preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
     if not preamble and ctx.server:
-        preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+        preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
         header = "No custom user preamble set, server preamble."
     if not preamble:
         preamble = default_preamble
@@ -604,8 +608,8 @@ async def cmd_preamble(ctx):
 
         if new_preamble is not None:
             # Finally, update the preamble
-            await ctx.data.users.set(ctx.authid, "previous_preamble", preamble)
-            await ctx.data.users.set(ctx.authid, "latex_preamble", new_preamble)
+            await ctx.data.users_long.set(ctx.authid, "previous_preamble", preamble)
+            await ctx.data.users_long.set(ctx.authid, "latex_preamble", new_preamble)
 
             await ctx.reply("Your preamble has been updated!")
             await preamblelog(ctx, "Material was removed from the preamble. New preamble below.", source=new_preamble)
@@ -655,9 +659,9 @@ async def cmd_preamble(ctx):
             return
 
         # Set the preamble
-        current_preamble = await ctx.data.users.get(ctx.authid, 'latex_preamble')
-        await ctx.data.users.set(ctx.authid, 'previous_preamble', current_preamble)
-        await ctx.data.users.set(ctx.authid, 'latex_preamble', preset)
+        current_preamble = await ctx.data.users_long.get(ctx.authid, 'latex_preamble')
+        await ctx.data.users_long.set(ctx.authid, 'previous_preamble', current_preamble)
+        await ctx.data.users_long.set(ctx.authid, 'latex_preamble', preset)
 
         await ctx.reply("The preset has been applied!\
                         \nTo revert to your previous preamble, use `{}preamble --revert`".format(ctx.used_prefix))
@@ -719,8 +723,8 @@ async def cmd_preamble(ctx):
             if all(not package.strip() or (package.strip() in whitelisted_packages) for package in packages):
                 # All the requested packages are whitelisted
                 # Update the preamble, log the changes, and notify the user
-                await ctx.data.users.set(ctx.authid, "previous_preamble", preamble)
-                await ctx.data.users.set(ctx.authid, "latex_preamble", new_submission)
+                await ctx.data.users_long.set(ctx.authid, "previous_preamble", preamble)
+                await ctx.data.users_long.set(ctx.authid, "latex_preamble", new_submission)
 
                 await ctx.reply("Your preamble has been updated!")
                 await preamblelog(ctx, "Whitelisted packages were added to the preamble. New preamble below.",
@@ -789,7 +793,7 @@ async def cmd_serverpreamble(ctx):
             return
 
         # Reset the preamble
-        await ctx.data.servers.set(ctx.server.id, "server_latex_preamble", None)
+        await ctx.data.servers_long.set(ctx.server.id, "server_latex_preamble", None)
 
         # Log the preamble reset
         await preamblelog(ctx, "Server preamble reset", author=server_str)
@@ -799,7 +803,7 @@ async def cmd_serverpreamble(ctx):
         return
 
     # Grab the current server preamble, or the default preamble if none is set
-    current_preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+    current_preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
     header = None if current_preamble else "No custom server preamble set, using default preamble!"
     current_preamble = current_preamble if current_preamble else default_preamble
 
@@ -917,7 +921,7 @@ async def cmd_serverpreamble(ctx):
             return
 
         # Change the preamble
-        await ctx.data.servers.set(ctx.server.id, 'server_latex_preamble', new_preamble)
+        await ctx.data.servers_long.set(ctx.server.id, 'server_latex_preamble', new_preamble)
 
         # Log this, and notify the user
         await preamblelog(ctx, "Server preamble was updated!", source=new_preamble, author=server_str)
@@ -1012,7 +1016,7 @@ async def user_admin(ctx, userid):
         pass
     elif result == 0:
         # Show the preamble
-        preamble = await ctx.data.users.get(userid, "latex_preamble")
+        preamble = await ctx.data.users_long.get(userid, "latex_preamble")
         if not preamble:
             await ctx.reply("This user doesn't have a custom preamble set!")
         else:
@@ -1072,9 +1076,9 @@ async def user_admin(ctx, userid):
             return
 
         # Finally, set the preamble
-        current_preamble = await ctx.data.users.get(userid, "latex_preamble")
-        await ctx.data.users.set(userid, "previous_preamble", current_preamble)
-        await ctx.data.users.set(userid, "latex_preamble", preamble)
+        current_preamble = await ctx.data.users_long.get(userid, "latex_preamble")
+        await ctx.data.users_long.set(userid, "previous_preamble", current_preamble)
+        await ctx.data.users_long.set(userid, "latex_preamble", preamble)
 
         await ctx.reply("The preamble was updated.")
         await preamblelog(ctx, "Manual preamble update",
@@ -1083,11 +1087,11 @@ async def user_admin(ctx, userid):
                           source=preamble)
     elif result == 2:
         # Reset the current preamble to the default
-        current_preamble = await ctx.data.users.get(userid, "latex_preamble")
+        current_preamble = await ctx.data.users_long.get(userid, "latex_preamble")
 
-        await ctx.data.users.set(userid, "previous_preamble", current_preamble)
-        await ctx.data.users.set(userid, "latex_preamble", None)
-        await ctx.data.users.set(userid, "pending_preamble", None)
+        await ctx.data.users_long.set(userid, "previous_preamble", current_preamble)
+        await ctx.data.users_long.set(userid, "latex_preamble", None)
+        await ctx.data.users_long.set(userid, "pending_preamble", None)
         await ctx.data.users.set(userid, "pending_preamble_info", None)
 
         await handled_preamble(ctx, userid, "Preamble was reset")
@@ -1144,7 +1148,7 @@ async def server_admin(ctx, serverid):
         pass
     elif result == 0:
         # Show the preamble
-        preamble = await ctx.data.servers.get(serverid, 'server_latex_preamble')
+        preamble = await ctx.data.servers_long.get(serverid, 'server_latex_preamble')
         if not preamble:
             await ctx.reply("This server doesn't have a custom preamble set!")
         else:
@@ -1204,7 +1208,7 @@ async def server_admin(ctx, serverid):
             return
 
         # Finally, set the preamble
-        await ctx.data.servers.set(serverid, 'server_latex_preamble', preamble)
+        await ctx.data.servers_long.set(serverid, 'server_latex_preamble', preamble)
 
         await ctx.reply("The preamble was updated.")
         await preamblelog(ctx, "Manual server preamble update",
@@ -1213,7 +1217,7 @@ async def server_admin(ctx, serverid):
                           source=preamble)
     elif result == 2:
         # Reset the current preamble to the default
-        await ctx.data.servers.set(serverid, 'server_latex_preamble', None)
+        await ctx.data.servers_long.set(serverid, 'server_latex_preamble', None)
 
         await ctx.reply("The preamble was reset to the default!")
 
@@ -1621,9 +1625,9 @@ async def cmd_ppr(ctx):
             return
 
         # Set the preamble
-        current_preamble = await ctx.data.users.get(ctx.authid, 'latex_preamble')
-        await ctx.data.users.set(ctx.authid, 'previous_preamble', current_preamble)
-        await ctx.data.users.set(ctx.authid, 'latex_preamble', preset)
+        current_preamble = await ctx.data.users_long.get(ctx.authid, 'latex_preamble')
+        await ctx.data.users_long.set(ctx.authid, 'previous_preamble', current_preamble)
+        await ctx.data.users_long.set(ctx.authid, 'latex_preamble', preset)
 
         await ctx.reply("The preset has been applied!\
                         \nTo revert to your previous preamble, use `{}preamble --revert`".format(ctx.used_prefix))
@@ -1640,8 +1644,8 @@ async def load_channels(bot):
 
 async def cache_pending_preambles(bot):
     bot.objects["pending_preambles"] = {}
-    for userid in await bot.data.users.find_not_empty("pending_preamble"):
-        submission = await bot.data.users.get(userid, "pending_preamble")
+    for userid in await bot.data.users_long.find_not_empty("pending_preamble"):
+        submission = await bot.data.users_long.get(userid, "pending_preamble")
         info = await bot.data.users.get(userid, "pending_preamble_info")
         if info is not None:
             bot.objects["pending_preambles"][str(userid)] = (submission, info)
@@ -1651,9 +1655,9 @@ async def get_preamble(ctx):
     """
     Retrieve the correct current preamble for ctx.author
     """
-    preamble = await ctx.data.users.get(ctx.authid, "latex_preamble")
+    preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
     if not preamble and ctx.server:
-        preamble = await ctx.data.servers.get(ctx.server.id, "server_latex_preamble")
+        preamble = await ctx.data.servers_long.get(ctx.server.id, "server_latex_preamble")
     if not preamble:
         preamble = default_preamble
     return preamble
@@ -1662,5 +1666,8 @@ async def get_preamble(ctx):
 def load_into(bot):
     bot.add_after_event("ready", load_channels, priority=10)
     bot.add_after_event("ready", cache_pending_preambles, priority=10)
-    bot.data.users.ensure_exists("pending_preamble", "pending_preamble_info", "previous_preamble", "latex_preamble", shared=True)
+    bot.data.users.ensure_exists("pending_preamble_info", shared=True)
+    bot.data.users_long.ensure_exists("pending_preamble", "previous_preamble", "latex_preamble", shared=True)
+
+    bot.data.servers_long.ensure_exists("server_latex_preamble")
     bot.add_to_ctx(get_preamble)
