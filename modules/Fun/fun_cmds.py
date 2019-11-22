@@ -5,6 +5,20 @@ cmds = paraCH()
 
 # Provides bin2ascii, lenny
 
+"""
+Some simple fun utility commands
+
+Commands provided:
+    bin2ascii:
+        Translates a binary string to ascii
+    lenny:
+        Sends a lenny face
+    sorry:
+        Sends a sorry image
+    discrim:
+        Sends a list of users with matching discriminator
+"""
+
 
 @cmds.cmd("bin2ascii",
           category="Fun",
@@ -28,6 +42,7 @@ async def cmd_bin2ascii(ctx):
     asciilist = [chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist]
     await ctx.reply("Output: `{}`".format(''.join(asciilist)))
 
+
 @cmds.cmd("lenny",
           category="Fun",
           short_help="( ͡° ͜ʖ ͡°)")
@@ -44,10 +59,11 @@ async def cmd_lenny(ctx):
         pass
     await ctx.reply("( ͡° ͜ʖ ͡°)")
 
+
 @cmds.cmd("discrim",
           category="Fun",
           short_help="Searches for users with a given discrim")
-async def prim_cmd_discrim(ctx):
+async def cmd_discrim(ctx):
     """
     Usage:
         {prefix}discrim [discriminator]
@@ -69,16 +85,17 @@ async def prim_cmd_discrim(ctx):
     user_strs = ["{0[0]:^{max_len}} {0[1]:^25}".format(user, max_len=max_len) for user in user_info]
     await ctx.pager(ctx.paginate_list(user_strs, title="{} user{} found".format(len(user_strs), "s" if len(user_strs) > 1 else "", discrim)))
 
+
 @cmds.cmd("sorry",
           category="Fun Stuff",
           short_help="Sorry, love.")
 async def cmd_sorry(ctx):
     """
     Usage:
-        {prefix}sorry 
+        {prefix}sorry
     Description:
         Sorry, love
-        Due to popular demand, sorry is back!
+        Due to demand (from Cosmic), sorry is back!
     """
     embed = discord.Embed(color=discord.Colour.purple())
     embed.set_image(url="https://cdn.discordapp.com/attachments/309625872665542658/406040395462737921/image.png")

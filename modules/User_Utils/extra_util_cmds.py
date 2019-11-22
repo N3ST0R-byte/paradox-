@@ -60,7 +60,7 @@ async def cmd_jumpto(ctx):
 @cmds.cmd("quote",
           category="Utility",
           short_help="Quotes a message by ID")
-@cmds.execute("flags", flags=["a"])
+@cmds.execute("flags", flags=["a", "r"])
 @cmds.require("in_server")
 async def cmd_quote(ctx):
     """
@@ -71,6 +71,7 @@ async def cmd_quote(ctx):
         Note that the message must be from the same server.
     Flags:
         -a:  (anonymous) Removes author information from the quote.
+        -r: (raw) Gives the raw message instead of an embed.
     """
     msgid = ctx.arg_str
     if msgid == "" or not msgid.isdigit():
@@ -88,6 +89,15 @@ async def cmd_quote(ctx):
 
     if not message:
         await ctx.bot.edit_message(out_msg, "Couldn't find the message!")
+        return
+    if ctx.flags["r"]:
+        if message.attachments:
+            await ctx.reply("Cannot get the raw content of an attachment.")
+            return
+        if not message.content.startswith("```"):
+            await ctx.reply("```{}```".format(message.content))
+            return
+        await ctx.reply(message.clean_content)
         return
 
     embed = discord.Embed(colour=discord.Colour.light_grey(),
@@ -162,7 +172,7 @@ async def cmd_piggybank(ctx):
         Or with no arguments, lists your current amount and progress to the goal.
     """
     bank_amount = await ctx.data.users.get(ctx.authid, "piggybank_amount")
-    transactions = await ctx.data.users.get(ctx.authid, "piggybank_history")
+    transactions = await ctx.data.users_long.get(ctx.authid, "piggybank_history")
     goal = await ctx.data.users.get(ctx.authid, "piggybank_goal")
     bank_amount = bank_amount if bank_amount else 0
     transactions = transactions if transactions else {}
@@ -185,7 +195,7 @@ async def cmd_piggybank(ctx):
         transactions[now]["amount"] = "{}${:.2f}".format(action, amount)
         bank_amount += amount if action == "+" else -amount
         await ctx.data.users.set(ctx.authid, "piggybank_amount", bank_amount)
-        await ctx.data.users.set(ctx.authid, "piggybank_history", transactions)
+        await ctx.data.users_long.set(ctx.authid, "piggybank_history", transactions)
         msg = "${:.2f} has been {} your piggybank. You now have ${:.2f}!".format(amount,
                                                                                  "added to" if action == "+" else "removed from",
                                                                                  bank_amount)
@@ -212,7 +222,7 @@ async def cmd_piggybank(ctx):
             await ctx.reply("No transactions to show! Start adding money to your piggy bank with `{}piggybank + <amount>`".format(ctx.used_prefix))
             return
         if (len(ctx.params) == 2) and (ctx.params[1] == "clear"):
-            await ctx.data.users.set(ctx.authid, "piggybank_history", {})
+            await ctx.data.users_long.set(ctx.authid, "piggybank_history", {})
             await ctx.reply("Your transaction history has been cleared!")
             return
 
@@ -238,7 +248,7 @@ async def cmd_piggybank(ctx):
 @cmds.cmd("timezone",
           category="Utility",
           short_help="Searches the timezone list",
-          aliases=["tz"])
+          aliases=["tz", "timein"])
 async def cmd_timezone(ctx):
     """
     Usage:
@@ -427,7 +437,7 @@ async def cmd_names(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    usernames = await ctx.bot.data.users.get(user.id, "name_history")
+    usernames = await ctx.bot.data.users_long.get(user.id, "name_history")
     if not usernames:
         await ctx.reply("I haven't seen this user change their name!")
         return
@@ -435,4 +445,5 @@ async def cmd_names(ctx):
 
 
 def load_into(bot):
-    bot.data.users.ensure_exists("piggybank_amount", "piggybank_history", "piggybank_goal", shared=False)
+    bot.data.users.ensure_exists("piggybank_amount", "piggybank_goal", shared=False)
+    bot.data.users_long.ensure_exists("piggybank_history", shared=False)

@@ -5,7 +5,9 @@ import urllib
 import discord
 
 cmds = paraCH()
-# Provides nlab
+"""
+Provides the nlab command
+"""
 
 
 nlab_url = "https://ncatlab.org{}"

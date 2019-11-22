@@ -19,7 +19,7 @@ class paraCH(CommandHandler):
         self.raw_cmds = {}  # The raw command listing, with no aliases
 
     async def before_exec(self, ctx):
-        if ctx.author.bot:
+        if ctx.author.bot and int(ctx.authid) not in ctx.bot.bot_conf.getintlist("whitelisted_bots"):
             ctx.cmd_err = (1, "")
         if "ready" not in ctx.bot.objects:
             ctx.cmd_err = (1, "Bot is restarting, please try again in a moment.")

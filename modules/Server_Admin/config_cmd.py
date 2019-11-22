@@ -65,8 +65,9 @@ async def cmd_config(ctx):
             return
         op = ctx.params[1]
         op_conf = serv_conf[op]
-        msg = "Option help: ```\n{}.\nAcceptable input: {}.\nDefault value: {}```"\
+        msg = "\n{}.\nAcceptable input: `{}`.\nDefault value: `{}`\n"\
             .format(op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx))
+        embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(ctx.params[0]), description="{}".format(msg))
         await ctx.reply(msg)
     else:
         if ctx.params[0] not in serv_conf:
@@ -75,11 +76,14 @@ async def cmd_config(ctx):
         if len(ctx.params) == 1:
             op = ctx.params[0]
             op_conf = serv_conf[op]
-            msg = "Option help: ```\n{}.\nAcceptable input: {}.\nDefault value: {}```"\
-                .format(op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx))
-            msg += "Currently set to: {}".format(await op_conf.hr_get(ctx))
-            await ctx.reply(msg)
+            # Why must you do this to me
+            whydoyoudothis = "" if op_conf.desc.endswith(".") else "."
+            msg = "\n{}.\nAcceptable input: `{}`{}\nDefault value: `{}`\n"\
+                .format(op_conf.desc, op_conf.accept, whydoyoudothis, await op_conf.dyn_default(ctx))
+            msg += "Current value: {}".format(await op_conf.hr_get(ctx))
+            embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(ctx.params[0]), description="{}".format(msg))
+            await ctx.reply(embed=embed)
         else:
             await serv_conf[ctx.params[0]].hr_set(ctx, ' '.join(ctx.params[1:]))
             if not ctx.cmd_err[0]:
-                await ctx.reply("The setting was set successfully")
+                await ctx.reply("The setting was set successfully.")

@@ -81,7 +81,7 @@ async def cmd_notifyme(ctx):
         --notbot:: Requires the message not have been sent by a bot.
         --in:: Requires message to be in the specified channel. (TBD)
     """
-    checks = await ctx.data.users.get(ctx.authid, "notifyme")
+    checks = await ctx.data.users_long.get(ctx.authid, "notifyme")
     checks = checks if checks else []
 
     if ctx.flags["remove"]:
@@ -142,8 +142,9 @@ async def cmd_notifyme(ctx):
         if ctx.flags["from"] == "me":
             user = ctx.author
         else:
-            user = await ctx.find_user(ctx.flags["from"], interactive=True)
+            user = await ctx.find_user(ctx.flags["from"], interactive=True, in_server=True)
             if not user:
+                await ctx.reply("I couldn't find this user!")
                 return
         check["from"] = {"id": user.id}
     if ctx.flags["rolementions"]:
@@ -167,7 +168,7 @@ async def cmd_notifyme(ctx):
 
 
 async def update_checks(ctx, checks):
-    await ctx.data.users.set(ctx.authid, "notifyme", checks)
+    await ctx.data.users_long.set(ctx.authid, "notifyme", checks)
     listeners = ctx.bot.objects["notifyme_listeners"]
     listener = listeners[ctx.authid] if ctx.authid in listeners else {"user": ctx.author}
     listener["checks"] = checks
@@ -175,7 +176,7 @@ async def update_checks(ctx, checks):
 
 
 async def notify_user(user, ctx, check):
-    await ctx.log("Notifying user {} with check {}".format(user, check))
+    await ctx.log("Notifying user {} ({}) with check {}".format(user, user.id, check))
     prior_msgs = [ctx.msg]
     async for msg in ctx.bot.logs_from(ctx.ch, limit=5, before=ctx.msg):
         prior_msgs.append(msg)
@@ -190,7 +191,7 @@ async def notify_user(user, ctx, check):
 
 async def register_notifyme_listeners(bot):
     bot.objects["notifyme_listeners"] = {}
-    active_listeners = await bot.data.users.find_not_empty("notifyme")
+    active_listeners = await bot.data.users_long.find_not_empty("notifyme")
     notifyme_listeners = {}
     for listener in active_listeners:
         listener = str(listener)
@@ -200,7 +201,7 @@ async def register_notifyme_listeners(bot):
             continue
         if not user:
             continue
-        check_list = await bot.data.users.get(listener, "notifyme")
+        check_list = await bot.data.users_long.get(listener, "notifyme")
         notifyme_listeners[listener] = {"user": user, "checks": check_list}
     bot.objects["notifyme_listeners"] = notifyme_listeners
 
@@ -224,7 +225,7 @@ async def fire_listeners(ctx):
 
 
 def load_into(bot):
-    bot.data.users.ensure_exists("notifyme", shared=False)
+    bot.data.users_long.ensure_exists("notifyme", shared=False)
 
     bot.add_after_event("ready", register_notifyme_listeners)
     bot.after_ctx_message(fire_listeners)

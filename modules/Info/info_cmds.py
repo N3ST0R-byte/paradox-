@@ -1,15 +1,33 @@
 import discord
 from paraCH import paraCH
-from datetime import datetime, timedelta
+from datetime import datetime
 
 cmds = paraCH()
 
 # Provides serverinfo, userinfo, roleinfo, whohas, avatar
+"""
+Provides a number of information providing commands
+
+Commands provided:
+    userinfo:
+        Provides info on the provided user
+    avatar:
+        Displays the avatar for the provided user
+    role:
+        Displays info on the provided role, or displays a list of roles
+    rolemembers:
+        Displays the members of a role
+    serverinfo:
+        Displays info on the current server
+    channelinfo:
+        Displays information about a specified channel
+"""
 
 
 @cmds.cmd(name="roleinfo",
           category="Info",
           short_help="Displays information about a role",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["role", "rinfo", "ri"])
 @cmds.require("in_server")
 async def cmd_role(ctx):
@@ -31,11 +49,9 @@ async def cmd_role(ctx):
     title = "{role.name} (id: {role.id})".format(role=role)
 
     colour = role.colour if role.colour.value else discord.Colour.light_grey()
-#    thumbnail = "http://placehold.it/150x150.png/{}/000000?text={}".format(colour.strip("#"), colour)
     num_users = len([user for user in ctx.server.members if (role in user.roles)])
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - role.created_at, minutes=False))
     created = role.created_at.strftime("%-I:%M %p, %d/%m/%Y")
-#    created_at = "{} ({} ago)".format(created, created_ago)
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
 
@@ -73,6 +89,7 @@ async def cmd_role(ctx):
 @cmds.cmd(name="rolemembers",
           category="Info",
           short_help="Lists members with a particular role.",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["rolemems", "whohas"])
 @cmds.require("in_server")
 async def cmd_rolemembers(ctx):
@@ -104,7 +121,8 @@ async def cmd_rolemembers(ctx):
 @cmds.cmd("userinfo",
           category="Info",
           short_help="Shows the user's information",
-          aliases=["uinfo", "ui"])
+          edit_handler=cmds.edit_handler_rerun,
+          aliases=["uinfo", "ui", "user"])
 @cmds.require("in_server")
 @cmds.execute("user_lookup", in_server=True, greedy=True)
 async def cmd_userinfo(ctx):
@@ -120,7 +138,8 @@ async def cmd_userinfo(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     bot_emoji = ctx.bot.objects["emoji_bot"]
     statusdict = {"offline": ("Offline/Invisible", ctx.bot.objects["emoji_offline"]),
                   "dnd": ("Do Not Disturb", ctx.bot.objects["emoji_dnd"]),
@@ -136,12 +155,14 @@ async def cmd_userinfo(ctx):
     joined = user.joined_at.strftime("%-I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - user.created_at, minutes=False))
     created = user.created_at.strftime("%-I:%M %p, %d/%m/%Y")
-    usernames = await ctx.bot.data.users.get(user.id, "name_history")
+    usernames = await ctx.bot.data.users_long.get(user.id, "name_history")
     name_list = "{}{}".format("..., " if len(usernames) > 10 else "",
                               ", ".join(usernames[-10:])) if usernames else "No recent past usernames."
-    nicknames = await ctx.bot.data.members.get(ctx.server.id, user.id, "nickname_history")
+    nicknames = await ctx.bot.data.members_long.get(ctx.server.id, user.id, "nickname_history")
     nickname_list = "{}{}".format("..., " if len(nicknames) > 10 else "",
                                   ", ".join(nicknames[-10:])) if nicknames else "No recent past nicknames."
+    """
+    # Last status stuff is disabled for now
     last_status = await ctx.bot.data.users.get(user.id, "old_status")
     if last_status:
         status_str = "(Was {})".format(statusdict[last_status[0]][0])
@@ -154,9 +175,12 @@ async def cmd_userinfo(ctx):
     else:
         seen_ago = "No status changes seen!"
         status_str = ""
-
     prop_list = ["Full name", "Nickname", "Names", "Nicknames", "Status", "Playing", "Seen in", "Last seen", "", "Joined at", "", "Created at", ""]
     value_list = [name, user.display_name, name_list, nickname_list, status, game, shared, seen_ago, status_str, joined, joined_ago, created, created_ago]
+    """
+
+    prop_list = ["Full name", "Nickname", "Names", "Nicknames", "Status", "Playing", "Seen in", "Joined at", "", "Created at", ""]
+    value_list = [name, user.display_name, name_list, nickname_list, status, game, shared, joined, joined_ago, created, created_ago]
     desc = ctx.prop_tabulate(prop_list, value_list)
 
     roles = [r.name for r in user.roles if r.name != "@everyone"]
@@ -176,9 +200,9 @@ async def cmd_userinfo(ctx):
 
     embed = discord.Embed(type="rich", color=colour, description=desc)
     embed.set_author(name="{user.name} (id: {user.id})".format(user=user),
-                     icon_url=user.avatar_url,
-                     url=user.avatar_url)
-    embed.set_thumbnail(url=user.avatar_url)
+                     icon_url=avlink,
+                     url=avlink)
+    embed.set_thumbnail(url=avlink)
 
     emb_fields = [("Roles", roles, 0), ("Join order", join_seq, 0)]
     await ctx.emb_add_fields(embed, emb_fields)
@@ -191,6 +215,7 @@ async def cmd_userinfo(ctx):
 @cmds.cmd("serverinfo",
           category="Info",
           short_help="Shows server info.",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["sinfo", "si"])
 @cmds.execute("flags", flags=["icon"])
 @cmds.require("in_server")
@@ -217,7 +242,7 @@ async def cmd_serverinfo(ctx):
         "low": "Level 1 (Must have a verified email)",
         "medium": "Level 2 (Registered for more than 5 minutes)",
         "high": "Level 3 (Member for more than 10 minutes)",
-        4: "Level 4 (Verified phone number)"
+        "4": "Level 4 (Verified phone number)"
     }
 
     mfa = {
@@ -259,9 +284,9 @@ async def cmd_serverinfo(ctx):
     status = "{} - **{}**\n{} - **{}**\n{} - **{}**\n{} - **{}**".format(Online, online, Idle, idle, Dnd, dnd, Offline, offline)
     avatar_url = ctx.server.icon_url
     icon = "[Icon Link]({})".format(avatar_url)
-    is_large = "More than 200 members" if ctx.server.large else "Less than 200 members"
+    is_large = "Yes, more than 200 members" if ctx.server.large else "No, less than 200 members"
 
-    prop_list = ["Owner", "Region", "Icon", "Large server", "Verification", "2FA", "Roles", "Members", "Channels", "Created at", ""]
+    prop_list = ["Owner", "Region", "Icon", "Large server?", "Verification", "2FA", "Roles", "Members", "Channels", "Created at", ""]
     value_list = [owner,
                   regions[str(ctx.server.region)],
                   icon,
@@ -284,22 +309,106 @@ async def cmd_serverinfo(ctx):
         await ctx.confirm_sent(reply="Serverinfo sent!")
 
 
+@cmds.cmd("channelinfo",
+          category="Info",
+          short_help="Displays information about a channel.",
+          edit_handler=cmds.edit_handler_rerun,
+          aliases=["ci"])
+@cmds.require('in_server')
+async def cmd_secho(ctx):
+    """
+    Usage:
+        {prefix}channelinfo #electronics
+        {prefix}channelinfo 525457831869284353
+        {prefix}channelinfo general
+    Description:
+        Gives information on a text channel, voice channel, or category.
+    """
+    valid_channels = [ch for ch in ctx.server.channels if ch.permissions_for(ctx.author).read_messages]
+    ch = await ctx.find_channel(ctx.arg_str, interactive=True, collection=valid_channels)
+    if not ch:
+        return
+    type = str(ch.type)
+    name = "{} [{}]".format(ch.name, ch.mention) if type == "text" else "{}".format(ch.name)
+    # category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
+    id = ch.id
+    createdat = ch.created_at.strftime("%d/%m/%Y")
+    created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - ch.created_at, minutes=False))
+    atgo = "{} {}".format(createdat, created_ago)
+    if ch.topic == "":
+        topic = "None"
+    else:
+        topic = ch.topic
+    userlimit = ch.user_limit
+
+    tv = {
+        "text": "Text channel",
+        "voice": "Voice channel",
+        "4": "Category"
+    }
+    if userlimit == 0:
+        reallimit = "Unlimited"
+    else:
+        reallimit = userlimit
+
+    if not ch.voice_members:
+        members = "No members in this channel."
+    else:
+        members = "{} - ".format(ch.voice_members) + ", ".join([mem.mention for mem in ch.voice_members])
+
+    if str(ch.type) == "text":
+        prop_list = ["Name", "Type", "ID", "Created at", "Topic"]
+        value_list = [name, tv[type], id, atgo, topic]
+        desc = ctx.prop_tabulate(prop_list, value_list)
+        embed = discord.Embed(type="rich", color=discord.Colour.green(), description=desc)
+        embed.set_author(name="Text channel info")
+        embed.set_footer(text="Text channel information limited due to Discord.py version")
+        await ctx.reply(embed=embed)
+        return
+    elif str(ch.type) == "voice":
+        whore = ["Name", "Type", "ID", "Created at", "User limit", "Current members"]
+        extrawhore = [name, tv[type], id, atgo, reallimit, members]
+        desc = ctx.prop_tabulate(whore, extrawhore)
+        embed = discord.Embed(type="rich", color=discord.Colour.purple(), description=desc)
+        embed.set_author(name="Voice channel info")
+        await ctx.reply(embed=embed)
+        return
+    elif str(ch.type) == "4":
+        prop_list = ["Name", "Type", "ID", "Created at"]
+        value_list = [ch.name, tv[type], id, atgo]
+        desc = ctx.prop_tabulate(prop_list, value_list)
+        embed = discord.Embed(type="rich", color=discord.Colour.blue(), description=desc)
+        embed.set_author(name="Category info")
+        embed.set_footer(text="Category information limited due to Discord.py version")
+        await ctx.reply(embed=embed)
+        return
+
+
 @cmds.cmd("avatar",
           category="Info",
           short_help="Obtains the mentioned user's avatar, or your own.",
+          edit_handler=cmds.edit_handler_rerun,
           aliases=["av"])
 @cmds.execute("user_lookup", in_server=True)
 async def cmd_avatar(ctx):
+    """
+    Usage:
+        {prefix}avatar [user]
+    Description:
+        Replies with the avatar of the provided user,
+        or your own avatar if none was given.
+    """
     user = ctx.author
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    avatar = user.avatar_url if user.avatar_url else user.default_avatar_url
+    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
+    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
     embed = discord.Embed(colour=discord.Colour.green())
     embed.set_author(name="{}'s Avatar".format(user))
-    embed.set_image(url=avatar)
+    embed.set_image(url=avlink)
 
     out_msg = await ctx.reply(embed=embed, dm=ctx.bot.objects["brief"])
     if out_msg and ctx.bot.objects["brief"]:

@@ -1,22 +1,25 @@
-import sqlite3 as sq
 import json
+import mysql.connector
 
 prop_table_info = [
     ("users", "users", ["userid"]),
     ("servers", "servers", ["serverid"]),
-    ("members", "members", ["serverid", "userid"])
+    ("members", "members", ["serverid", "userid"]),
+    ("users_long", "users_long", ["userid"]),
+    ("servers_long", "servers_long", ["serverid"]),
+    ("members_long", "members_long", ["serverid", "userid"])
 ]
 
 
 class BotData:
-    def __init__(self, dbfile, app=""):
-        self.conn = sq.connect(dbfile)
+    def __init__(self, app="", **dbopts):
+        self.conn = mysql.connector.connect(**dbopts)
+        self.conn.autocommit = True
         for name, table_name, keys in prop_table_info:
             manipulator = _propTableManipulator(table_name, keys, self.conn, app)
             self.__setattr__(name, manipulator)
 
     def close(self):
-        self.conn.commit()
         self.conn.close()
 
 
@@ -27,7 +30,7 @@ class _propTableManipulator:
         self.conn = conn
         self.app = app
 
-        self.ensure_tables()
+        # self.ensure_tables()
         self.propmap = self.get_propmap()
 
     def ensure_tables(self):
@@ -39,7 +42,6 @@ class _propTableManipulator:
         cursor.execute('CREATE TABLE IF NOT EXISTS {}_props (property TEXT NOT NULL,\
                        shared BOOLEAN NOT NULL,\
                        PRIMARY KEY (property))'.format(self.table))
-        self.conn.commit()
 
     def get_propmap(self):
         cursor = self.conn.cursor()
@@ -57,20 +59,18 @@ class _propTableManipulator:
             if prop in self.propmap:
                 if self.propmap[prop] != shared:
                     cursor = self.conn.cursor()
-                    cursor.execute('UPDATE {}_props SET shared = ? WHERE property = ?'.format(self.table), (shared, prop))
+                    cursor.execute('UPDATE {}_props SET shared = %s WHERE property = %s'.format(self.table), (shared, prop))
                     self.propmap[prop] = shared
-                    self.conn.commit()
             else:
                 cursor = self.conn.cursor()
-                cursor.execute('INSERT INTO {}_props VALUES (?, ?)'.format(self.table), (prop, shared))
+                cursor.execute('INSERT INTO {}_props VALUES (%s,%s)'.format(self.table), (prop, shared))
                 self.propmap = self.get_propmap()
-                self.conn.commit()
 
     async def get(self, *args, default=None):
         if len(args) != len(self.keys) + 1:
             raise Exception("Improper number of keys passed to get.")
         prop = self.map_prop(args[-1])
-        criteria = " AND ".join("{} = ?" for key in args)
+        criteria = " AND ".join("{} = %s" for key in args)
 
         cursor = self.conn.cursor()
         cursor.execute('SELECT value from {} where {}'.format(self.table, criteria).format(*self.keys, 'property'), tuple([*args[:-1], prop]))
@@ -82,18 +82,17 @@ class _propTableManipulator:
             raise Exception("Improper number of keys passed to set.")
         prop = self.map_prop(args[-2])
         value = json.dumps(args[-1])
-        criteria = " AND ".join("{} = ?" for key in args[:-1])
-        values = ", ".join("?" for key in args)
+        criteria = " AND ".join("{} = %s" for key in args[:-1])
+        values = ", ".join("%s" for key in args)
 
         cursor = self.conn.cursor()
-        cursor.execute('SELECT EXISTS(SELECT 1 from {} where {})'.format(self.table, criteria).format(*self.keys, 'property'), tuple([*args[:-2], prop]))
+        cursor.execute("SELECT 1 from {} where {}".format(self.table, criteria).format(*self.keys, 'property'), tuple([*args[:-2], prop]))
         exists = cursor.fetchone()
 
-        if not exists[0]:
+        if exists is None:
             cursor.execute('INSERT INTO {} VALUES ({})'.format(self.table, values), tuple([*args[:-2], prop, value]))
         else:
-            cursor.execute('UPDATE {} SET value = ? WHERE {}'.format(self.table, criteria).format(*self.keys, 'property'), tuple([value, *args[:-2], prop]))
-        self.conn.commit()
+            cursor.execute('UPDATE {} SET value = %s WHERE {}'.format(self.table, criteria).format(*self.keys, 'property'), tuple([value, *args[:-2], prop]))
 
     async def find(self, prop, value, read=False):
         if len(self.keys) > 1:
@@ -103,7 +102,7 @@ class _propTableManipulator:
             value = json.dumps(value)
 
         cursor = self.conn.cursor()
-        cursor.execute('SELECT {} FROM {} WHERE property = ? AND value = ?'.format(self.keys[0], self.table), (prop, value))
+        cursor.execute('SELECT {} FROM {} WHERE property = %s AND value = %s'.format(self.keys[0], self.table), (prop, value))
         return [value[0] for value in cursor.fetchall()]
 
     async def find_not_empty(self, prop):
@@ -112,5 +111,5 @@ class _propTableManipulator:
         prop = self.map_prop(prop)
 
         cursor = self.conn.cursor()
-        cursor.execute('SELECT {} FROM {} WHERE property = ? AND value IS NOT NULL AND value != \'\''.format(self.keys[0], self.table), (prop,))
+        cursor.execute('SELECT {} FROM {} WHERE property = %s AND value IS NOT NULL AND value != \'\''.format(self.keys[0], self.table), (prop,))
         return [value[0] for value in cursor.fetchall()]

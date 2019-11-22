@@ -4,7 +4,20 @@ import aiohttp
 
 cmds = paraCH()
 
-# Provides shutdown, setinfo, logs, dm
+"""
+Administration level commands for the bot
+All commands require manager or master level permissions.
+
+Commands provided:
+    shutdown:
+        Shuts down the bot, that's all
+    setinfo:
+        Sets the bot status, game/avatar/playing message
+    dm:
+        Sends a dm to the user with user id given
+    logs:
+        Attempts to send the logfile or last n lines of the log.
+"""
 
 status_dict = {"online": discord.Status.online,
                "offline": discord.Status.offline,
@@ -12,12 +25,13 @@ status_dict = {"online": discord.Status.online,
                "dnd": discord.Status.dnd,
                "invisible": discord.Status.invisible}
 
+
 @cmds.cmd("shutdown",
           category="Bot admin",
           aliases=["restart"])
 @cmds.require("manager_perm")
 async def cmd_shutdown(ctx):
-    await ctx.reply("Shutting down, cya another day~")
+    await ctx.reply("Shutting down...")
     await ctx.bot.logout()
 
 
@@ -32,7 +46,7 @@ async def cmd_setgame(ctx):
     Usage:
         {prefix}setinfo --game game --status status --avatar avatar_url
     Description:
-        The following expansions are made in game
+        The following expansions are made in the game string
             $users$: Number of users I can see.
             $servers$: Number of servers I am in.
             $channels$: Number of channels I am in.
@@ -56,6 +70,7 @@ async def cmd_setgame(ctx):
         else:
             await ctx.bot.change_presence(status=status_dict[status])
 
+
 @cmds.cmd("dm",
           category="Bot admin",
           short_help="dms a user")
@@ -73,6 +88,7 @@ async def cmd_dm(ctx):
         return
     await ctx.run("dm", user_info=ctx.params[0], message=" ".join(ctx.params[1:]))
     await ctx.reply("Done.")
+
 
 @cmds.cmd("logs",
           category="Bot admin",

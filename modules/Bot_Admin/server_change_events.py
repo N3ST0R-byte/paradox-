@@ -4,6 +4,17 @@ from datetime import datetime
 
 # Provides logging events for when the bot joins and leaves servers
 
+"""
+Event handlers for posting the leave/join server messages in the botlog
+
+Handlers:
+    log_left_server:
+        Posts to the botlog when the bot leaves a serer
+    log_joined_server:
+        Posts to the botlog when the bot joins a server
+"""
+
+
 async def log_left_server(bot, server):
     owner = server.owner
     icon = server.icon_url
@@ -52,10 +63,10 @@ async def log_joined_server(bot, server):
 
     created = server.created_at.strftime("%-I:%M %p, %d/%m/%Y")
 
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=owner.colour if owner.colour.value else discord.Colour.light_grey())
+    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.green())
     embed.set_author(name="Joined server!")
     embed.set_thumbnail(url=icon)
-    embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(owner), inline=False)
+    embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
     embed.add_field(name="Region", value=bot.objects["regions"][str(server.region)], inline=False)
     embed.add_field(name="Created at", value="{}".format(created), inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
@@ -71,5 +82,5 @@ async def log_joined_server(bot, server):
 
 
 def load_into(bot):
-    bot.add_after_event("server_join", log_joined_server, priority = 10)
-    bot.add_after_event("server_remove", log_left_server, priority = 10)
+    bot.add_after_event("server_join", log_joined_server, priority=10)
+    bot.add_after_event("server_remove", log_left_server, priority=10)
