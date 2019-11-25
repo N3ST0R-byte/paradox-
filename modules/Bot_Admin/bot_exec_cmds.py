@@ -2,8 +2,9 @@ import sys
 from io import StringIO
 import traceback
 import asyncio
-import discord
 import inspect
+
+import discord
 
 from paraCH import paraCH
 
@@ -220,8 +221,9 @@ async def _async(ctx):
         exec(exec_string, env)
         result = (redirected_output.getvalue(), 0)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()))
+        await ctx.bot.log(str(traceback.format_exc()), chid=ctx.ch.id)
         result = (str(traceback.format_exc()), 1)
+        return result
     _temp_exec = env['_temp_exec']
     try:
         returnval = await _temp_exec()
@@ -231,7 +233,7 @@ async def _async(ctx):
         else:
             result = (value + '\n' + str(returnval), 0)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()))
+        await ctx.bot.log(str(traceback.format_exc()), chid=ctx.ch.id)
         result = (str(traceback.format_exc()), 1)
     finally:
         sys.stdout = old_stdout

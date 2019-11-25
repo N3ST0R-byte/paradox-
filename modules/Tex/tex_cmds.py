@@ -492,9 +492,9 @@ async def tex_listener(ctx):
 
     # Log the listening tex message
     if ctx.server:
-        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\" in server \"{ctx.server.name}\":\n{ctx.cntnt}".format(ctx=ctx))
+        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\"(id: {ctx.authid}) in server \"{ctx.server.name}\":\n{ctx.cntnt}".format(ctx=ctx), chid=ctx.ch.id)
     else:
-        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\" in DMS:\n{ctx.cntnt}".format(ctx=ctx))
+        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\"(id: {ctx.authid}) in DMS:\n{ctx.cntnt}".format(ctx=ctx), chid=ctx.ch.id)
 
     # Set the LaTeX compilation flags
     ctx.objs["latex_handled"] = True
