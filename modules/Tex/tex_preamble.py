@@ -388,6 +388,7 @@ async def deny_submission(ctx, userid, manager):
             await ctx.reply("Aborting preamble rejection on manager request!")
             return False
         embed = discord.Embed(title="Unfortunately, your preamble request was denied!")
+        result += "\nFor assistance setting your preamble, join our support server [here]({}).".format(ctx.bot.objects["support_guild"])
         embed.add_field(name="Reason", value=result)
         embed.timestamp = datetime.utcnow()
 
