@@ -420,9 +420,8 @@ async def reaction_edit_handler(ctx, out_msg):
 
             # If we need to show the source and dm, send it via the tex pager
             if ctx.objs["latex_show"] and ctx.objs["dm_source"]:
-                pages = tex_pagination(ctx.objs["latex_source"], basetitle="LaTeX source", header=ctx.objs["latex_errmsg"])
-                for page in pages:
-                    page.set_author(name="Click here to jump back to message", url=ctx.msg_jumpto(out_msg))
+                header = "{}[Click here to jump back to message]({})".format(ctx.objs["latex_errmsg"], ctx.msg_jumpto(out_msg))
+                pages = tex_pagination(ctx.objs["latex_source"], basetitle="LaTeX source", header=header)
                 await ctx.pager(pages, embed=True, destination=res.user)
 
     # Remove the reactions and clean up
