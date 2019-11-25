@@ -7,6 +7,7 @@ from contextBot.Context import MessageContext as MCtx
 
 from tex_config import show_config
 from tex_compile import colourschemes
+from tex_preamble import tex_pagination
 
 from paraCH import paraCH
 
@@ -326,7 +327,17 @@ async def make_latex(ctx):
         ctx.objs["latex_source_deleted"] = True
         await ctx.del_src()
 
-    ctx.objs["latex_source_msg"] = "```tex\n{}\n```{}".format(ctx.objs["latex_source"], err_msg)
+    ctx.objs["latex_errmsg"] = err_msg
+
+    # If the latex source is too long for in-channel display, set it to be dmmed.
+    # In either case, build the display message.
+    if len(ctx.objs["latex_source"]) > 1000:
+        ctx.objs["dm_source"] = True
+        ctx.objs["latex_source_msg"] = "```fix\nLaTeX source sent via direct message.\n```{}".format(err_msg)
+    else:
+        ctx.objs["dm_source"] = False
+        ctx.objs["latex_source_msg"] = "```tex\n{}\n```{}".format(ctx.objs["latex_source"], err_msg)
+
     ctx.objs["latex_del_emoji"] = ctx.bot.objects["emoji_tex_del"]
     ctx.objs["latex_delsource_emoji"] = ctx.bot.objects["emoji_tex_delsource"]
     ctx.objs["latex_show_emoji"] = ctx.bot.objects["emoji_tex_errors" if error else "emoji_tex_show"]
@@ -406,6 +417,13 @@ async def reaction_edit_handler(ctx, out_msg):
             ctx.objs["latex_show"] = 1 - ctx.objs["latex_show"]
             await ctx.bot.edit_message(out_msg,
                                        "{}{} ".format(ctx.objs["latex_name"], (ctx.objs["latex_source_msg"] if ctx.objs["latex_show"] else "")))
+
+            # If we need to show the source and dm, send it via the tex pager
+            if ctx.objs["latex_show"] and ctx.objs["dm_source"]:
+                pages = tex_pagination(ctx.objs["latex_source"], basetitle="LaTeX source", header=ctx.objs["latex_errmsg"])
+                for page in pages:
+                    page.set_author(name="Click here to jump back to message", url=ctx.msg_jumpto(out_msg))
+                await ctx.pager(pages, embed=True, destination=res.user)
 
     # Remove the reactions and clean up
     try:
