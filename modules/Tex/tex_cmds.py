@@ -486,6 +486,9 @@ async def tex_listener(ctx):
     if ctx.server and (ctx.server.id in ctx.bot.objects["server_tex_listeners"]) and ctx.bot.objects["server_tex_listeners"][ctx.server.id] and not (ctx.ch.id in ctx.bot.objects["server_tex_listeners"][ctx.server.id]):
         # The current channel isn't in the list of math channels for the server
         return
+    if int(ctx.authid) in ctx.bot.bot_conf.getintlist("blacklisted_users"):
+        # The user has been blacklisted from using the bot
+        return
 
     # Log the listening tex message
     if ctx.server:
