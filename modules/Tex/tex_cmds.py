@@ -130,7 +130,7 @@ def _is_tex(msg):
 @cmds.cmd("tex",
           category="Maths",
           short_help="Renders LaTeX code",
-          aliases=[",", "$", "$$", "align", "latex", "texw"])
+          aliases=[",", "$", "$$", "align", "latex", "texw", "texsp"])
 @cmds.execute("flags", flags=["config", "keepmsg", "color==", "colour==", "alwaysmath", "allowother", "name"])
 async def cmd_tex(ctx):
     """
@@ -140,6 +140,7 @@ async def cmd_tex(ctx):
         {prefix}$ <equation>
         {prefix}$$ <displayeqn>
         {prefix}align <align block>
+        {prefix}texsp <code>
         {prefix}tex --colour white | black | grey | dark
     Description:
         Renders and displays LaTeX code.
@@ -154,8 +155,10 @@ async def cmd_tex(ctx):
         Using align instead of tex compiles
         \\begin{{align*}}<code>\\end{{align*}}.
 
+        Using texsp instead of tex adds a spoiler tag to the output.
+
         Use the reactions to delete the message and show your code, respectively.
-    Flags:10
+    Flags:9
         config:: Shows you your current config.
         colour:: Changes your colourscheme. Run this as `--colour show` to see valid schemes
         keepmsg:: Toggles whether I delete your source message or not.
@@ -238,6 +241,7 @@ async def cmd_tex(ctx):
     ctx.objs["latex_handled"] = True
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
     ctx.objs["latex_wide"] = (ctx.used_cmd_name == "texw")
+    ctx.objs["latex_spoiler"] = (ctx.used_cmd_name == "texsp")
 
     # Compile and send the final output message
     out_msg = await make_latex(ctx)
@@ -348,6 +352,10 @@ async def make_latex(ctx):
     # Send the final output, or a failure image if there is no output
     file_name = "tex/staging/{id}/{id}.png".format(id=ctx.authid)
     exists = True if os.path.isfile(file_name) else False
+    if exists and ctx.objs["latex_spoiler"]:
+        new_filename = "tex/staging/{id}/SPOILER_{id}.png".format(id=ctx.authid)
+        os.rename(file_name, new_filename)
+        file_name = new_filename
     out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
                               message="{}{}".format(ctx.objs["latex_name"],
                                                     ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
@@ -491,6 +499,7 @@ async def tex_listener(ctx):
     ctx.objs["latex_source_deleted"] = False
     ctx.objs["latex_out_deleted"] = False
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
+    ctx.obs["latex_spoiler"] = False
 
     # Generate the LaTeX
     out_msg = await make_latex(ctx)
