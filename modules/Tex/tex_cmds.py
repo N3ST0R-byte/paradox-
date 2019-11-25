@@ -502,7 +502,7 @@ async def tex_listener(ctx):
     ctx.objs["latex_source_deleted"] = False
     ctx.objs["latex_out_deleted"] = False
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
-    ctx.obs["latex_spoiler"] = False
+    ctx.objs["latex_spoiler"] = False
 
     # Generate the LaTeX
     out_msg = await make_latex(ctx)
