@@ -274,7 +274,7 @@ async def parse_tex(ctx, source):
                         to_compile.append("{}\\\\".format(split))
                     in_block = not in_block
                 if in_block:
-                    to_compile.append("\\\\")
+                    to_compile.append("\\hfill\\break")
                 in_block = not in_block
             elif in_block:
                 to_compile.append(line)
