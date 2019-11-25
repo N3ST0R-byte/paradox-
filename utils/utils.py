@@ -304,7 +304,7 @@ def load_into(bot):
 
     @bot.util
     def msg_jumpto(ctx, msg):
-        return "https://discordapp.com/channels/{}/{}/{}".format(msg.server.id, msg.channel.id, msg.id)
+        return "https://discordapp.com/channels/{}/{}/{}".format(msg.server.id if msg.server else "@me", msg.channel.id, msg.id)
 
     @bot.util
     async def confirm_sent(ctx, msg=None, reply=None):
