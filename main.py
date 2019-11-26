@@ -64,7 +64,7 @@ LOGFILE_LAST = "{}/{}.last.log".format(LOGDIR, LOGNAME)
 
 if os.path.isfile(LOGFILE):
     if os.path.isfile(LOGFILE_LAST):
-        shutil.move(LOGFILE_LAST, "{}/{}{}.log".format(LOGDIR, datetime.utcnow().strftime("%s"), LOGNAME))
+        shutil.move(LOGFILE_LAST, "{}/{}{}.log".format(LOGDIR, datetime.utcnow().strftime("%S"), LOGNAME))
     shutil.move(LOGFILE, LOGFILE_LAST)
 else:
     with open(LOGFILE, "w") as file:

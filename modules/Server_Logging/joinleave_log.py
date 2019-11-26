@@ -20,8 +20,7 @@ async def log_join(bot, member):
 
     user = member
     colour = (user.colour if user.colour.value else discord.Colour.yellow())
-    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
-    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
+    avlink = await ctx.get_avatar(user)
 
     info = "{} ({}) {}".format(user, user.id, user.mention)
     game = user.game if user.game else "Nothing"
@@ -57,8 +56,7 @@ async def log_leave(bot, member):
 
     user = member
     colour = (user.colour if user.colour.value else discord.Colour.orange())
-    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
-    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
+    avlink = await ctx.get_avatar(user)
 
     info = "{} ({}) {}".format(user, user.id, user.mention)
     joined_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - user.joined_at))

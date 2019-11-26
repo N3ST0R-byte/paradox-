@@ -49,8 +49,7 @@ async def log_member_update(bot, before, after):
 
     if not desc_lines:
         return
-    gifnogif = "gif" if after.avatar.startswith("a_") else "png"
-    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(after.id, after.avatar, gifnogif)
+    avlink = await ctx.get_avatar(user)
 
     description = "\n".join(desc_lines)
     colour = (after.colour if after.colour.value else discord.Colour.light_grey())

@@ -138,8 +138,7 @@ async def cmd_userinfo(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
-    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
+    avlink = await ctx.get_avatar(user)
     bot_emoji = ctx.bot.objects["emoji_bot"]
     statusdict = {"offline": ("Offline/Invisible", ctx.bot.objects["emoji_offline"]),
                   "dnd": ("Do Not Disturb", ctx.bot.objects["emoji_dnd"]),
@@ -152,9 +151,9 @@ async def cmd_userinfo(ctx):
     status = "{1}{0}".format(*statusdict[str(user.status)])
     shared = "{} servers".format(len(list(filter(lambda m: m.id == user.id, ctx.bot.get_all_members()))))
     joined_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - user.joined_at, minutes=False))
-    joined = user.joined_at.strftime("%-I:%M %p, %d/%m/%Y")
+    joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - user.created_at, minutes=False))
-    created = user.created_at.strftime("%-I:%M %p, %d/%m/%Y")
+    created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
     usernames = await ctx.bot.data.users_long.get(user.id, "name_history")
     name_list = "{}{}".format("..., " if len(usernames) > 10 else "",
                               ", ".join(usernames[-10:])) if usernames else "No recent past usernames."
@@ -354,7 +353,7 @@ async def cmd_secho(ctx):
     if not ch.voice_members:
         members = "No members in this channel."
     else:
-        members = "{} - ".format(ch.voice_members) + ", ".join([mem.mention for mem in ch.voice_members])
+        members = "{} - ".format(len(ch.voice_members)) + ", ".join([mem.mention for mem in ch.voice_members])
 
     if str(ch.type) == "text":
         prop_list = ["Name", "Type", "ID", "Created at", "Topic"]
@@ -389,7 +388,7 @@ async def cmd_secho(ctx):
           short_help="Obtains the mentioned user's avatar, or your own.",
           edit_handler=cmds.edit_handler_rerun,
           aliases=["av"])
-@cmds.execute("user_lookup", in_server=True)
+@cmds.execute("user_lookup", in_server=True, greedy=True)
 async def cmd_avatar(ctx):
     """
     Usage:
@@ -404,9 +403,9 @@ async def cmd_avatar(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    gifnogif = "gif" if user.avatar.startswith("a_") else "png"
-    avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, gifnogif)
-    embed = discord.Embed(colour=discord.Colour.green())
+    avlink = await ctx.get_avatar(user) 
+    desc = "Click [here]({}) to view the {}.".format(avlink,"GIF" if ((user.avatar is not None) and user.avatar.startswith("a_")) else "image")
+    embed = discord.Embed(colour=discord.Colour.green(), description=desc)
     embed.set_author(name="{}'s Avatar".format(user))
     embed.set_image(url=avlink)
 

@@ -307,6 +307,15 @@ def load_into(bot):
         return "https://discordapp.com/channels/{}/{}/{}".format(msg.server.id, msg.channel.id, msg.id)
 
     @bot.util
+    async def get_avatar(ctx, user):
+        if user.avatar:
+            dancingpictures = "gif" if user.avatar.startswith("a_") else "png"
+            avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, dancingpictures)
+        else:
+            avlink = user.default_avatar_url
+        return avlink
+
+    @bot.util
     async def confirm_sent(ctx, msg=None, reply=None):
         try:
             await ctx.bot.add_reaction(msg if msg else ctx.msg, "✅")
