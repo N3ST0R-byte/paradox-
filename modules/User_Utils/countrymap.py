@@ -196,5 +196,5 @@ countries = [
 {'timezones': ['Asia/Taipei'], 'code': 'TW', 'continent': 'Asia', 'name': 'Taiwan', 'capital': 'Taipei'},
 {'timezones': ['Asia/Hong_Kong'], 'code': 'HK', 'continent': 'Asia', 'name': 'Hong Kong', 'capital': 'Hong Kong'},
 {'timezones': ['CET'], 'code': 'XK', 'continent': 'Europe', 'name': 'Kosovo', 'capital': 'Pristina'},
-{'timezones': ['America/Puerto_Rico'], 'code': 'PR', 'continent': 'America', 'name': 'Puerto Rico', 'capital': 'San Juan'},
+{'timezones': ['America/Puerto_Rico'], 'code': 'PR', 'continent': 'South America', 'name': 'Puerto Rico', 'capital': 'San Juan'},
 ]
