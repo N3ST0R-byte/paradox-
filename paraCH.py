@@ -1,10 +1,13 @@
+import logging
+import asyncio
+
+import discord
+
 from contextBot.CommandHandler import CommandHandler
 from paraCMD import paraCMD
 
 from snippets import snippets
 from checks import checks
-
-import asyncio
 
 
 class paraCH(CommandHandler):
@@ -56,3 +59,34 @@ class paraCH(CommandHandler):
         ctx.update_message(after)
 
         await ctx.bot.parse_cmd(ctx.used_prefix, ctx)
+
+    async def on_error(self, ctx):
+        """
+        Runs if the ctx.cmd_err context flag is set.
+
+        ctx (MessageContext): Context to read and modify.
+        """
+        await ctx.log("Caught a command error with code {0[0]} and message \"{0[1]}\"".format(ctx.cmd_err), chid=ctx.ch.id)
+        if ctx.cmd_err[1]:
+            await ctx.reply(ctx.cmd_err[1])
+
+    async def on_fail(self, ctx):
+        """
+        Runs if the command fails (i.e. we catch an exception)
+
+        ctx (MessageContext): Context to read and modify.
+        Expects ctx.cmd_err to be set.
+        """
+        if isinstance(ctx.err[1], discord.Forbidden):
+            if ctx.cmd_err[0] != 1:
+                try:
+                    await ctx.reply("I just attempted to do something I don't have permissions for in this server! Aborting!")
+                except discord.Forbidden:
+                    pass
+            else:
+                await ctx.log("There was a permission error running the command \n{}".format(ctx.cmd.name, ctx.err[2]), error=True, level=logging.ERROR, chid=ctx.ch.id)
+        else:
+            await ctx.reply("Something went wrong while running your command. The error has been logged and will be fixed soon!")
+            await ctx.log("There was an exception while running the command \n{}\nStack trace:{}".format(ctx.cmd.name, ctx.err[2]), error=True, level=logging.ERROR, chid=ctx.ch.id)
+            if ctx.bot.DEBUG > 2:
+                await ctx.reply("Stack trace:\n```{}```".format(ctx.err[2]))

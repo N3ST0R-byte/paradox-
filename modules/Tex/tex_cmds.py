@@ -7,6 +7,7 @@ from contextBot.Context import MessageContext as MCtx
 
 from tex_config import show_config
 from tex_compile import colourschemes
+from tex_preamble import tex_pagination
 
 from paraCH import paraCH
 
@@ -129,7 +130,7 @@ def _is_tex(msg):
 @cmds.cmd("tex",
           category="Maths",
           short_help="Renders LaTeX code",
-          aliases=[",", "$", "$$", "align", "latex", "texw"])
+          aliases=[",", "$", "$$", "align", "latex", "texw", "texsp"])
 @cmds.execute("flags", flags=["config", "keepmsg", "color==", "colour==", "alwaysmath", "allowother", "name"])
 async def cmd_tex(ctx):
     """
@@ -139,6 +140,7 @@ async def cmd_tex(ctx):
         {prefix}$ <equation>
         {prefix}$$ <displayeqn>
         {prefix}align <align block>
+        {prefix}texsp <code>
         {prefix}tex --colour white | black | grey | dark
     Description:
         Renders and displays LaTeX code.
@@ -153,8 +155,10 @@ async def cmd_tex(ctx):
         Using align instead of tex compiles
         \\begin{{align*}}<code>\\end{{align*}}.
 
+        Using texsp instead of tex adds a spoiler tag to the output.
+
         Use the reactions to delete the message and show your code, respectively.
-    Flags:10
+    Flags:9
         config:: Shows you your current config.
         colour:: Changes your colourscheme. Run this as `--colour show` to see valid schemes
         keepmsg:: Toggles whether I delete your source message or not.
@@ -237,6 +241,7 @@ async def cmd_tex(ctx):
     ctx.objs["latex_handled"] = True
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
     ctx.objs["latex_wide"] = (ctx.used_cmd_name == "texw")
+    ctx.objs["latex_spoiler"] = (ctx.used_cmd_name == "texsp")
 
     # Compile and send the final output message
     out_msg = await make_latex(ctx)
@@ -274,7 +279,7 @@ async def parse_tex(ctx, source):
                         to_compile.append("{}\\\\".format(split))
                     in_block = not in_block
                 if in_block:
-                    to_compile.append("\\\\")
+                    to_compile.append("\\hfill\\break")
                 in_block = not in_block
             elif in_block:
                 to_compile.append(line)
@@ -326,7 +331,17 @@ async def make_latex(ctx):
         ctx.objs["latex_source_deleted"] = True
         await ctx.del_src()
 
-    ctx.objs["latex_source_msg"] = "```tex\n{}\n```{}".format(ctx.objs["latex_source"], err_msg)
+    ctx.objs["latex_errmsg"] = err_msg
+
+    # If the latex source is too long for in-channel display, set it to be dmmed.
+    # In either case, build the display message.
+    if len(ctx.objs["latex_source"]) > 1000:
+        ctx.objs["dm_source"] = True
+        ctx.objs["latex_source_msg"] = "```fix\nLaTeX source sent via direct message.\n```{}".format(err_msg)
+    else:
+        ctx.objs["dm_source"] = False
+        ctx.objs["latex_source_msg"] = "```tex\n{}\n```{}".format(ctx.objs["latex_source"], err_msg)
+
     ctx.objs["latex_del_emoji"] = ctx.bot.objects["emoji_tex_del"]
     ctx.objs["latex_delsource_emoji"] = ctx.bot.objects["emoji_tex_delsource"]
     ctx.objs["latex_show_emoji"] = ctx.bot.objects["emoji_tex_errors" if error else "emoji_tex_show"]
@@ -337,6 +352,10 @@ async def make_latex(ctx):
     # Send the final output, or a failure image if there is no output
     file_name = "tex/staging/{id}/{id}.png".format(id=ctx.authid)
     exists = True if os.path.isfile(file_name) else False
+    if exists and ctx.objs["latex_spoiler"]:
+        new_filename = "tex/staging/{id}/SPOILER_{id}.png".format(id=ctx.authid)
+        os.rename(file_name, new_filename)
+        file_name = new_filename
     out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
                               message="{}{}".format(ctx.objs["latex_name"],
                                                     ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
@@ -407,6 +426,12 @@ async def reaction_edit_handler(ctx, out_msg):
             await ctx.bot.edit_message(out_msg,
                                        "{}{} ".format(ctx.objs["latex_name"], (ctx.objs["latex_source_msg"] if ctx.objs["latex_show"] else "")))
 
+            # If we need to show the source and dm, send it via the tex pager
+            if ctx.objs["latex_show"] and ctx.objs["dm_source"]:
+                header = "{}[Click here to jump back to message]({})".format(ctx.objs["latex_errmsg"], ctx.msg_jumpto(out_msg))
+                pages = tex_pagination(ctx.objs["latex_source"], basetitle="LaTeX source", header=header)
+                await ctx.pager(pages, embed=True, destination=res.user)
+
     # Remove the reactions and clean up
     try:
         await ctx.bot.remove_reaction(out_msg, ctx.objs["latex_del_emoji"], ctx.me)
@@ -461,12 +486,15 @@ async def tex_listener(ctx):
     if ctx.server and (ctx.server.id in ctx.bot.objects["server_tex_listeners"]) and ctx.bot.objects["server_tex_listeners"][ctx.server.id] and not (ctx.ch.id in ctx.bot.objects["server_tex_listeners"][ctx.server.id]):
         # The current channel isn't in the list of math channels for the server
         return
+    if int(ctx.authid) in ctx.bot.bot_conf.getintlist("blacklisted_users"):
+        # The user has been blacklisted from using the bot
+        return
 
     # Log the listening tex message
     if ctx.server:
-        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\" in server \"{ctx.server.name}\":\n{ctx.cntnt}".format(ctx=ctx))
+        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\"(id: {ctx.authid}) in server \"{ctx.server.name}\":\n{ctx.cntnt}".format(ctx=ctx), chid=ctx.ch.id)
     else:
-        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\" in DMS:\n{ctx.cntnt}".format(ctx=ctx))
+        await ctx.bot.log("Recieved the following listening tex message from \"{ctx.author.name}\"(id: {ctx.authid}) in DMS:\n{ctx.cntnt}".format(ctx=ctx), chid=ctx.ch.id)
 
     # Set the LaTeX compilation flags
     ctx.objs["latex_handled"] = True
@@ -474,6 +502,7 @@ async def tex_listener(ctx):
     ctx.objs["latex_source_deleted"] = False
     ctx.objs["latex_out_deleted"] = False
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
+    ctx.objs["latex_spoiler"] = False
 
     # Generate the LaTeX
     out_msg = await make_latex(ctx)

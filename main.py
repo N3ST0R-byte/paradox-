@@ -1,14 +1,13 @@
+import sys
+import logging
+from cachetools import LRUCache
+
 import discord
-import shutil
-import os
-from datetime import datetime
 
 from botconf import Conf
 
 from contextBot.Context import Context
 from contextBot.Bot import Bot
-
-from cachetools import LRUCache
 
 
 # Configuration file for environment variables.
@@ -28,6 +27,7 @@ FEEDBACK_CH = conf.get("FEEDBACK_CH")
 PREAMBLE_CH = conf.get("PREAMBLE_CH")
 BOT_LOG_CH = conf.get("BOT_LOG_CH")
 LOG_CHANNEL = conf.get("LOG_CHANNEL")
+ERROR_CHANNEL = conf.get("ERROR_CHANNEL") or LOG_CHANNEL
 
 # Server where the referenced emojis live
 EMOJI_SERVER = conf.get("EMOJI_SERVER")
@@ -55,37 +55,35 @@ else:
 
 botdata = BotData(app=CURRENT_APP, **dbopts)
 
-# Initialise logs
-LOGNAME = conf.get("LOGFILE")
-LOGDIR = conf.get("LOGDIR")
+# Initialise the logger
+LOGFILE = conf.get("LOGNAME")
 
-LOGFILE = "{}/{}.log".format(LOGDIR, LOGNAME)
-LOGFILE_LAST = "{}/{}.last.log".format(LOGDIR, LOGNAME)
-
-if os.path.isfile(LOGFILE):
-    if os.path.isfile(LOGFILE_LAST):
-        shutil.move(LOGFILE_LAST, "{}/{}{}.log".format(LOGDIR, datetime.utcnow().strftime("%S"), LOGNAME))
-    shutil.move(LOGFILE, LOGFILE_LAST)
-else:
-    with open(LOGFILE, "w") as file:
-        pass
+logger = logging.getLogger()
+log_fmt = logging.Formatter(fmt='[{asctime}][{levelname:^7}] {message}', datefmt='%m/%d | %H:%M:%S', style='{')
+file_handler = logging.FileHandler(filename=LOGFILE, encoding='utf-8', mode='a')
+term_handler = logging.StreamHandler(sys.stdout)
+file_handler.setFormatter(log_fmt)
+term_handler.setFormatter(log_fmt)
+logger.addHandler(file_handler)
+logger.addHandler(term_handler)
+logger.setLevel(logging.INFO)
 
 # -------------------------------
 # Get the valid prefixes in given context
 
 
 async def get_prefixes(ctx):
-        """
-        Returns a list of valid prefixes in this context.
-        Currently just bot and server prefixes
-        """
-        prefix = 0
-        prefix_conf = ctx.server_conf.guild_prefix
-        if ctx.server:
-            prefix = await prefix_conf.get(ctx)
-        user_prefix = await ctx.bot.data.users.get(ctx.authid, "custom_prefix")
-        prefix = prefix if prefix else ctx.bot.prefix
-        return [prefix, user_prefix] if user_prefix else [prefix]
+    """
+    Returns a list of valid prefixes in this context.
+    Currently just bot and server prefixes
+    """
+    prefix = 0
+    prefix_conf = ctx.server_conf.guild_prefix
+    if ctx.server:
+        prefix = await prefix_conf.get(ctx)
+    user_prefix = await ctx.bot.data.users.get(ctx.authid, "custom_prefix")
+    prefix = prefix if prefix else ctx.bot.prefix
+    return [prefix, user_prefix] if user_prefix else [prefix]
 
 # Initialise the bot
 bot = Bot(data=botdata,
@@ -98,14 +96,16 @@ bot.DEBUG = conf.get("DEBUG")
 bot.objects["logfile"] = open(bot.LOGFILE, 'a+')
 
 
-async def log(bot, logMessage):
-    print(logMessage)
-    bot.objects["logfile"].write(logMessage + "\n")
+async def log(bot, logMessage, chid="Global".center(18, '='), error=False, level=logging.INFO):
+    for line in logMessage.split('\n'):
+        logger.log(level, '[{}] {}'.format(chid, line))
+
     if bot.DEBUG > 1:
         ctx = Context(bot=bot)
         log_splits = await ctx.msg_split(logMessage, True)
+        dest = discord.utils.get(bot.get_all_channels(), id=ERROR_CHANNEL if error else LOG_CHANNEL)
         for log in log_splits:
-            await bot.send_message(discord.utils.get(bot.get_all_channels(), id=LOG_CHANNEL), log)
+            await bot.send_message(dest, log)
 
 Bot.log = log
 

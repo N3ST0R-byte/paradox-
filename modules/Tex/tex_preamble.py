@@ -199,7 +199,7 @@ async def preamblelog(ctx, title, user=None, author=None, header=None, source=No
             await ctx.pager(pages, embed=True, locked=False, destination=logch, file_data=temp_file, file_name="source.tex")
 
 
-async def handled_preamble(ctx, userid, info):
+async def handled_preamble(ctx, userid, info, colour=None):
     """
     Clean up after a preamble submission request has been handled
     Involves finding the message in the submission log,
@@ -230,6 +230,11 @@ async def handled_preamble(ctx, userid, info):
 
     # Edit the message with the provided info
     await ctx.bot.edit_message(msg, new_content=info)
+    if colour is not None:
+        embed = msg.embeds[0]
+        msg_embed = discord.Embed.from_data(embed)
+        msg_embed.colour = colour
+        await ctx.bot.edit_message(msg, embed=msg_embed)
 
 
 async def submit_preamble(ctx, user, submission, info):
@@ -238,7 +243,7 @@ async def submit_preamble(ctx, user, submission, info):
     """
     # If there is a previous active request, mark it as outdated
     if user.id in ctx.bot.objects["pending_preambles"]:
-        await handled_preamble(ctx, user.id, "New preamble request submitted")
+        await handled_preamble(ctx, user.id, "New preamble request submitted", colour=discord.Colour.red())
 
     # Set the new pending preamble
     await ctx.data.users_long.set(ctx.authid, "pending_preamble", submission)
@@ -320,7 +325,7 @@ async def approve_submission(ctx, userid, manager):
     ctx.author = manager  # Hack so that ask and input work properly
 
     # Mark the case as handled
-    await handled_preamble(ctx, userid, "Preamble approved by {}".format(manager.mention))
+    await handled_preamble(ctx, userid, "Preamble approved by {}".format(manager.mention), colour=discord.Colour.green())
 
     # Then update the preamble
     current_preamble = await ctx.data.users_long.get(userid, "latex_preamble")
@@ -383,6 +388,7 @@ async def deny_submission(ctx, userid, manager):
             await ctx.reply("Aborting preamble rejection on manager request!")
             return False
         embed = discord.Embed(title="Unfortunately, your preamble request was denied!")
+        result += "\nFor assistance setting your preamble, join our support server [here]({}).".format(ctx.bot.objects["support_guild"])
         embed.add_field(name="Reason", value=result)
         embed.timestamp = datetime.utcnow()
 
@@ -395,7 +401,7 @@ async def deny_submission(ctx, userid, manager):
             await ctx.reply("Something unknown went wrong while DMMing this user!")
 
     # Mark the case as handled
-    await handled_preamble(ctx, userid, "Preamble denied by {}".format(manager.mention))
+    await handled_preamble(ctx, userid, "Preamble denied by {}".format(manager.mention), colour=discord.Colour.red())
 
     # Deny the submission
     await ctx.data.users_long.set(userid, "pending_preamble", None)
@@ -478,7 +484,7 @@ async def cmd_preamble(ctx):
             await ctx.data.users_long.set(ctx.authid, "pending_preamble", None)
             await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
 
-            await handled_preamble(ctx, ctx.authid, "Preamble was reset")
+            await handled_preamble(ctx, ctx.authid, "Preamble was reset", colour=discord.Colour.red())
             ctx.bot.objects["pending_preambles"].pop(ctx.authid, None)
             await ctx.reply("Your preamble has been reset!")
 
@@ -498,7 +504,7 @@ async def cmd_preamble(ctx):
 
         await ctx.reply("Your preamble request has been retracted!")
 
-        await handled_preamble(ctx, ctx.authid, "Request retracted")
+        await handled_preamble(ctx, ctx.authid, "Request retracted", colour=discord.Colour.red())
         ctx.bot.objects["pending_preambles"].pop(ctx.authid, None)
         await preamblelog(ctx, "Preamble request was retracted")
         return
@@ -1094,7 +1100,7 @@ async def user_admin(ctx, userid):
         await ctx.data.users_long.set(userid, "pending_preamble", None)
         await ctx.data.users.set(userid, "pending_preamble_info", None)
 
-        await handled_preamble(ctx, userid, "Preamble was reset")
+        await handled_preamble(ctx, userid, "Preamble was reset", colour=discord.Colour.red())
         ctx.bot.objects["pending_preambles"].pop(userid, None)
         await ctx.reply("The preamble was reset to the default!")
 
