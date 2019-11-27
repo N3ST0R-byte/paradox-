@@ -24,12 +24,12 @@ class paraCH(CommandHandler):
     async def before_exec(self, ctx):
         if ctx.author.bot and int(ctx.authid) not in ctx.bot.bot_conf.getintlist("whitelisted_bots"):
             ctx.cmd_err = (1, "")
-        if "ready" not in ctx.bot.objects:
-            ctx.cmd_err = (1, "Bot is restarting, please try again in a moment.")
-            return
-        if not ctx.bot.objects["ready"]:
+
+        if "ready" not in ctx.bot.objects or not ctx.bot.objects["ready"]:
             await ctx.reply("I have just restarted and am loading myself, please wait!")
-            await ctx.bot.wait_until_ready()
+            while "ready" not in ctx.bot.objects or not ctx.bot.objects["ready"]:
+                await asyncio.sleep(1)
+
         if int(ctx.authid) in ctx.bot.bot_conf.getintlist("blacklisted_users") and ctx.used_cmd_name != "texlisten":
             ctx.cmd_err = (1, "")
         if ctx.server:
