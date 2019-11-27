@@ -74,6 +74,13 @@ class Server_Setting_StarChan(Server_Setting, settingTypes.CHANNEL):
     category = "Starboard"
     default = None
 
+@server_conf.setting
+class Server_Setting_StarThresh(Server_Setting, settingTypes.INT):
+    name = "starboard_threshold"
+    vis_name = "star_threshold"
+    desc = "Minimum stars a message must have to be posted in the starboard channel"
+    category = "Starboard"
+    default = 2
 
 @server_conf.setting
 class Server_Setting_StarEmoji(Server_Setting, settingTypes.EMOJI):

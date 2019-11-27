@@ -259,6 +259,32 @@ class SETTING_LIST(paraSetting):
             items.append(item)
         return items
 
+class INT(paraSetting):
+    """
+    Check for a valid number.
+    """
+    accept = "Any number between 1-100"
+    @classmethod
+    async def humanise(self, ctx, raw):
+        """
+        idk
+        """
+        if raw:
+            return "{}".format(raw)
+    @classmethod
+    async def understand(self, ctx, userstr):
+        """
+        Check if the number is valid
+        """
+        if not userstr.isdigit():
+            ctx.cmd_err = (1, "Please provide a valid number!")
+            return None
+        elif not int(userstr) in range(1, 100):
+            ctx.cmd_err = (1, "Please provide a number between 1-100!")
+            return None
+        else:
+            return int(userstr)
+
 
 class CHANNELLIST(SETTING_LIST):
     """
