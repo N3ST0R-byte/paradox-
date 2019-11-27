@@ -225,7 +225,7 @@ async def cmd_time(ctx):
             else:
                 methods.append("Try entering the name of your nearest capital city, e.g. `{prefix}ti --set London`, "
                                "or your current time, e.g. `{prefix}ti --set 7:20`.")
-            methods.append("Find up your timezone in the complete list with `{prefix}ti --list`")
+            methods.append("Find your timezone in the complete list with `{prefix}ti --list`")
             methods.append("Use [this interactive map](http://kevalbhatt.github.io/timezone-picker) to find your timezone!")
             methods.append("Get your timezone from your country and region [here](http://www.timezoneconverter.com/cgi-bin/findzone)!")
             methods.append("Or join our [support server]({support}) and ask one of our friendly support team!")
