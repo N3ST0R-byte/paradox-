@@ -138,7 +138,10 @@ async def cmd_userinfo(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    avlink = await ctx.get_avatar(user)
+    # Manually get a new user in case the old one was out of date
+    new_user = await ctx.bot.get_user_info(user.id)
+
+    avlink = await ctx.get_avatar(new_user)
     bot_emoji = ctx.bot.objects["emoji_bot"]
     statusdict = {"offline": ("Offline/Invisible", ctx.bot.objects["emoji_offline"]),
                   "dnd": ("Do Not Disturb", ctx.bot.objects["emoji_dnd"]),
@@ -198,7 +201,7 @@ async def cmd_userinfo(ctx):
     join_seq = "```markdown\n{}\n```".format("\n".join(positions))
 
     embed = discord.Embed(type="rich", color=colour, description=desc)
-    embed.set_author(name="{user.name} (id: {user.id})".format(user=user),
+    embed.set_author(name="{user.name} (id: {user.id})".format(user=new_user),
                      icon_url=avlink,
                      url=avlink)
     embed.set_thumbnail(url=avlink)
@@ -403,8 +406,11 @@ async def cmd_avatar(ctx):
         if not user:
             await ctx.reply("I couldn't find any matching users in this server sorry!")
             return
-    avlink = await ctx.get_avatar(user) 
-    desc = "Click [here]({}) to view the {}.".format(avlink,"GIF" if ((user.avatar is not None) and user.avatar.startswith("a_")) else "image")
+    # Manually get a new user in case the old one was out of date
+    user = await ctx.bot.get_user_info(user.id)
+
+    avlink = await ctx.get_avatar(user)
+    desc = "Click [here]({}) to view the {}.".format(avlink, "GIF" if ((user.avatar is not None) and user.avatar.startswith("a_")) else "image")
     embed = discord.Embed(colour=discord.Colour.green(), description=desc)
     embed.set_author(name="{}'s Avatar".format(user))
     embed.set_image(url=avlink)
