@@ -110,6 +110,9 @@ def _is_tex(msg):
                         1 - (content.count("$") % 2) and
                         content.strip("$"))
 
+    # Check if there are more than 6 dollar signs
+    is_tex = is_tex or (content.count('$') > 6)
+
     # Check if it contains the start of an environment
     is_tex = is_tex or ("\\begin{" in content)
 
