@@ -162,6 +162,9 @@ async def cmd_notifyme(ctx):
     if check in checks:
         await ctx.reply("This check already exists!")
         return
+    if ("contains" not in check) or len(check["contains"]) < 3:
+        await ctx.reply("Your check must be at least 3 characters long.")
+        return
     checks.append(check)
     await update_checks(ctx, checks)
     await ctx.reply("Added pounce!")
