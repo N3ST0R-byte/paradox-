@@ -20,12 +20,11 @@ async def log_left_server(bot, server):
     icon = server.icon_url
     servers = bot.servers
 
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.red())
+    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.red(), timestamp=datetime.now())
     embed.set_author(name="Left server!")
     embed.set_thumbnail(url=icon)
     embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(owner), inline=False)
     embed.add_field(name="Now playing in", value="{} servers".format(len(servers)), inline=False)
-    embed.set_footer(text=datetime.utcnow().strftime("Left at %-I:%M %p, %d/%m/%Y"))
     log_ch = bot.objects["server_change_log_channel"]
     if log_ch:
         await bot.send_message(log_ch, embed=embed)
@@ -63,7 +62,7 @@ async def log_joined_server(bot, server):
 
     created = server.created_at.strftime("%-I:%M %p, %d/%m/%Y")
 
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.green())
+    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.green(), timestamp=datetime.now())
     embed.set_author(name="Joined server!")
     embed.set_thumbnail(url=icon)
     embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
@@ -71,7 +70,6 @@ async def log_joined_server(bot, server):
     embed.add_field(name="Created at", value="{}".format(created), inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
     embed.add_field(name="Now playing in", value="{} servers".format(len(bot.servers)), inline=False)
-    embed.set_footer(text=datetime.utcnow().strftime("Joined at %-I:%M %p, %d/%m/%Y"))
 
     log_ch = bot.objects["server_change_log_channel"]
     if log_ch:

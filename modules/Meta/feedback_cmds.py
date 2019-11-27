@@ -33,11 +33,11 @@ async def cmd_feedback(ctx):
         elif response.lower() == "c":
             await ctx.reply("User cancelled, aborting!")
             return
-    embed = discord.Embed(title="Feedback", color=discord.Colour.green()) \
+    embed = discord.Embed(title="Feedback", color=discord.Colour.green(), timestamp=datetime.now()) \
         .set_author(name="{} ({})".format(ctx.author, ctx.authid),
                     icon_url=ctx.author.avatar_url) \
         .add_field(name="Message", value=response, inline=False) \
-        .set_footer(text=datetime.utcnow().strftime("Sent from {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
+        .set_footer(text=datetime.utcnow().strftime("Sent from {}".format(ctx.server.name if ctx.server else "private message")))
     out_msg = await ctx.reply(embed=embed)
     response = await ctx.ask("Are you sure you wish to send the above message to the developers?")
     if not response:

@@ -103,12 +103,13 @@ async def cmd_quote(ctx):
     embed = discord.Embed(colour=discord.Colour.light_grey(),
                           description=message.content,
                           title="Click to jump to message",
-                          url=ctx.msg_jumpto(message))
+                          url=ctx.msg_jumpto(message),
+                          timestamp=datetime.now())
 
     if not ctx.flags["a"]:
         embed.set_author(name="{user.name}".format(user=message.author),
                          icon_url=message.author.avatar_url)
-    embed.set_footer(text=message.timestamp.strftime("Sent at %-I:%M %p, %d/%m/%Y in #{}".format(message.channel.name)))
+    embed.set_footer(text=message.timestamp.strftime("Sent in #{}".format(message.channel.name)))
     if message.attachments:
         embed.set_image(url=message.attachments[0]["proxy_url"])
     await ctx.bot.edit_message(out_msg, " ", embed=embed)

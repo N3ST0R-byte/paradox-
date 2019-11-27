@@ -49,15 +49,13 @@ async def log_member_update(bot, before, after):
 
     if not desc_lines:
         return
-    avlink = await ctx.get_avatar(user)
 
     description = "\n".join(desc_lines)
     colour = (after.colour if after.colour.value else discord.Colour.light_grey())
 
-    embed = discord.Embed(color=colour, description=description)
+    embed = discord.Embed(color=colour, description=description, timestamp=datetime.now())
     if image_url:
         embed.set_thumbnail(url=image_url)
-    embed.set_footer(text=datetime.utcnow().strftime("Sent at %-I:%M %p, %d/%m/%Y"))
     await bot.send_message(userlog, embed=embed)
 
 
