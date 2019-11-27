@@ -32,14 +32,22 @@ class paraCH(CommandHandler):
             await ctx.bot.wait_until_ready()
         if int(ctx.authid) in ctx.bot.bot_conf.getintlist("blacklisted_users") and ctx.used_cmd_name != "texlisten":
             ctx.cmd_err = (1, "")
+        if ctx.server:
+            if (
+                ctx.server.id in ctx.bot.objects["channel_blacklists"] and
+                ctx.ch.id in ctx.bot.objects["channel_blacklists"][ctx.server.id] and
+                not ctx.author.server_permissions.administrator
+            ):
+                ctx.cmd_err = (1, "")
+
+            ban_cmds = await ctx.data.servers.get(ctx.server.id, "banned_cmds")
+            if ban_cmds and ctx.cmd.name in ban_cmds:
+                ctx.cmd_err = (1, "")
+
         try:
             await ctx.bot.send_typing(ctx.ch)
         except Exception:
             pass
-        if ctx.server:
-            ban_cmds = await ctx.data.servers.get(ctx.server.id, "banned_cmds")
-            if ban_cmds and ctx.cmd.name in ban_cmds:
-                ctx.cmd_err = (1, "")
         ctx.bot.objects["command_cache"][ctx.msg.id] = ctx
 
     def build_cmd(self, name, func, aliases=[], **kwargs):

@@ -183,6 +183,24 @@ class Server_Setting_mute_role(Server_Setting, settingTypes.ROLE):
     default = None
     category = "Moderation"
 
+
+@server_conf.setting
+class Server_Setting_Channel_Blacklist(Server_Setting, settingTypes.CHANNELLIST):
+    name = "channel_blacklist"
+    vis_name = "channel_blacklist"
+    desc = "Disable non-moderator command responses in these channels."
+    category = "Guild settings"
+    default = None
+
+    @classmethod
+    async def write(cls, ctx, value):
+        result = await super().write(ctx, value)
+        blacklist = ctx.bot.objects["channel_blacklists"]
+        if (ctx.cmd_err and ctx.cmd_err[0] != 0):
+            return
+        blacklist[ctx.server.id] = value if value else []
+        return result
+
 # Logging settings
 
 
