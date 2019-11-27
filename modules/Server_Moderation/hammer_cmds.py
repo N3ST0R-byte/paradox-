@@ -68,8 +68,7 @@ async def unban(ctx, user, **kwargs):
 async def cmd_hackban(ctx):
     """
     Usage:
-        {prefix}hackban <user> [reason] [-f] [-p days]
-        {prefix}hackban -m <user1> [user2] [user3]... [-r <reason>] [-p <days>] [-f]
+        {prefix}hackban user 1, user 2, user 3,... [-r <reason>] [-f] [-p days]
     Description:
         Hackbans the users listed with an optional reason.
         Hackbanning allows you to ban without the user being in the server.
@@ -77,7 +76,6 @@ async def cmd_hackban(ctx):
         Multi hackban currently supports up to 20 users.
         <Required>, [Optional]
     Flags:3
-        -m::  **multi**, allows mutiple user bans. (20 maximum)
         -r::  **reason**, reason for the ban
         -p::  **purge**, purge <days> days of message history. (1 day by default)
         -f::  **fake**, pretends to hackban.
@@ -108,15 +106,12 @@ async def cmd_hackban(ctx):
 async def cmd_unban(ctx):
     """
     Usage:
-        {prefix}unban <user> [reason]
-        {prefix}unban -m <user1> [user2] [user3]... [-r <reason>]
+        {prefix}unban user 1, user 2, user 3,... [-r <reason>]
     Description:
         Unbans the listed users with optional reason.
         Partial names are supported.
-        Multi unban currently supports up to 20 users.
         <Required>, [Optional]
     Flags:3
-        -m::  **multi** allows mutiple user unbans. (20 maximum)
         -r::  **reason** Reason for unbanning
     """
     if ctx.arg_str.strip() == "":
@@ -146,15 +141,12 @@ async def cmd_unban(ctx):
 async def cmd_ban(ctx):
     """
     Usage:
-        {prefix}ban <user> [reason] [-f] [-p days]
-        {prefix}ban -m <user1> [user2] [user3]... [-r <reason>] [-p <days>] [-f]
+        {prefix}ban user 1, user 2, user 3,... [-r <reason>] [-p <days>] [-f]
     Description:
         Bans the users listed with an optional reason.
         Partial names are supported.
-        Multi ban currently supports up to 20 bans.
         <Required>, [Optional]
     Flags:3
-        -m::  **multi** Allows mutiple user bans. (20 maximum)
         -r::  **reason** Reason for the ban
         -p::  **purge** Purge <days> days of message history. (1 day by default)
         -f::  **fake** Pretends to ban.
@@ -186,15 +178,12 @@ async def cmd_ban(ctx):
 async def cmd_softban(ctx):
     """
     Usage:
-        {prefix}softban <user> [reason] [-f] [-p days]
-        {prefix}softban -m <user1> [user2] [user3]... [-r <reason>] [-p <days>] [-f]
+        {prefix}softban user 1, user 2, user 3,... [-r <reason>] [-p <days>] [-f]
     Description:
         Softbans (bans and unbans) the users listed with an optional reason.
         Partial names are supported.
-        Multi softban currently supports up to 20 users.
         <Required>, [Optional]
     Flags:3
-        -m::  **multi** Allows mutiple user bans. (20 maximum)
         -r::  **reason** Reason for the ban
         -p::  **purge** Purge <days> days of message history. (1 day by default)
         -f::  **fake** Pretends to softban.
@@ -226,13 +215,11 @@ async def cmd_softban(ctx):
 async def cmd_kick(ctx):
     """
     Usage:
-        {prefix}kick <user1> [user2] [user3]... [-r <reason>] [-f]
+        {prefix}kick user 1, user 2, user 3,... [-r <reason>] [-f]
     Description:
         Kicks the users listed with an optional reason.
-        Multi kick currently supports up to 20 users.
         <Required>, [Optional]
     Flags:3
-        -m::  **multi** Allows multiple user kicks. (20 maximum)
         -r::  **reason** Reason for the kick.
         -f::  **fake** Pretends to kick.
     """

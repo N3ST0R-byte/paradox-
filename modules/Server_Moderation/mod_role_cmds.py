@@ -57,13 +57,14 @@ async def cmd_giverole(ctx):
 async def cmd_rolemod(ctx):
     """
     Usage:
-        {prefix}rolemod <user1> [user2] [user3]... <+|->role1 [<+|->role2]...
+        {prefix}rolemod user1, user2 --add role1, role2 --remove role3
+        {prefix}rolemod user1, user2 +role1, role2 -role3
     Description:
         Modifies the specified user(s) roles.
-        All listed roles must be prefixed with + or -, the roles with + will be added and the roles with - will be removed.
-        <Required>, [Optional]
+        Roles may be specified either as flag arguments or after + or -.
     Example:
-        {prefix}rmod Para +Bots -Member
+        {prefix}rmod {msg.server.me.name} +{msg.server.owner.top_role.name}
+        {prefix}rmod {msg.author.name} +{msg.server.owner.top_role.name}, root -Members, Bots
     """
     if ctx.flags['add'] or ctx.flags['remove']:
         userblock = ctx.arg_str
