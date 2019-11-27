@@ -42,6 +42,7 @@ async def cmd_rotate(ctx):
             break
         if message.embeds and message.embeds[0].get('type', None) == 'image':
             image_url = message.embeds[0].get('url', None)
+            break
 
     if image_url is None:
         await ctx.reply("Couldn't find an attached image in the last 10 messages")
