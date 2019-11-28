@@ -364,13 +364,12 @@ async def cmd_secho(ctx):
         desc = ctx.prop_tabulate(prop_list, value_list)
         embed = discord.Embed(type="rich", color=discord.Colour.green(), description=desc)
         embed.set_author(name="Text channel info")
-        embed.set_footer(text="Text channel information limited due to Discord.py version")
         await ctx.reply(embed=embed)
         return
     elif str(ch.type) == "voice":
-        whore = ["Name", "Type", "ID", "Created at", "User limit", "Current members"]
-        extrawhore = [name, tv[type], id, atgo, reallimit, members]
-        desc = ctx.prop_tabulate(whore, extrawhore)
+        prop_list = ["Name", "Type", "ID", "Created at", "User limit", "Current members"]
+        value_list = [name, tv[type], id, atgo, reallimit, members]
+        desc = ctx.prop_tabulate(prop_list, value_list)
         embed = discord.Embed(type="rich", color=discord.Colour.purple(), description=desc)
         embed.set_author(name="Voice channel info")
         await ctx.reply(embed=embed)
@@ -381,7 +380,6 @@ async def cmd_secho(ctx):
         desc = ctx.prop_tabulate(prop_list, value_list)
         embed = discord.Embed(type="rich", color=discord.Colour.blue(), description=desc)
         embed.set_author(name="Category info")
-        embed.set_footer(text="Category information limited due to Discord.py version")
         await ctx.reply(embed=embed)
         return
 
