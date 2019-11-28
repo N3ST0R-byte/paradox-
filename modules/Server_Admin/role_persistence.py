@@ -1,3 +1,4 @@
+import asyncio
 import discord
 
 from paraCH import paraCH
@@ -95,6 +96,7 @@ async def recall_roles(bot, member):
 
     # Give the member their roles, in theory
     try:
+        await asyncio.sleep(5)
         await bot.add_roles(member, *roles_to_add)
     except discord.Forbidden:
         pass
