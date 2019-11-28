@@ -129,15 +129,15 @@ async def tz_picker(ctx):
     return timezones[tzid] if tzid is not None else None
 
 
-def get_timestr(tz):
+def get_timestr(tz, brief=False):
     """
     Get the current time in the given timezone, using a fixed format string.
     """
-    format_str = "**%I:%M %p (%Z(%z))** on **%a, %d/%m/%Y**"
+    format_str = "**%H:%M, %d/%m/%Y**" if brief else "**%I:%M %p (%Z)** on **%a, %d/%m/%Y**"
     return get_time(tz).strftime(format_str)
 
 
-async def time_diff(ctx, tz):
+async def time_diff(ctx, tz, brief=False):
     """
     Get a string representing the time difference between the user's timezone and the given one.
     """
@@ -162,13 +162,13 @@ async def time_diff(ctx, tz):
     hourstr = "{} hour{} ".format(hours, "s" if hours > 1 else "") if hours else ""
     minstr = "{} minutes ".format(mins) if mins else ""
     joiner = "and " if (hourstr and minstr) else ""
-    return ".\n**{}** is {}{}{}{}, at {}.".format(name, hourstr, joiner, minstr, modifier, get_timestr(auth_tz))
+    return ".\n**{}** is {}{}{}{}, at {}.".format(name, hourstr, joiner, minstr, modifier, get_timestr(auth_tz, brief=brief))
 
 
 @cmds.cmd("time",
           category="Utility",
           short_help="Displays the current time for a user",
-          flags=['set', 'at', 'list', 'simple', '24h'],
+          flags=['set', 'at', 'list', 'brief', '24h'],
           aliases=['ti'])
 async def cmd_time(ctx):
     """
@@ -176,6 +176,7 @@ async def cmd_time(ctx):
         {prefix}time [user]
         {prefix}time --set [timezone or time]
         {prefix}time --at <timezone>
+        {prefix}time --brief
         {prefix}time --list
     Description:
         Shows the current time for yourself or the provided user.
@@ -184,6 +185,7 @@ async def cmd_time(ctx):
     Flags:5
         set:: Sets your timezone the one provided, or shows an interactive timezone picker.
         at:: Shows the current time in the timezone given. (Can be a partial timezone)
+        brief:: Toggles usage of a briefer time display.
         list:: Displays a list of valid timezones in the tz database, as shown [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
     Examples:
         {prefix}time {msg.author.name}
@@ -193,6 +195,7 @@ async def cmd_time(ctx):
         {prefix}time --at Melbourne
     """
     prefix = (await ctx.bot.get_prefixes(ctx))[0]
+    brief = (await ctx.data.users.get(ctx.user.id, "brief_time")) or False
     if ctx.flags["set"]:
         # Handling setting a timezone
         # Grab the timezone from interactive lookup if args are given, otherwise the interactive picker
@@ -200,11 +203,11 @@ async def cmd_time(ctx):
 
         if tz:
             # We have a timezone, display the success message, current time, and a warning about Etc if needed.
-            user_time = get_timestr(tz)
+            user_time = get_timestr(tz, brief=brief)
             msg = "Your timezone has been set to `{}`!\nYour current time is {}.".format(tz, user_time)
             if ctx.arg_str and (tz.startswith("Etc/GMT+") or tz.startswith("Etc/GMT-")):
                 other_tz = tz.replace("+", "-").replace("-", "+")
-                other_time = get_timestr(other_tz)
+                other_time = get_timestr(other_tz, brief=brief)
                 proper_time = other_tz[4:]
                 warning = (
                     "\nNote that due to the POSIX standard, the timezone `{}` represents the time in `{}`.\n"
@@ -247,13 +250,17 @@ async def cmd_time(ctx):
                 pass
             else:
                 # Report the time, with the time difference if possible
-                tdiffstr = await time_diff(ctx, tz)
-                timestr = get_timestr(tz)
+                tdiffstr = await time_diff(ctx, tz, brief=brief)
+                timestr = get_timestr(tz, brief=brief)
 
                 msg = "The time in `{}` is {}{}".format(tz, timestr, tdiffstr or '.')
                 await ctx.reply(msg)
     elif ctx.flags['list']:
         await ctx.offer_delete(await ctx.pager(ctx.paginate_list(gen_tz_strings(all_timezones), title="Timezone list")))
+    elif ctx.flags['brief']:
+        brief = 1 - brief
+        await ctx.data.users.set(ctx.author.id, "brief_time", bool(brief))
+        await ctx.reply("Your clock is now more compact." if brief else "Your clock is now more verbose.")
     else:
         # All flags have been handled, all that remains is time reporting for targeted user or author.
 
@@ -274,11 +281,11 @@ async def cmd_time(ctx):
                 else:
                     msg = "This user hasn't set their timezone! Ask them to set it using `{prefix}ti --set`."
             else:
-                timestr = get_timestr(tz)
-                tdiffstr = await time_diff(ctx, tz) if user != ctx.author else ""
+                timestr = get_timestr(tz, brief=brief)
+                tdiffstr = await time_diff(ctx, tz, brief=brief) if user != ctx.author else ""
                 msg = "The current time for **{}** is {}{}".format(user.name, timestr, tdiffstr or '.')
         await ctx.reply(msg.format(prefix=prefix))
 
 
 def load_into(bot):
-    bot.data.users.ensure_exists("tz")
+    bot.data.users.ensure_exists("tz", "brief", shared=True)
