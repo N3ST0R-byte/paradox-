@@ -15,7 +15,7 @@ def load_into(bot):
             def is_user(member):
                 return (user_str.lower() in str(member).lower())
 
-        collection = collection if collection else (ctx.server.members if in_server else ctx.bot.get_all_members())
+        collection = collection if collection is not None else (ctx.server.members if in_server else ctx.bot.get_all_members())
         collection = list(collection)
         if maybe_user_id.isdigit():
             user = discord.utils.get(collection, id=maybe_user_id)
@@ -69,7 +69,7 @@ def load_into(bot):
             ctx.cmd_err = (-1, "")
             return None
 
-        collection = collection if collection else ctx.server.roles
+        collection = collection if collection is not None else ctx.server.roles
 
         roleid = userstr.strip('<#@!>')
         if interactive:
@@ -118,7 +118,7 @@ def load_into(bot):
             ctx.cmd_err = (-1, "")
             return None
 
-        collection = collection if collection else ctx.server.channels
+        collection = collection if collection is not None else ctx.server.channels
 
         channelid = userstr.strip('<#@>')
         tv = {
