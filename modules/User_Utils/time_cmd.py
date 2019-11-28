@@ -82,15 +82,15 @@ async def tz_lookup(ctx, search_str):
         search_str = search_str.replace(' ', '')
 
         # Look for this time in the search list
-        options = [tz for tz, tzstr in searchlist if search_str in tz]
+        options = [tz for tz, tzstr in searchlist if search_str in tzstr]
         if not options:
             # Time not found. Try to get the last digit and increase it by one, then look again.
-            if search_str[-1].is_digit():
+            if search_str[-1].isdigit():
                 search_str = search_str[:-1] + str(int(search_str[-1]) + 1)
-                options = [tz for tz, tzstr in searchlist if search_str in tz]
-            elif search_str[-3].is_digit():
+                options = [tz for tz, tzstr in searchlist if search_str in tzstr]
+            elif search_str[-3].isdigit():
                 search_str = search_str[:-3] + str(int(search_str[-3]) + 1) + search_str[-2:]
-                options = [tz for tz, tzstr in searchlist if search_str in tz]
+                options = [tz for tz, tzstr in searchlist if search_str in tzstr]
     else:
         # So it's not a time, just some string.
         search_str = search_str.replace(' ', '_')
