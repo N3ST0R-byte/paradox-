@@ -50,7 +50,8 @@ async def cmds_forgetuser(ctx):
         elif result == 0:
             await ctx.reply("Aborting...")
         else:
-            # TODO: Forget the persistent roles
+            ctx.data.conn.cursor().execute("delete from members_long where serverid = {} and property = 'persistent_roles'".format(ctx.server.id))
+            ctx.data.conn.commit()
             await ctx.reply("Persistent roles forgotten.")
     elif ctx.arg_str:
         # They want us to forget a single user.
