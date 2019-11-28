@@ -22,7 +22,7 @@ async def log_join(bot, member):
     colour = (user.colour if user.colour.value else discord.Colour.gold())
     avlink = await ctx.get_avatar(user)
 
-    info = "{} ({}) {}".format(user, user.id, user.mention)
+    info = "{} ({})".format(user, user.id)
     game = user.game if user.game else "Nothing"
     status = statusdict[str(user.status)]
     shared = "{} servers".format(len(list(filter(lambda m: m.id == user.id, ctx.bot.get_all_members()))))
@@ -56,7 +56,7 @@ async def log_leave(bot, member):
     colour = (user.colour if user.colour.value else discord.Colour.orange())
     avlink = await ctx.get_avatar(user)
 
-    info = "{} ({}) {}".format(user, user.id, user.mention)
+    info = "{} ({})".format(user, user.id)
     joined_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - user.joined_at))
     joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
     usernames = await ctx.bot.data.users.get(user.id, "name_history")
@@ -69,7 +69,7 @@ async def log_leave(bot, member):
     roles = [r.name for r in user.roles if r.name != "@everyone"]
     roles = ('`' + '`, `'.join(roles) + '`') if roles else "None"
     server_count = "{} Users, {} bots | {} total".format(str(len([m for m in ctx.server.members if not m.bot])), str(len([m for m in ctx.server.members if m.bot])), ctx.server.member_count)
-    prop_list = ["Info, ""Past names", "Past nicks", "Joined at", "", "Roles", "Member count"]
+    prop_list = ["Info", "Past names", "Past nicks", "Joined at", "", "Roles", "Member count"]
     value_list = [info, name_list, nickname_list, joined, joined_ago, roles, server_count]
     desc = ctx.prop_tabulate(prop_list, value_list)
 
