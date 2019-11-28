@@ -356,13 +356,13 @@ async def cmd_secho(ctx):
     if not ch.voice_members:
         members = "No members in this channel."
     else:
-        members = "{} - ".format(len(ch.voice_members)) + ", ".join([mem.mention for mem in ch.voice_members])
+        members = "{}\n".format(len(ch.voice_members)) + "\n".join([mem.mention for mem in ch.voice_members])
 
     if str(ch.type) == "text":
         prop_list = ["Name", "Type", "ID", "Created at", "Topic"]
         value_list = [name, tv[type], id, atgo, topic]
         desc = ctx.prop_tabulate(prop_list, value_list)
-        embed = discord.Embed(type="rich", color=discord.Colour.green(), description=desc)
+        embed = discord.Embed(type="rich", color=discord.Colour.dark_green(), description=desc)
         embed.set_author(name="Text channel info")
         await ctx.reply(embed=embed)
         return
@@ -370,7 +370,7 @@ async def cmd_secho(ctx):
         prop_list = ["Name", "Type", "ID", "Created at", "User limit", "Current members"]
         value_list = [name, tv[type], id, atgo, reallimit, members]
         desc = ctx.prop_tabulate(prop_list, value_list)
-        embed = discord.Embed(type="rich", color=discord.Colour.purple(), description=desc)
+        embed = discord.Embed(type="rich", color=discord.Colour.dark_purple(), description=desc)
         embed.set_author(name="Voice channel info")
         await ctx.reply(embed=embed)
         return
@@ -378,7 +378,7 @@ async def cmd_secho(ctx):
         prop_list = ["Name", "Type", "ID", "Created at"]
         value_list = [ch.name, tv[type], id, atgo]
         desc = ctx.prop_tabulate(prop_list, value_list)
-        embed = discord.Embed(type="rich", color=discord.Colour.blue(), description=desc)
+        embed = discord.Embed(type="rich", color=discord.Colour.dark_blue(), description=desc)
         embed.set_author(name="Category info")
         await ctx.reply(embed=embed)
         return
