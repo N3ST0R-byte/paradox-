@@ -139,7 +139,7 @@ async def cmd_cat(ctx, recursion=0):
                 pass
         else:
             if recursion < 10:
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
                 await cmd_cat(ctx, recursion=recursion+1)
                 return
         await ctx.reply("Sorry! The cats are too powerful right now. Please try again later!")
