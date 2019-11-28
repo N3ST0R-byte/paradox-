@@ -60,7 +60,7 @@ async def log_joined_server(bot, server):
     total = "`{}`".format(server.member_count)
     mem_str = "{0:<5}\t{4},\n{1:<5}\t{5},\n{2:<5}\t{6}, and\n{3:<5}\t{7}.".format(known, unknown, bots, total, mem1, mem2, mem3, mem4)
 
-    created = server.created_at.strftime("%-I:%M %p, %d/%m/%Y")
+    created = server.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
     embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.green(), timestamp=datetime.now())
     embed.set_author(name="Joined server!")

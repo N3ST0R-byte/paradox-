@@ -87,7 +87,7 @@ async def cmd_cr(ctx):
         .add_field(name="Reported User", value="`{0}` (`{0.id}`)".format(user), inline=True) \
         .add_field(name="Cheat", value=cheat, inline=True) \
         .add_field(name="Evidence", value=evidence, inline=False) \
-        .set_footer(text=datetime.utcnow().strftime("Reported in {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
+        .set_footer(text=datetime.utcnow().strftime("Reported in {} at %I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
     out_msg = await ctx.reply(embed=embed)
     response = await ctx.ask("Are you sure you wish to send the above cheat report?")
     if not response:

@@ -28,7 +28,7 @@ class ModEvent:
         self.action = action
         self.mod = mod
         self.users = users
-        self.user_strs = ["`{0.name}` (ID: `{0.id}`)".format(user) for user in users]
+        self.user_strs = ["`{0.id}`: {0}".format(user) for user in users]
         self.timeout = timeout
         self.reason = reason
         self.init_time = datetime.utcnow()
@@ -39,7 +39,7 @@ class ModEvent:
         TODO: timeout in sensible form
         """
         embed = discord.Embed(title=self.actions[self.action][0], color=self.actions[self.action][1], timestamp=self.init_time)
-        embed.add_field(name="User{}:".format("s" if len(self.users) > 1 else ""), value="\n".join(self.user_strs), inline=False)
+        embed.add_field(name="User{}".format("s" if len(self.users) > 1 else ""), value="\n".join(self.user_strs), inline=False)
         if self.timeout is not None:
             embed.add_field(name="Expires:", value=self.ctx.strfdelta(self.timeout), inline=False)
         embed.add_field(name="Reason", value=self.reason, inline=False)

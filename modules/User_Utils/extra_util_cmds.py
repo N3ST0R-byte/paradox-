@@ -238,7 +238,7 @@ async def cmd_piggybank(ctx):
                     pass
             else:
                 TZ = timezone("UTC")
-            timestr = '%-I:%M %p, %d/%m/%Y (%Z)'
+            timestr = '%I:%M %p, %d/%m/%Y (%Z)'
             timestr = TZ.localize(trans_time).strftime(timestr)
             msg += "{}\t {:^10}\n".format(timestr, str(transactions[trans]["amount"]))
         await ctx.reply(msg + "```", dm=True)
@@ -257,7 +257,7 @@ async def cmd_timezone(ctx):
     Description:
         Searches for <partial> amongst the available timezones and shows you the current time in each!
     """
-    timestr = '%-I:%M %p'
+    timestr = '%I:%M %p'
     tzlist = [(tz, iso8601.parse_date(datetime.now().isoformat()).astimezone(timezone(tz)).strftime(timestr)) for tz in pytz.all_timezones]
     if ctx.arg_str:
         tzlist = [tzpair for tzpair in tzlist if (ctx.arg_str.lower() in tzpair[0].lower()) or (ctx.arg_str.lower() in tzpair[1].lower())]
@@ -348,7 +348,7 @@ async def cmd_emoji(ctx):
     embed.set_image(url=url)
     if not ctx.flags["e"]:
         created_ago = ctx.strfdelta(datetime.utcnow() - emoji.created_at)
-        created = emoji.created_at.strftime("%-I:%M %p, %d/%m/%Y")
+        created = emoji.created_at.strftime("%I:%M %p, %d/%m/%Y")
         emojis = emojis[:10] if emojis else filter(lambda e: (e.name == emoji.name) and (e != emoji), ctx.bot.get_all_emojis())
         emoj_similar_str = " ".join(map(str, emojis))
         emb_fields = [("Name", emoji.name, 0),

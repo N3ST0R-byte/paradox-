@@ -56,7 +56,7 @@ def gen_tz_strings(tzlist):
     """
     Generates blocks of timezone (time) pairs with nice spacing, ready for use in a pager.
     """
-    tzlist = [(tz, get_time(tz).strftime('%-I:%M %p')) for tz in tzlist]
+    tzlist = [(tz, get_time(tz).strftime('%I:%M %p')) for tz in tzlist]
     tz_blocks = [tzlist[i:i + 20] for i in range(0, len(tzlist), 20)]
     max_block_lens = [len(max(list(zip(*tz_block))[0], key=len)) for tz_block in tz_blocks]
     block_strs = [["{0[0]:^{max_len}} {0[1]:^10}".format(tzpair, max_len=max_block_lens[i]) for tzpair in tzblock] for i, tzblock in enumerate(tz_blocks)]
@@ -133,7 +133,7 @@ def get_timestr(tz):
     """
     Get the current time in the given timezone, using a fixed format string.
     """
-    format_str = "**%-I:%M %p (%Z(%z))** on **%a, %d/%m/%Y**"
+    format_str = "**%I:%M %p (%Z(%z))** on **%a, %d/%m/%Y**"
     return get_time(tz).strftime(format_str)
 
 

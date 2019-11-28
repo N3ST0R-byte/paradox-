@@ -51,7 +51,7 @@ async def cmd_role(ctx):
     colour = role.colour if role.colour.value else discord.Colour.light_grey()
     num_users = len([user for user in ctx.server.members if (role in user.roles)])
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - role.created_at, minutes=False))
-    created = role.created_at.strftime("%-I:%M %p, %d/%m/%Y")
+    created = role.created_at.strftime("%I:%M %p, %d/%m/%Y")
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
 
@@ -280,7 +280,7 @@ async def cmd_serverinfo(ctx):
     members = "{} humans, {} bots | {} total".format(str(len([m for m in ctx.server.members if not m.bot])),
                                                      str(len([m for m in ctx.server.members if m.bot])),
                                                      ctx.server.member_count)
-    created = ctx.server.created_at.strftime("%-I:%M %p, %d/%m/%Y")
+    created = ctx.server.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(ctx.strfdelta(datetime.utcnow() - ctx.server.created_at, minutes=False))
     channels = "{} text, {} voice | {} total".format(text, voice, total)
     status = "{} - **{}**\n{} - **{}**\n{} - **{}**\n{} - **{}**".format(Online, online, Idle, idle, Dnd, dnd, Offline, offline)

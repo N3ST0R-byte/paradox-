@@ -290,7 +290,7 @@ def load_into(bot):
 
     @bot.util
     def msg_string(ctx, msg, mask_link=False, line_break=False, tz=None, clean=True):
-        timestr = "%-I:%M %p, %d/%m/%Y"
+        timestr = "%I:%M %p, %d/%m/%Y"
         if tz:
             time = iso8601.parse_date(msg.timestamp.isoformat()).astimezone(tz).strftime(timestr)
         else:
