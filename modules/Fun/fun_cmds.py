@@ -36,7 +36,7 @@ async def cmd_bin2ascii(ctx):
     # Would be cool if example could use username
     bitstr = ctx.arg_str.replace(' ', '')
     if (not bitstr.isdigit()) or (len(bitstr) % 8 != 0):
-        await ctx.reply("Not a valid binary string!")
+        await ctx.reply("Please provide a valid binary string!")
         return
     bytelist = map(''.join, zip(*[iter(bitstr)] * 8))
     asciilist = [chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist]
@@ -95,7 +95,6 @@ async def cmd_sorry(ctx):
         {prefix}sorry
     Description:
         Sorry, love
-        Due to demand (from Cosmic), sorry is back!
     """
     embed = discord.Embed(color=discord.Colour.purple())
     embed.set_image(url="https://cdn.discordapp.com/attachments/309625872665542658/406040395462737921/image.png")

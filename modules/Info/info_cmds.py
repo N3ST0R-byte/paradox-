@@ -33,7 +33,7 @@ Commands provided:
 async def cmd_role(ctx):
     """
     Usage:
-        {prefix}roleinfo <rolename>
+        {prefix}roleinfo [<role-name> | <role-mention> | <role-id>]
     Description:
         Provides information about the given role.
     """
@@ -79,7 +79,7 @@ async def cmd_role(ctx):
 
     embed = discord.Embed(title=title, colour=colour, description=desc)
 #    embed.set_thumbnail(url=thumbnail)
-    emb_fields = [("Position in the hierachy", position, 0)]
+    emb_fields = [("Position in the hierarchy", position, 0)]
     await ctx.emb_add_fields(embed, emb_fields)
     out_msg = await ctx.reply(embed=embed, dm=ctx.bot.objects["brief"])
     if out_msg and ctx.bot.objects["brief"]:
@@ -95,9 +95,9 @@ async def cmd_role(ctx):
 async def cmd_rolemembers(ctx):
     """
     Usage:
-        {prefix}rolemembers <rolename>
+        {prefix}rolemembers [<role-name> | <role-mention> | <role-id>]
     Description:
-    Displays the users with this role.
+    Lists the users with this role.
     """
 
     if ctx.arg_str.strip() == "":
@@ -110,7 +110,7 @@ async def cmd_rolemembers(ctx):
 
     members = [str(mem) for mem in ctx.server.members if role in mem.roles]
     if len(members) == 0:
-        await ctx.reply("No members have this role")
+        await ctx.reply("No members have this role.")
         return
 
     out_msg = await ctx.pager(ctx.paginate_list(members, title="Members in {}".format(role.name)), dm=ctx.bot.objects["brief"])
@@ -276,7 +276,7 @@ async def cmd_serverinfo(ctx):
     Offline = ctx.bot.objects["emoji_offline"]
 
     server_owner = ctx.server.owner
-    owner = "{} (id {})".format(server_owner, server_owner.id)
+    owner = "{} (id: {})".format(server_owner, server_owner.id)
     members = "{} humans, {} bots | {} total".format(str(len([m for m in ctx.server.members if not m.bot])),
                                                      str(len([m for m in ctx.server.members if m.bot])),
                                                      ctx.server.member_count)
@@ -320,9 +320,7 @@ async def cmd_serverinfo(ctx):
 async def cmd_secho(ctx):
     """
     Usage:
-        {prefix}channelinfo #electronics
-        {prefix}channelinfo 525457831869284353
-        {prefix}channelinfo general
+        {prefix}channelinfo [<channel-name> | <channel-mention> | <channel-id]
     Description:
         Gives information on a text channel, voice channel, or category.
     """
