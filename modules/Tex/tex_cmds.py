@@ -8,6 +8,7 @@ from contextBot.Context import MessageContext as MCtx
 from tex_config import show_config
 from tex_compile import colourschemes
 from tex_preamble import tex_pagination
+from tex_help.tex_help import tex_extended_help
 
 from paraCH import paraCH
 
@@ -133,6 +134,7 @@ def _is_tex(msg):
 @cmds.cmd("tex",
           category="Maths",
           short_help="Renders LaTeX code",
+          extended_help=tex_extended_help,
           aliases=[",", "$", "$$", "align", "latex", "texw", "texsp"])
 @cmds.execute("flags", flags=["config", "keepmsg", "color==", "colour==", "alwaysmath", "allowother", "name"])
 async def cmd_tex(ctx):
