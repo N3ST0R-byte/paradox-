@@ -50,6 +50,7 @@ async def cmd_help(ctx):
             else:
                 emb_fields = [(field[0], field[1].format(**help_keys), 0) for field in fields]
                 await ctx.emb_add_fields(embed, emb_fields)
+                await command.help_modifier(ctx, embed)
                 await ctx.offer_delete(await ctx.reply(embed=embed))
         else:
             if ctx.arg_str.strip() == "cmd":

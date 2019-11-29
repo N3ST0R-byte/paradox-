@@ -10,6 +10,7 @@ class paraCMD(Command):
         self.aliases = aliases
         self.flags = kwargs["flags"] if "flags" in kwargs else None
         self.edit_handler = kwargs.get("edit_handler", None)
+        self._help_func = kwargs.get("extended_help", None)
 
     async def run(self, ctx):
         if self.flags:
@@ -19,6 +20,10 @@ class paraCMD(Command):
             ctx.arg_str = arg_str
 
         await super().run(ctx)
+
+    async def help_modifier(self, ctx, embed=None, *args, **kwargs):
+        if self._help_func is not None:
+            await self._help_func(ctx, *args, help_embed=embed, cmd=self, **kwargs)
 
     def parse_help(self):
         lines = self.long_help.split("\n")
