@@ -86,33 +86,35 @@ async def cmd_quote(ctx):
         pass
     if not message:
         message = await ctx.find_message(msgid, ignore=[ctx.ch])
-
     if not message:
         await ctx.bot.edit_message(out_msg, "Couldn't find the message!")
         return
-    if ctx.flags["r"]:
+
+    quote_content = message.content.replace("```", "[CODEBLOCK]") if ctx.flags['r'] else message.content
+
+    header = "[Click to jump to message]({})".format(ctx.msg_jumpto(message))
+    blocks = ctx.split_text(quote_content, 1000, code=ctx.flags['r'])
+
+    embeds = []
+    for block in blocks:
+        desc = header + "\n" + block
+        embed = discord.Embed(colour=discord.Colour.light_grey(),
+                              description=desc,
+                              timestamp=datetime.now())
+
+        if not ctx.flags["a"]:
+            embed.set_author(name="{user.name}".format(user=message.author),
+                             icon_url=message.author.avatar_url)
+        embed.set_footer(text="Sent in #{}".format(message.channel.name))
         if message.attachments:
-            await ctx.reply("Cannot get the raw content of an attachment.")
-            return
-        if not message.content.startswith("```"):
-            await ctx.reply("```{}```".format(message.content))
-            return
-        await ctx.reply(message.clean_content)
-        return
+            embed.set_image(url=message.attachments[0]["proxy_url"])
+        embeds.append(embed)
 
-    embed = discord.Embed(colour=discord.Colour.light_grey(),
-                          description=message.content,
-                          title="Click to jump to message",
-                          url=ctx.msg_jumpto(message),
-                          timestamp=datetime.now())
-
-    if not ctx.flags["a"]:
-        embed.set_author(name="{user.name}".format(user=message.author),
-                         icon_url=message.author.avatar_url)
-    embed.set_footer(text=message.timestamp.strftime("Sent in #{}".format(message.channel.name)))
-    if message.attachments:
-        embed.set_image(url=message.attachments[0]["proxy_url"])
-    await ctx.bot.edit_message(out_msg, " ", embed=embed)
+    if len(embeds) == 1:
+        await ctx.bot.edit_message(out_msg, " ", embed=embed)
+    else:
+        await ctx.bot.delete_message(out_msg)
+        await ctx.pager(embeds, embed=True, locked=False)
 
 
 @cmds.cmd("secho",
