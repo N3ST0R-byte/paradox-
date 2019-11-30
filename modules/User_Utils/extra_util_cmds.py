@@ -1,4 +1,3 @@
-from paraCH import paraCH
 import discord
 from datetime import datetime
 from pytz import timezone
@@ -7,6 +6,7 @@ import iso8601
 import aiohttp
 import string
 
+from paraCH import paraCH
 
 cmds = paraCH()
 
@@ -279,113 +279,6 @@ async def cmd_timezone(ctx):
     block_strs = [["{0[0]:^{max_len}} {0[1]:^10}".format(tzpair, max_len=max_block_lens[i]) for tzpair in tzblock] for i, tzblock in enumerate(tz_blocks)]
     tz_pages = ["```\n{}\n```".format("\n".join(block)) for block in block_strs]
     await ctx.pager(tz_pages)
-
-
-@cmds.cmd(name="emoji",
-          category="Utility",
-          short_help="Displays info and enlarges a custom emoji",
-          aliases=["e", "ee", "ree", "sree"])
-@cmds.execute("flags", flags=["e", "a"])
-async def cmd_emoji(ctx):
-    """
-    Usage:
-        {prefix}emoji <emoji> [-e]
-        {prefix}ee <emoji>
-        {prefix}ree <emoji>
-    Description:
-        Displays some information about the provided custom emoji, and sends an enlarged version.
-        If the emoji isn't found, instead searches for the emoji amongst all emojis I can see.
-        If used as ee or given with -e flag, only shows the enlarged image.
-        If used as ree, reacts with the emoji.
-        Built in emoji support is coming soon!
-    Flags:
-        -e:  (enlarge) Only shows the enlarged emoji, with no other info.
-        -a:  (animated) Forces to show the emoji as animated (if possible).
-    Examples:
-        {prefix}e catThink
-    """
-    # TODO: Handle the case where a builtin emoji has the same name as a custom emoji
-    # Any way of testing whether an emoji from get is a builtin?
-    # Emojis with the same name are shown
-    if not ctx.arg_str and ctx.used_cmd_name in ["ree", "sree"]:
-        ctx.arg_str = "reeeeeeeeeee"
-    if not ctx.arg_str:
-        if ctx.server:
-            emojis = filter(lambda e: e.server == ctx.server, ctx.bot.get_all_emojis())
-            if emojis:
-                await ctx.reply("Custom emojis in this server:\n{}".format(" ".join(map(str, emojis))))
-                return
-            else:
-                await ctx.reply("No custom emojis in this server! You can search for emojis using this command!")
-                return
-        else:
-            await ctx.reply("Search for emojis using {}`emoji <search>`".format(ctx.used_prefix))
-            return
-    id_str = 0
-    em_str = 0
-    emoji = None
-    emojis = []
-    if ctx.used_cmd_name in ["ee", "ree", "sree"]:
-        ctx.flags["e"] = True
-    embed = discord.Embed(title=None if ctx.flags["e"] else "Emoji info!", color=discord.Colour.light_grey())
-    if ctx.arg_str.endswith(">") and ctx.arg_str.startswith("<"):
-        id_str = ctx.arg_str[ctx.arg_str.rfind(":") + 1:-1]
-        if id_str.isdigit():
-            emoji = discord.utils.get(ctx.bot.get_all_emojis(), id=id_str)
-            if emoji is None:
-                link = "https://cdn.discordapp.com/emojis/{}.{}".format(id_str, "gif" if ctx.arg_str[1] == "a" or ctx.flags["a"] else "png")
-                embed.set_image(url=link)
-                if not ctx.flags["e"]:
-                    emb_fields = [("Name", ctx.arg_str[ctx.arg_str.find(":") + 1:ctx.arg_str.rfind(":")], 0),
-                                  ("ID", id_str, 0),
-                                  ("Link", "[Click me](" + link + ")", 0)]
-                    await ctx.emb_add_fields(embed, emb_fields)
-                try:
-                    await ctx.reply(None if ctx.flags["e"] else "I couldn't find the emoji in my servers, but here is what I have!", embed=embed)
-                except Exception:
-                    await ctx.reply("I couldn't understand or find the emoji in your message")
-                return
-    else:
-        em_str = ctx.arg_str.strip(":")
-        emoji = discord.utils.get(ctx.bot.get_all_emojis(), name=em_str)
-        emojis = list(filter(lambda e: (em_str.lower() in e.name.lower()), ctx.bot.get_all_emojis()))
-        emoji = emoji if emoji else (emojis[0] if emojis else None)
-        if not emoji:
-            await ctx.reply("I cannot see any matching emojis.\nPlease note I cannot handle built in emojis at this time.")
-            return
-    url = "https://cdn.discordapp.com/emojis/{}.{}".format(emoji.id, "gif" if ctx.flags["a"] else "png")
-    embed.set_image(url=url)
-    if not ctx.flags["e"]:
-        created_ago = ctx.strfdelta(datetime.utcnow() - emoji.created_at)
-        created = emoji.created_at.strftime("%I:%M %p, %d/%m/%Y")
-        emojis = emojis[:10] if emojis else filter(lambda e: (e.name == emoji.name) and (e != emoji), ctx.bot.get_all_emojis())
-        emoj_similar_str = " ".join(map(str, emojis))
-        emb_fields = [("Name", emoji.name, 0),
-                      ("ID", emoji.id, 0),
-                      ("Link", emoji.url, 0),
-                      ("Originating server", emoji.server.name if emoji.server else "Built in", 0),
-                      ("Created at", "{}({} ago)".format(created, created_ago), 0)]
-        if emoj_similar_str:
-            emb_fields.append(("Some other matching emojis", emoj_similar_str, 0))
-        await ctx.emb_add_fields(embed, emb_fields)
-    try:
-        if ctx.used_cmd_name in ["ree", "sree"]:
-            logs = ctx.bot.logs_from(ctx.ch, limit=2)
-            async for message in logs:
-                message = message
-            await ctx.bot.add_reaction(message, emoji)
-            if ctx.used_cmd_name == "sree":
-                try:
-                    await ctx.bot.delete_message(ctx.msg)
-                except discord.Forbidden:
-                    pass
-        else:
-            await ctx.reply(embed=embed)
-    except discord.HTTPException:
-        if ctx.flags["a"]:
-            await ctx.reply("Failed to send animated emoji. Maybe this emoji isn't animated?")
-        else:
-            await ctx.reply("Failed to send the emoji!")
 
 
 @cmds.cmd(name="colour",
