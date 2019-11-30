@@ -22,7 +22,7 @@ async def cmd_profile(ctx):
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
-            await ctx.reply("I couldn't find any matching users in this server sorry!")
+            await ctx.reply("No matching users found!")
             return
 
     badge_dict = {"master_perm": "botowner",

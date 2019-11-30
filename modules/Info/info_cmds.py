@@ -136,7 +136,7 @@ async def cmd_userinfo(ctx):
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
-            await ctx.reply("I couldn't find any matching users in this server sorry!")
+            await ctx.reply("No matching users found!")
             return
     # Manually get a new user in case the old one was out of date
     new_user = await ctx.bot.get_user_info(user.id)
@@ -400,7 +400,7 @@ async def cmd_avatar(ctx):
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
-            await ctx.reply("I couldn't find any matching users in this server sorry!")
+            await ctx.reply("No matching users found!")
             return
     # Manually get a new user in case the old one was out of date
     user = await ctx.bot.get_user_info(user.id)

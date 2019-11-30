@@ -438,7 +438,7 @@ async def cmd_names(ctx):
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
-            await ctx.reply("I couldn't find any matching users in this server sorry!")
+            await ctx.reply("No matching users found in this server!")
             return
     usernames = await ctx.bot.data.users_long.get(user.id, "name_history")
     if not usernames:

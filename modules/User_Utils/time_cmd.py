@@ -268,7 +268,7 @@ async def cmd_time(ctx):
         user = (await ctx.find_user(ctx.arg_str, interactive=True, in_server=True)) if ctx.arg_str else ctx.author
         if user is None:
             # Failed to find the target user
-            msg = "Couldn't find any matching users in this server sorry"
+            msg = "No matching users found!"
         else:
             # Found a user, get their timezone and construct the time message
             tz = await ctx.data.users.get(user.id, 'tz')
