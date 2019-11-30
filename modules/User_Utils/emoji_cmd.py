@@ -163,10 +163,10 @@ async def cmd_emoji(ctx):
         emojis = await get_custom_emojis(ctx, ctx.server.id)
         if emojis:
             # Check exact matches
-            index = next([i for i, emoji in enumerate(emojis) if ctx.arg_str == emoji['name'].lower()], None)
+            index = next((i for i, emoji in enumerate(emojis) if ctx.arg_str == emoji['name'].lower()), None)
             if index is None:
                 # Check inexact matches
-                index = next([i for i, emoji in enumerate(emojis) if em_str in emoji['name'].lower()], None)
+                index = next((i for i, emoji in enumerate(emojis) if em_str in emoji['name'].lower()), None)
 
             if index is not None:
                 emoji = emoji[index]
