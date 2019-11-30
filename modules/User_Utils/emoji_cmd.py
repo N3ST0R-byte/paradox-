@@ -169,7 +169,8 @@ async def cmd_emoji(ctx):
                 index = next((i for i, emoji in enumerate(emojis) if em_str in emoji['name'].lower()), None)
 
             if index is not None:
-                emoji = emoji[index]
+                emoji = emojis[index]
+                emoji_obj = discord.utils.get(ctx.bot.get_all_emojis(), id=emoji['id'])
 
         if not emoji:
             # Okay, no matches found in the current server, let's look at everyone else.
