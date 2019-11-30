@@ -50,6 +50,7 @@ async def cmd_help(ctx):
             else:
                 emb_fields = [(field[0], field[1].format(**help_keys), 0) for field in fields]
                 await ctx.emb_add_fields(embed, emb_fields)
+                embed.add_field(name="Have more questions?", value="Visit our support server [here]({}) to speak to our friendly support team!".format(ctx.bot.objects['support_guild']))
                 await ctx.offer_delete(await ctx.reply(embed=embed))
         else:
             if ctx.arg_str.strip() == "cmd":
