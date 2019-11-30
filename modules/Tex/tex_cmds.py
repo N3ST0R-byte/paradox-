@@ -134,7 +134,7 @@ def _is_tex(msg):
           category="Maths",
           short_help="Renders LaTeX code",
           aliases=[",", "$", "$$", "align", "latex", "texw", "texsp"])
-@cmds.execute("flags", flags=["config", "keepmsg", "color==", "colour==", "alwaysmath", "allowother", "name"])
+@cmds.execute("flags", flags=["config", "keepmsg", "color", "colour", "alwaysmath", "allowother", "name"])
 async def cmd_tex(ctx):
     """
     Usage:
@@ -144,7 +144,7 @@ async def cmd_tex(ctx):
         {prefix}$$ <displayeqn>
         {prefix}align <align block>
         {prefix}texsp <code>
-        {prefix}tex --colour white | black | grey | dark
+        {prefix}tex --colour [colourscheme]
     Description:
         Renders and displays LaTeX code.
 
@@ -163,7 +163,7 @@ async def cmd_tex(ctx):
         Use the reactions to delete the message and show your code, respectively.
     Flags:9
         config:: Shows you your current config.
-        colour:: Changes your colourscheme. Run this as `--colour show` to see valid schemes
+        colour:: Changes your colourscheme, or lists the valid schemes.
         keepmsg:: Toggles whether I delete your source message or not.
         alwaysmath:: Toggles whether {prefix}tex always renders in math mode.
         allowother:: Toggles whether other users may use the reaction to show your message source.
@@ -190,7 +190,7 @@ async def cmd_tex(ctx):
             await ctx.reply("I will not keep your message after compilation.")
         return
     elif ctx.flags["colour"] or ctx.flags["color"]:
-        colour = ctx.flags["colour"] if ctx.flags["colour"] else ctx.flags["color"]
+        colour = ctx.arg_str
         if colour.lower() not in colourschemes.keys():
             await ctx.reply("Valid colour schemes are: `{}`".format("`, `".join(colourschemes.keys())))
             return
