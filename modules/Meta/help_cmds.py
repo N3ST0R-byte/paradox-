@@ -63,20 +63,23 @@ async def cmd_help(ctx):
 @cmds.cmd("list",
           category="Meta",
           short_help="Lists all my commands!",
+          aliases=['ls'],
           flags=["brief"])
 async def cmd_list(ctx):
     """
     Usage:
         {prefix}list [--brief]
+        {prefix}ls
     Description:
         Replies with a list of my commands.
-        Use --brief to get a briefer listing.
+        Use as ls or with --brief to get a briefer listing.
     """
     msg = ""
     commands = await ctx.get_raw_cmds()
     sorted_cats = ctx.bot.objects["sorted cats"]
 
-    if ctx.flags["brief"]:
+    brief = ctx.flags['brief'] or ctx.used_cmd_name == 'ls'
+    if brief:
         cats = {}
         for cmd in sorted(commands):
             command = commands[cmd]
