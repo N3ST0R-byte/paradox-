@@ -122,7 +122,6 @@ async def sendfile_reaction_handler(ctx, out_msg, contents, title):
     # Generate file
     temp_file = BytesIO()
     temp_file.write(contents.encode())
-    temp_file.seek(0)
 
     while True:
         res = await ctx.bot.wait_for_reaction(message=out_msg,
@@ -136,6 +135,7 @@ async def sendfile_reaction_handler(ctx, out_msg, contents, title):
             break
         elif res.user != ctx.me:
             try:
+                temp_file.seek(0)
                 await ctx.bot.send_file(res.user, fp=temp_file, filename="preamble.tex", content=title)
             except discord.Forbidden:
                 pass
