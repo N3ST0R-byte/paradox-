@@ -29,7 +29,14 @@ async def cmd_echo(ctx):
           short_help="Generates a jump to link with a given message ID.")
 @cmds.require("in_server")
 async def cmd_jumpto(ctx):
-
+    """
+    Usage:
+        {prefix}jumpto <msgid>
+    Description:
+        Replies with the jumpto link for the given message.
+    Examples:
+        {prefix}jumpto {msg.id}
+    """
     msgid = ctx.arg_str
     if msgid == "" or not msgid.isdigit():
         await ctx.reply("Please provide a valid message ID.")
@@ -53,7 +60,7 @@ async def cmd_jumpto(ctx):
     if not message:
         await ctx.reply("Couldn't find the message!")
         return
-    embed = discord.Embed(colour=discord.Colour.green(), title="Jump to for message ID {}".format(msgid), description="[Click to jump to message]({})".format(ctx.msg_jumpto(message)))
+    embed = discord.Embed(colour=discord.Colour.green(), description="[Jump to message {}]({})".format(msgid, ctx.msg_jumpto(message)))
     await ctx.reply(embed=embed)
 
 
