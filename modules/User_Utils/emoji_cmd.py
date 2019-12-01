@@ -61,13 +61,13 @@ def read_emoji_link(emoji):
           category="Utility",
           short_help="Displays info and enlarges a custom emoji",
           aliases=["e", "ee", "ree", "sree"],
-          flags=['e', 'a', 'to=='])
+          flags=['e', 'a', 'to==', 'up=='])
 async def cmd_emoji(ctx):
     """
     Usage:
         {prefix}emoji <emoji> [-e]
         {prefix}ee <emoji>
-        {prefix}ree <emoji>
+        {prefix}ree <emoji>  [--to msgid | --up count]
     Description:
         Displays some information about the provided custom emoji, and sends an enlarged version.
         If the emoji isn't found, instead searches for the emoji amongst all emojis I can see.
@@ -209,8 +209,12 @@ async def cmd_emoji(ctx):
                 await ctx.reply("Couldn't find that message in this channel!")
                 return
         else:
+            if ctx.flags['up'].isdigit() and int(ctx.flags['up']) < 20:
+                distance = int(ctx.flags['up'])
+            else:
+                distance = 2
             # Grab logs
-            logs = ctx.bot.logs_from(ctx.ch, limit=2)
+            logs = ctx.bot.logs_from(ctx.ch, limit=distance)
             async for message in logs:
                 react_message = message
 
