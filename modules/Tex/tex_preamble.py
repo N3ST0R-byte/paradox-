@@ -41,6 +41,16 @@ with open(os.path.join(__location__, "package_whitelist.txt"), 'r') as pw:
 # Load list of preamble presets from directory
 preset_dir = os.path.join(__location__, "presets")
 presets = [os.path.splitext(fn)[0] for fn in os.listdir(preset_dir) if fn.endswith('.tex')]
+presets_lower = [p.lower() for p in presets]
+
+
+def get_preset(name):
+    """
+    Returns the preset corresponding to name, if it exists, allowing for case changes.
+    """
+    name = name.lower()
+    i = next((i for i, preset in enumerate(presets_lower) if name == preset), None)
+    return presets[i] if i is not None else None
 
 
 def split_text(text, blocksize, code=True, syntax="", maxheight=50):
@@ -640,9 +650,9 @@ async def cmd_preamble(ctx):
         else:
             # Check that the preset name entered with the command is a valid preset
             # If it is, set selected to this
-            selected = ctx.arg_str.strip().lower()
+            selected = get_preset(ctx.arg_str.strip())
 
-            if selected not in presets:
+            if not selected:
                 await ctx.reply("This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
                 return
 
@@ -847,9 +857,9 @@ async def cmd_serverpreamble(ctx):
         else:
             # Check that the preset name entered with the command is a valid preset
             # If it is, set selected to this
-            name = name.strip().lower()
+            name = get_preset(name.strip())
 
-            if name not in presets:
+            if not name:
                 await ctx.reply("This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
                 return
 
@@ -1419,9 +1429,11 @@ async def cmd_ppr(ctx):
                 return
 
             name = presets[result]
-        elif name not in presets:
-            await ctx.reply("This preamble preset doesn't exist!")
-            return
+        else:
+            name = get_preset(name.strip())
+            if not name:
+                await ctx.reply("This preamble preset doesn't exist!")
+                return
 
         # Confirm removal of the preset
         resp = await ctx.ask("Are you sure you wish to remove the preamble preset {}?".format(name))
@@ -1468,9 +1480,11 @@ async def cmd_ppr(ctx):
                 return
 
             name = presets[result]
-        elif name not in presets:
-            await ctx.reply("This preamble preset doesn't exist!")
-            return
+        else:
+            name = get_preset(name)
+            if not name:
+                await ctx.reply("This preamble preset doesn't exist!")
+                return
 
         # Get the actual contents of the preset
         preset_file = os.path.join(preset_dir, name + '.tex')
@@ -1601,9 +1615,9 @@ async def cmd_ppr(ctx):
     else:
         # Check that the preset name entered with the command is a valid preset
         # If it is, set selected to this
-        selected = args.strip().lower()
+        selected = get_preset(args.strip())
 
-        if selected not in presets:
+        if not selected:
             await ctx.reply("This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
             return
 
