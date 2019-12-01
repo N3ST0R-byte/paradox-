@@ -209,8 +209,8 @@ async def cmd_emoji(ctx):
                 await ctx.reply("Couldn't find that message in this channel!")
                 return
         else:
-            if ctx.flags['up'].isdigit() and int(ctx.flags['up']) < 20:
-                distance = int(ctx.flags['up'])
+            if ctx.flags['up'] and ctx.flags['up'].isdigit() and int(ctx.flags['up']) < 20:
+                distance = int(ctx.flags['up']) + 1
             else:
                 distance = 2
             # Grab logs
