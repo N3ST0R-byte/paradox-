@@ -218,7 +218,7 @@ class CHANNEL(paraSetting):
         else:
             def is_ch(ch):
                 return userstr.lower() in ch.name.lower()
-        ch = discord.utils.find(is_ch, ctx.server.channels)
+        ch = discord.utils.find(is_ch, [c for c in ctx.server.channels if c.type == discord.ChannelType.text])
         if ch:
             return ch.id
         else:
