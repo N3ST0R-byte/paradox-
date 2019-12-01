@@ -20,7 +20,7 @@ fi
 if [ ! -f $1.pdf ];
 then
   cp ../../failed.png $1.png
-  exit
+  exit 1
 fi
 
 convert -density 700 -quality 8 -trim +repage $1.pdf $1.png;

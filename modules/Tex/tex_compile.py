@@ -85,10 +85,11 @@ async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="defaul
         work.close()
 
     # Build compile script
-    script = "{compile_script} {id}\
-        \ncd {path}\
-        \n{colour}\
-        \n{pad}".format(compile_script=compile_path,
+    script = (
+        "{compile_script} {id} || exit;\n"
+        "cd {path}\n"
+        "{colour}\n"
+        "{pad}").format(compile_script=compile_path,
                         id=userid, path=path,
                         colour=colourschemes[colour] or "",
                         pad=pad_script if pad else "").format(image="{}.png".format(userid))
