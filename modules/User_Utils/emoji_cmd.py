@@ -144,7 +144,7 @@ async def cmd_emoji(ctx):
                 # Okay, we can't see the emoji in our list.
                 # We'll have to build the emoji manually with name and id.
                 emoji = {
-                    'name': ctx.arg_str[ctx.arg_str.find(":") + 1:ctx.arg_str.rfind(":")],
+                    'name': ctx.arg_str[ctx.arg_str.find(":") + 1:ctx.arg_str.rfind(":")].strip(),
                     'id': id_str,
                     'animated': ctx.arg_str[1] == 'a'
                 }
@@ -222,6 +222,8 @@ async def cmd_emoji(ctx):
             await ctx.bot.http.add_reaction(react_message.id, ctx.ch.id, "{}:{}".format(emoji['name'], emoji['id']))
         except discord.NotFound:
             pass
+        except discord.HttpException:
+            await ctx.reply("No matching emojis found!")
 
         # If we need to delete the source message, do this now
         if ctx.used_cmd_name == "sree":
