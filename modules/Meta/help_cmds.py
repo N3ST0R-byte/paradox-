@@ -9,7 +9,7 @@ cmds = paraCH()
 @cmds.cmd("help",
           category="Meta",
           short_help="Provides some detailed help on a command.",
-          aliases=["h"])
+          aliases=['h', 'man'])
 async def cmd_help(ctx):
     """
     Usage:
