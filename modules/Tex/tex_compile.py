@@ -55,8 +55,6 @@ compile_path = os.path.join(__location__, "texcompile.sh")
 
 # Header for every LaTeX source file
 header = "\\documentclass[preview, border=10pt, 13pt]{standalone}\
-    \\usepackage[warnunknown, fasterrors, mathletters]{ucs}\
-    \\usepackage[utf8x]{inputenc}\
     \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
     \n\\nonstopmode"
 
