@@ -171,7 +171,7 @@ async def cmd_notifyme(ctx):
         here:: Message must be from this server.
         from:: Message must be from this specified user.
         notbot:: Message was not sent by a bot.
-        in:: Message must be in this channel. (TBD)
+        in:: Message must be in this channel.
         mentions:: Message mentions provided user.
         rolementions:: Message mentions provided role.
         smart:: WIP option to delay notifications and not send them if you've already seen the message
