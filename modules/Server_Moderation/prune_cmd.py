@@ -143,7 +143,11 @@ async def cmd_prune(ctx):
         except discord.HTTPException:
             try:
                 for msg in message_list:
-                    await ctx.bot.delete_message(msg)
+                    try:
+                        await ctx.bot.delete_message(msg)
+                    except discord.NotFound:
+                        # The message may have been deleted in the meantime
+                        pass
             except discord.Forbidden:
                 await ctx.reply("I have insufficient permissions to delete these messages.")
                 abort = True
