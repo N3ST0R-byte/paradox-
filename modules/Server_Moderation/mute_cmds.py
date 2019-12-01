@@ -123,19 +123,16 @@ async def unmute(ctx, user, **kwargs):
 async def cmd_mute(ctx):
     """
     Usage:
-        {prefix}mute <user> [reason] [-f] [-t time]
-        {prefix}mute -m <user1> [user2] [user3]... [-r <reason>] [-f] [-t time]
+        {prefix}mute user 1, user 2, user 3 [-r <reason>] [-f] [-t <time>]
     Description:
-        Mutes the users listed with an optional reason. (WIP)
-        Multi mute currently supports up to 20 users.
+        Mutes the users listed with an optional reason.
         <Required>, [Optional]
     Flags:3
-        -m::  **multi** Allows multiple user mutes. (20 maximum)
         -r::  **reason** Reason for the mute.
         -f::  **fake** Pretends to mute.
         -t::  **time** Optional time to mute for.
     Examples:
-        {prefix}mute {msg.author.name} For jokes -t 1d, 2h, 10m
+        {prefix}mute {msg.author.name} -r For jokes -t 1d, 2h, 10m
     """
     if ctx.arg_str.strip() == "":
         await ctx.reply("You must give me a user to mute!")
@@ -170,16 +167,15 @@ async def cmd_mute(ctx):
 async def cmd_unmute(ctx):
     """
     Usage:
-        {prefix}unmute <user> [reason] [-f]
-        {prefix}unmute <user1> [user2] [user3]... [-r <reason>] [-f]
+        {prefix}unmute user 1, user 2, user 3 [-r <reason>] [-f]
     Description:
-        Unmutes the users listed with an optional reason. (WIP)
-        Multi unmute currently supports up to 20 users.
+        Unmutes the users listed with an optional reason.
         <Required>, [Optional]
     Flags:3
-        -m::  **multi** Allows multiple user unmutes. (20 maximum)
         -r::  **reason** Reason for the unmute.
         -f::  **fake** Pretends to unmute.
+    Examples:
+        {prefix}unmute {msg.author.name} -r Jokes complete
     """
     if ctx.arg_str.strip() == "":
         await ctx.reply("You must give me at least one user to unmute")
