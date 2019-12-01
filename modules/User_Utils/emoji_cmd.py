@@ -151,6 +151,9 @@ async def cmd_emoji(ctx):
                 if not await emoji_validity(emoji):
                     await ctx.reply("No matching emojis found!")
                     return
+            else:
+                # We found the emoji, get the emoji dict
+                emoji = await get_custom_emoji(ctx, emoji_obj.server.id, emoji_obj.id)
     elif not all(ord(char) < 128 for char in ctx.arg_str):
         # There's unicode in this string
         # TODO: handle unicode emojis
