@@ -104,7 +104,7 @@ async def create_tag(ctx):
     tag_name = ctx.arg_str if ctx.arg_str else None
     content = None
     created_time = ctx.msg.timestamp
-    created_time_str = created_time.strftime("%-I:%M %p, %d/%m/%Y")
+    created_time_str = created_time.strftime("%I:%M %p, %d/%m/%Y")
 
     if ctx.flags["from"]:
         try:

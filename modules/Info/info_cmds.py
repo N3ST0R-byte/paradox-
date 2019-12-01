@@ -317,7 +317,7 @@ async def cmd_serverinfo(ctx):
           edit_handler=cmds.edit_handler_rerun,
           aliases=["ci"])
 @cmds.require('in_server')
-async def cmd_secho(ctx):
+async def cmd_channelinfo(ctx):
     """
     Usage:
         {prefix}channelinfo [<channel-name> | <channel-mention> | <channel-id]
@@ -325,9 +325,12 @@ async def cmd_secho(ctx):
         Gives information on a text channel, voice channel, or category.
     """
     valid_channels = [ch for ch in ctx.server.channels if ch.permissions_for(ctx.author).read_messages]
-    ch = await ctx.find_channel(ctx.arg_str, interactive=True, collection=valid_channels)
-    if not ch:
-        return
+    if not ctx.arg_str:
+        ch = ctx.ch
+    else:
+        ch = await ctx.find_channel(ctx.arg_str, interactive=True, collection=valid_channels)
+        if not ch:
+            return
     type = str(ch.type)
     name = "{} [{}]".format(ch.name, ch.mention) if type == "text" else "{}".format(ch.name)
     # category = "{} (ID:{})".format(ctx.ch.category, ctx.ch.category_id) # Version too old for this
