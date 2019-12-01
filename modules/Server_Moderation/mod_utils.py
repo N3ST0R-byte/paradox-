@@ -43,6 +43,7 @@ async def member_finder(ctx, user_str, msg, hack=False, collection=None, is_memb
             member = discord.Object(id=user_str)
             member.server = ctx.server
             member.name = member_info.name
+            member.__str__ = member_info.__str__
             return (member, msg)
     user = await ctx.find_user(user_str, in_server=True, interactive=True, collection=collection, is_member=is_member)
     if user is None:

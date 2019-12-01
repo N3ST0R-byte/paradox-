@@ -28,7 +28,7 @@ class ModEvent:
         self.action = action
         self.mod = mod
         self.users = users
-        self.user_strs = ["`{0.id}`: {0}".format(user) for user in users]
+        self.user_strs = ["`{}`: {}".format(user.id, user.__str__()) for user in users]
         self.timeout = timeout
         self.reason = reason
         self.init_time = datetime.utcnow()
