@@ -229,7 +229,7 @@ async def cmd_emoji(ctx):
             await ctx.bot.http.add_reaction(react_message.id, ctx.ch.id, "{}:{}".format(emoji['name'], emoji['id']))
         except discord.NotFound:
             pass
-        except discord.HttpException:
+        except discord.HTTPException:
             await ctx.reply("No matching emojis found!")
 
         # If we need to delete the source message, do this now
