@@ -92,7 +92,7 @@ def load_into(bot):
             pass
         except discord.NotFound:
             pass
-        if result == "c":
+        if result in ["c", "C"]:
             if not silent:
                 await ctx.reply("Cancelled selection.")
             ctx.cmd_err = (-1, "")  # User cancelled or didn't respond
@@ -140,7 +140,7 @@ def load_into(bot):
         except Exception:
             pass
         # if user cancels selection, reply and return
-        if result == "c":
+        if result in ["c", "C"]:
             if not silent:
                 await ctx.reply("Cancelled selection.")
             ctx.cmd_err = (-1, "")  # User cancelled or didn't respond
