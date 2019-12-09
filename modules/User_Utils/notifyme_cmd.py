@@ -196,7 +196,7 @@ async def cmd_notifyme(ctx):
             for check in checks:
                 check_strs.append(await check_to_str(ctx, check, markdown=False))
             selected = await ctx.multi_selector("Select pounces to remove!", check_strs)
-            if selected is None:
+            if not selected:
                 return
             to_remove = []
             for item in selected:
