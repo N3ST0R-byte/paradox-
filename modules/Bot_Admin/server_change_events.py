@@ -4,17 +4,27 @@ from datetime import datetime
 
 # Provides logging events for when the bot joins and leaves servers
 
+"""
+Event handlers for posting the leave/join server messages in the botlog
+
+Handlers:
+    log_left_server:
+        Posts to the botlog when the bot leaves a serer
+    log_joined_server:
+        Posts to the botlog when the bot joins a server
+"""
+
+
 async def log_left_server(bot, server):
     owner = server.owner
     icon = server.icon_url
     servers = bot.servers
 
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.red())
+    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.red(), timestamp=datetime.now())
     embed.set_author(name="Left server!")
     embed.set_thumbnail(url=icon)
     embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(owner), inline=False)
     embed.add_field(name="Now playing in", value="{} servers".format(len(servers)), inline=False)
-    embed.set_footer(text=datetime.utcnow().strftime("Left at %-I:%M %p, %d/%m/%Y"))
     log_ch = bot.objects["server_change_log_channel"]
     if log_ch:
         await bot.send_message(log_ch, embed=embed)
@@ -50,17 +60,16 @@ async def log_joined_server(bot, server):
     total = "`{}`".format(server.member_count)
     mem_str = "{0:<5}\t{4},\n{1:<5}\t{5},\n{2:<5}\t{6}, and\n{3:<5}\t{7}.".format(known, unknown, bots, total, mem1, mem2, mem3, mem4)
 
-    created = server.created_at.strftime("%-I:%M %p, %d/%m/%Y")
+    created = server.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=owner.colour if owner.colour.value else discord.Colour.light_grey())
+    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.green(), timestamp=datetime.now())
     embed.set_author(name="Joined server!")
     embed.set_thumbnail(url=icon)
-    embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(owner), inline=False)
+    embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
     embed.add_field(name="Region", value=bot.objects["regions"][str(server.region)], inline=False)
     embed.add_field(name="Created at", value="{}".format(created), inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
     embed.add_field(name="Now playing in", value="{} servers".format(len(bot.servers)), inline=False)
-    embed.set_footer(text=datetime.utcnow().strftime("Joined at %-I:%M %p, %d/%m/%Y"))
 
     log_ch = bot.objects["server_change_log_channel"]
     if log_ch:
@@ -71,5 +80,5 @@ async def log_joined_server(bot, server):
 
 
 def load_into(bot):
-    bot.add_after_event("server_join", log_joined_server, priority = 10)
-    bot.add_after_event("server_remove", log_left_server, priority = 10)
+    bot.add_after_event("server_join", log_joined_server, priority=10)
+    bot.add_after_event("server_remove", log_left_server, priority=10)

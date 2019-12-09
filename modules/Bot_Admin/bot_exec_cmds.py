@@ -2,17 +2,36 @@ import sys
 from io import StringIO
 import traceback
 import asyncio
+import inspect
+
 import discord
 
 from paraCH import paraCH
 
 cmds = paraCH()
 
-# Provides async, exec, eval, seval
+"""
+Exec level commands to manage the bot.
+
+Commands provided:
+    async:
+        Executes provided code in an async executor
+    exec:
+        Executes code using standard python exec
+    eval:
+        Executes code and awaits it if required
+    shell:
+        Runs a command in the executing environment
+    showcmd:
+        Views the source of a command
+        This does not need any special permissions, but is a hidden command
+"""
+
 
 @cmds.cmd("async",
           category="Bot admin",
-          short_help="Executes async code and displays the output")
+          short_help="Executes async code and displays the output",
+          edit_handler=cmds.edit_handler_rerun)
 @cmds.require("exec_perm")
 async def cmd_async(ctx):
     """
@@ -36,7 +55,8 @@ async def cmd_async(ctx):
 @cmds.cmd("exec",
           category="Bot admin",
           short_help="Executes python code using exec and displays the output",
-          aliases=["ex"])
+          aliases=["ex"],
+          edit_handler=cmds.edit_handler_rerun)
 @cmds.require("exec_perm")
 async def cmd_exec(ctx):
     """
@@ -60,7 +80,8 @@ async def cmd_exec(ctx):
 @cmds.cmd("eval",
           category="Bot admin",
           short_help="Executes python code using eval and displays the output",
-          aliases=["ev"])
+          aliases=["ev"],
+          edit_handler=cmds.edit_handler_rerun)
 @cmds.require("exec_perm")
 async def cmd_eval(ctx):
     """
@@ -83,7 +104,8 @@ async def cmd_eval(ctx):
 
 @cmds.cmd("seval",
           category="Bot admin",
-          short_help="Silent version of eval.")
+          short_help="Silent version of eval.",
+          edit_handler=cmds.edit_handler_rerun)
 @cmds.require("exec_perm")
 async def cmd_seval(ctx):
     """
@@ -106,7 +128,8 @@ async def cmd_seval(ctx):
 
 @cmds.cmd("shell",
           category="Bot admin",
-          short_help="Runs a command in the operating environment.")
+          short_help="Runs a command in the operating environment.",
+          edit_handler=cmds.edit_handler_rerun)
 @cmds.require("exec_perm")
 async def cmd_shell(ctx):
     """
@@ -130,6 +153,33 @@ async def cmd_shell(ctx):
                         \n```sh\n{}\n```\
                         \n**Output:**".format(ctx.arg_str))
         await ctx.reply("{}".format(output), code=True, split=True)
+
+
+@cmds.cmd("showcmd",
+          category="Bot admin",
+          short_help="Shows the source of a command.",
+          edit_handler=cmds.edit_handler_rerun)
+async def cmd_showcmd(ctx):
+    """
+        Usage:
+            {prefix}showcmd cmdname
+        Description:
+            Replies with the source for the command <cmdname>
+    """
+    # Get the list of current active commands, including aliases
+    cmds = await ctx.get_cmds()
+
+    if not ctx.arg_str:
+        await ctx.reply("You must give me with a command name!")
+    elif ctx.arg_str not in cmds:
+        await ctx.reply("I don't recognise this command.")
+    else:
+        cmd_func = cmds[ctx.arg_str].func
+        source = inspect.getsource(cmd_func)
+        source = source.replace('```', '[codeblock]')
+        blocks = ctx.split_text(source, 1800, syntax='python')
+
+        await ctx.offer_delete(await ctx.pager(blocks, locked=False))
 
 
 async def _eval(ctx):
@@ -171,8 +221,9 @@ async def _async(ctx):
         exec(exec_string, env)
         result = (redirected_output.getvalue(), 0)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()))
+        await ctx.bot.log(str(traceback.format_exc()), chid=ctx.ch.id)
         result = (str(traceback.format_exc()), 1)
+        return result
     _temp_exec = env['_temp_exec']
     try:
         returnval = await _temp_exec()
@@ -182,7 +233,7 @@ async def _async(ctx):
         else:
             result = (value + '\n' + str(returnval), 0)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()))
+        await ctx.bot.log(str(traceback.format_exc()), chid=ctx.ch.id)
         result = (str(traceback.format_exc()), 1)
     finally:
         sys.stdout = old_stdout

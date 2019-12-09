@@ -1,12 +1,10 @@
-from paraCH import paraCH
 import discord
 from datetime import datetime
 from pytz import timezone
-import pytz
-import iso8601
 import aiohttp
 import string
 
+from paraCH import paraCH
 
 cmds = paraCH()
 
@@ -29,7 +27,14 @@ async def cmd_echo(ctx):
           short_help="Generates a jump to link with a given message ID.")
 @cmds.require("in_server")
 async def cmd_jumpto(ctx):
-
+    """
+    Usage:
+        {prefix}jumpto <msgid>
+    Description:
+        Replies with the jumpto link for the given message.
+    Examples:
+        {prefix}jumpto {msg.id}
+    """
     msgid = ctx.arg_str
     if msgid == "" or not msgid.isdigit():
         await ctx.reply("Please provide a valid message ID.")
@@ -53,14 +58,14 @@ async def cmd_jumpto(ctx):
     if not message:
         await ctx.reply("Couldn't find the message!")
         return
-    embed = discord.Embed(colour=discord.Colour.green(), title="Jump to for message ID {}".format(msgid), description="[Click to jump to message]({})".format(ctx.msg_jumpto(message)))
+    embed = discord.Embed(colour=discord.Colour.green(), description="[Jump to message {}]({})".format(msgid, ctx.msg_jumpto(message)))
     await ctx.reply(embed=embed)
 
 
 @cmds.cmd("quote",
           category="Utility",
           short_help="Quotes a message by ID")
-@cmds.execute("flags", flags=["a"])
+@cmds.execute("flags", flags=["a", "r"])
 @cmds.require("in_server")
 async def cmd_quote(ctx):
     """
@@ -71,6 +76,7 @@ async def cmd_quote(ctx):
         Note that the message must be from the same server.
     Flags:
         -a:  (anonymous) Removes author information from the quote.
+        -r: (raw) Gives the raw message instead of an embed.
     """
     msgid = ctx.arg_str
     if msgid == "" or not msgid.isdigit():
@@ -85,23 +91,35 @@ async def cmd_quote(ctx):
         pass
     if not message:
         message = await ctx.find_message(msgid, ignore=[ctx.ch])
-
     if not message:
         await ctx.bot.edit_message(out_msg, "Couldn't find the message!")
         return
 
-    embed = discord.Embed(colour=discord.Colour.light_grey(),
-                          description=message.content,
-                          title="Click to jump to message",
-                          url=ctx.msg_jumpto(message))
+    quote_content = message.content.replace("```", "[CODEBLOCK]") if ctx.flags['r'] else message.content
 
-    if not ctx.flags["a"]:
-        embed.set_author(name="{user.name}".format(user=message.author),
-                         icon_url=message.author.avatar_url)
-    embed.set_footer(text=message.timestamp.strftime("Sent at %-I:%M %p, %d/%m/%Y in #{}".format(message.channel.name)))
-    if message.attachments:
-        embed.set_image(url=message.attachments[0]["proxy_url"])
-    await ctx.bot.edit_message(out_msg, " ", embed=embed)
+    header = "[Click to jump to message]({})".format(ctx.msg_jumpto(message))
+    blocks = ctx.split_text(quote_content, 1000, code=ctx.flags['r'])
+
+    embeds = []
+    for block in blocks:
+        desc = header + "\n" + block
+        embed = discord.Embed(colour=discord.Colour.light_grey(),
+                              description=desc,
+                              timestamp=datetime.now())
+
+        if not ctx.flags["a"]:
+            embed.set_author(name="{user.name}".format(user=message.author),
+                             icon_url=message.author.avatar_url)
+        embed.set_footer(text="Sent in #{}".format(message.channel.name))
+        if message.attachments:
+            embed.set_image(url=message.attachments[0]["proxy_url"])
+        embeds.append(embed)
+
+    if len(embeds) == 1:
+        await ctx.bot.edit_message(out_msg, " ", embed=embed)
+    else:
+        await ctx.bot.delete_message(out_msg)
+        await ctx.pager(embeds, embed=True, locked=False)
 
 
 @cmds.cmd("secho",
@@ -227,145 +245,12 @@ async def cmd_piggybank(ctx):
                     pass
             else:
                 TZ = timezone("UTC")
-            timestr = '%-I:%M %p, %d/%m/%Y (%Z)'
+            timestr = '%I:%M %p, %d/%m/%Y (%Z)'
             timestr = TZ.localize(trans_time).strftime(timestr)
             msg += "{}\t {:^10}\n".format(timestr, str(transactions[trans]["amount"]))
         await ctx.reply(msg + "```", dm=True)
     else:
         await ctx.reply("Usage: {}piggybank [+|- <amount>] | [list] | [goal <amount>|none]".format(ctx.used_prefix))
-
-
-@cmds.cmd("timezone",
-          category="Utility",
-          short_help="Searches the timezone list",
-          aliases=["tz"])
-async def cmd_timezone(ctx):
-    """
-    Usage:
-        {prefix}timezone <partial>
-    Description:
-        Searches for <partial> amongst the available timezones and shows you the current time in each!
-    """
-    timestr = '%-I:%M %p'
-    tzlist = [(tz, iso8601.parse_date(datetime.now().isoformat()).astimezone(timezone(tz)).strftime(timestr)) for tz in pytz.all_timezones]
-    if ctx.arg_str:
-        tzlist = [tzpair for tzpair in tzlist if (ctx.arg_str.lower() in tzpair[0].lower()) or (ctx.arg_str.lower() in tzpair[1].lower())]
-    if not tzlist:
-        await ctx.reply("No timezones were found matching these criteria!")
-        return
-
-    tz_blocks = [tzlist[i:i + 20] for i in range(0, len(tzlist), 20)]
-    max_block_lens = [len(max(list(zip(*tz_block))[0], key=len)) for tz_block in tz_blocks]
-    block_strs = [["{0[0]:^{max_len}} {0[1]:^10}".format(tzpair, max_len=max_block_lens[i]) for tzpair in tzblock] for i, tzblock in enumerate(tz_blocks)]
-    tz_pages = ["```\n{}\n```".format("\n".join(block)) for block in block_strs]
-    await ctx.pager(tz_pages)
-
-
-@cmds.cmd(name="emoji",
-          category="Utility",
-          short_help="Displays info and enlarges a custom emoji",
-          aliases=["e", "ee", "ree", "sree"])
-@cmds.execute("flags", flags=["e", "a"])
-async def cmd_emoji(ctx):
-    """
-    Usage:
-        {prefix}emoji <emoji> [-e]
-        {prefix}ee <emoji>
-        {prefix}ree <emoji>
-    Description:
-        Displays some information about the provided custom emoji, and sends an enlarged version.
-        If the emoji isn't found, instead searches for the emoji amongst all emojis I can see.
-        If used as ee or given with -e flag, only shows the enlarged image.
-        If used as ree, reacts with the emoji.
-        Built in emoji support is coming soon!
-    Flags:
-        -e:  (enlarge) Only shows the enlarged emoji, with no other info.
-        -a:  (animated) Forces to show the emoji as animated (if possible).
-    Examples:
-        {prefix}e catThink
-    """
-    # TODO: Handle the case where a builtin emoji has the same name as a custom emoji
-    # Any way of testing whether an emoji from get is a builtin?
-    # Emojis with the same name are shown
-    if not ctx.arg_str and ctx.used_cmd_name in ["ree", "sree"]:
-        ctx.arg_str = "reeeeeeeeeee"
-    if not ctx.arg_str:
-        if ctx.server:
-            emojis = filter(lambda e: e.server == ctx.server, ctx.bot.get_all_emojis())
-            if emojis:
-                await ctx.reply("Custom emojis in this server:\n{}".format(" ".join(map(str, emojis))))
-                return
-            else:
-                await ctx.reply("No custom emojis in this server! You can search for emojis using this command!")
-                return
-        else:
-            await ctx.reply("Search for emojis using {}`emoji <search>`".format(ctx.used_prefix))
-            return
-    id_str = 0
-    em_str = 0
-    emoji = None
-    emojis = []
-    if ctx.used_cmd_name in ["ee", "ree", "sree"]:
-        ctx.flags["e"] = True
-    embed = discord.Embed(title=None if ctx.flags["e"] else "Emoji info!", color=discord.Colour.light_grey())
-    if ctx.arg_str.endswith(">") and ctx.arg_str.startswith("<"):
-        id_str = ctx.arg_str[ctx.arg_str.rfind(":") + 1:-1]
-        if id_str.isdigit():
-            emoji = discord.utils.get(ctx.bot.get_all_emojis(), id=id_str)
-            if emoji is None:
-                link = "https://cdn.discordapp.com/emojis/{}.{}".format(id_str, "gif" if ctx.arg_str[1] == "a" or ctx.flags["a"] else "png")
-                embed.set_image(url=link)
-                if not ctx.flags["e"]:
-                    emb_fields = [("Name", ctx.arg_str[ctx.arg_str.find(":") + 1:ctx.arg_str.rfind(":")], 0),
-                                  ("ID", id_str, 0),
-                                  ("Link", "[Click me](" + link + ")", 0)]
-                    await ctx.emb_add_fields(embed, emb_fields)
-                try:
-                    await ctx.reply(None if ctx.flags["e"] else "I couldn't find the emoji in my servers, but here is what I have!", embed=embed)
-                except Exception:
-                    await ctx.reply("I couldn't understand or find the emoji in your message")
-                return
-    else:
-        em_str = ctx.arg_str.strip(":")
-        emoji = discord.utils.get(ctx.bot.get_all_emojis(), name=em_str)
-        emojis = list(filter(lambda e: (em_str.lower() in e.name.lower()), ctx.bot.get_all_emojis()))
-        emoji = emoji if emoji else (emojis[0] if emojis else None)
-        if not emoji:
-            await ctx.reply("I cannot see any matching emojis.\nPlease note I cannot handle built in emojis at this time.")
-            return
-    url = "https://cdn.discordapp.com/emojis/{}.{}".format(emoji.id, "gif" if ctx.flags["a"] else "png")
-    embed.set_image(url=url)
-    if not ctx.flags["e"]:
-        created_ago = ctx.strfdelta(datetime.utcnow() - emoji.created_at)
-        created = emoji.created_at.strftime("%-I:%M %p, %d/%m/%Y")
-        emojis = emojis[:10] if emojis else filter(lambda e: (e.name == emoji.name) and (e != emoji), ctx.bot.get_all_emojis())
-        emoj_similar_str = " ".join(map(str, emojis))
-        emb_fields = [("Name", emoji.name, 0),
-                      ("ID", emoji.id, 0),
-                      ("Link", emoji.url, 0),
-                      ("Originating server", emoji.server.name if emoji.server else "Built in", 0),
-                      ("Created at", "{}({} ago)".format(created, created_ago), 0)]
-        if emoj_similar_str:
-            emb_fields.append(("Some other matching emojis", emoj_similar_str, 0))
-        await ctx.emb_add_fields(embed, emb_fields)
-    try:
-        if ctx.used_cmd_name in ["ree", "sree"]:
-            logs = ctx.bot.logs_from(ctx.ch, limit=2)
-            async for message in logs:
-                message = message
-            await ctx.bot.add_reaction(message, emoji)
-            if ctx.used_cmd_name == "sree":
-                try:
-                    await ctx.bot.delete_message(ctx.msg)
-                except discord.Forbidden:
-                    pass
-        else:
-            await ctx.reply(embed=embed)
-    except discord.HTTPException:
-        if ctx.flags["a"]:
-            await ctx.reply("Failed to send animated emoji. Maybe this emoji isn't animated?")
-        else:
-            await ctx.reply("Failed to send the emoji!")
 
 
 @cmds.cmd(name="colour",
@@ -425,7 +310,7 @@ async def cmd_names(ctx):
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
-            await ctx.reply("I couldn't find any matching users in this server sorry!")
+            await ctx.reply("No matching users found in this server!")
             return
     usernames = await ctx.bot.data.users_long.get(user.id, "name_history")
     if not usernames:

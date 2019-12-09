@@ -15,7 +15,7 @@ def load_into(bot):
             def is_user(member):
                 return (user_str.lower() in str(member).lower())
 
-        collection = collection if collection else (ctx.server.members if in_server else ctx.bot.get_all_members())
+        collection = collection if collection is not None else (ctx.server.members if in_server else ctx.bot.get_all_members())
         collection = list(collection)
         if maybe_user_id.isdigit():
             user = discord.utils.get(collection, id=maybe_user_id)
@@ -69,7 +69,7 @@ def load_into(bot):
             ctx.cmd_err = (-1, "")
             return None
 
-        collection = collection if collection else ctx.server.roles
+        collection = collection if collection is not None else ctx.server.roles
 
         roleid = userstr.strip('<#@!>')
         if interactive:
@@ -105,4 +105,49 @@ def load_into(bot):
                 await ctx.bot.delete_message(msg)
                 role = discord.utils.get(ctx.server.roles, id=role.id)
                 return role
+            return None
+
+
+    @bot.util
+    async def find_channel(ctx, userstr, create=False, interactive=False, collection=None):
+        if not ctx.server:
+            ctx.cmd_err = (1, "This is not valid outside of a server!")
+            return None
+        if userstr == "":
+            await ctx.reply("No channel name was provided. Please try again.")
+            ctx.cmd_err = (-1, "")
+            return None
+
+        collection = collection if collection is not None else ctx.server.channels
+
+        channelid = userstr.strip('<#@>')
+        tv = {
+        "text": "Text",
+        "voice": "Voice",
+        "4": "Category"
+        }
+        if interactive:
+            def check(channel):
+                return (channel.id == channelid) or (userstr.lower() in channel.name.lower())
+            channels = list(filter(check, collection))
+            if len(channels) == 0:
+                channel = None
+            else:
+                selected = await ctx.selector("Multiple channels found matching `{}`! Please select one.".format(userstr),
+                                              ["{} ({})".format(channel.name, tv[str(channel.type)]) for channel in channels])
+                if selected is None:
+                    return None
+                channel = channels[selected]
+        else:
+            if channelid.isdigit():
+                def is_channel(channel):
+                    return channel.id == channelid
+            else:
+                def is_channel(channel):
+                    return userstr.lower() in channel.name.lower()
+            channel = discord.utils.find(is_channel, collection)
+        if channel:
+            return channel
+        else:
+            await ctx.reply("Couldn't find a channel matching `{}`!".format(userstr))
             return None

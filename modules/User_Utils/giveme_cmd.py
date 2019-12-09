@@ -8,7 +8,7 @@ cmds = paraCH()
 @cmds.cmd("giveme",
           category="Moderation",
           short_help="Request, list and modify the self assignable roles.",
-          aliases=["selfrole", "srole", "iam", "iamnot"])
+          aliases=["selfrole", "srole", "iam", "iamnot", "roleme"])
 @cmds.require("in_server")
 @cmds.execute("flags", flags=["add", "remove", "list"])
 async def cmd_giveme(ctx):
@@ -66,18 +66,18 @@ async def cmd_giveme(ctx):
             selection = await ctx.selector("Please select which self assignable role you wish to toggle.", lines)
             if selection is None:
                 return
-            roles = [lines[selection]]
+            msg_roles = [self_roles[selection]]
     else:
         roles = ctx.arg_str.split(",")
-    msg_roles = []
-    for role in roles:
-        msg_role = await ctx.find_role(role.strip(), create=True if mod else False, interactive=True, collection=None if ctx.flags["add"] else self_roles)
-        if msg_role is None:
-            if role.isdigit() and ctx.flags["remove"]:
-                continue
-            else:
-                return
-        msg_roles.append(msg_role)
+        msg_roles = []
+        for role in roles:
+            msg_role = await ctx.find_role(role.strip(), create=True if mod else False, interactive=True, collection=None if ctx.flags["add"] else self_roles)
+            if msg_role is None:
+                if role.isdigit() and ctx.flags["remove"]:
+                    continue
+                else:
+                    return
+            msg_roles.append(msg_role)
 
     if mod:
         if ctx.flags["remove"]:
@@ -104,7 +104,8 @@ async def cmd_giveme(ctx):
         except discord.Forbidden:
             await ctx.reply("I don't have permissions to update these roles for you!")
             return
-    await ctx.reply("Updated your roles!")
+    # msg = "You now have `{}`.".format(role.name) if role in ctx.author.roles else "You no longer have `{}`.".format(role.name)
+    await ctx.reply("Your roles have been updated!")
     # TODO: Make interactive system with no arg_str, with comma separated list of numbers selecting roles
     # This probably needs a check func passed to the wait_for
 

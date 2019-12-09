@@ -65,9 +65,11 @@ async def cmd_config(ctx):
             return
         op = ctx.params[1]
         op_conf = serv_conf[op]
-        msg = "Option help: ```\n{}.\nAcceptable input: {}.\nDefault value: {}```"\
-            .format(op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx))
-        await ctx.reply(msg)
+        prop_list = ["Description", "Acceptable Input", "Default Value"]
+        value_list = [op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx)]
+        desc = ctx.prop_tabulate(prop_list, value_list)
+        embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(op), description=desc)
+        await ctx.reply(embed=embed)
     else:
         if ctx.params[0] not in serv_conf:
             await ctx.reply("Unrecognised option! See `{0.used_prefix}config help` for all options.".format(ctx))
@@ -75,11 +77,14 @@ async def cmd_config(ctx):
         if len(ctx.params) == 1:
             op = ctx.params[0]
             op_conf = serv_conf[op]
-            msg = "Option help: ```\n{}.\nAcceptable input: {}.\nDefault value: {}```"\
-                .format(op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx))
-            msg += "Currently set to: {}".format(await op_conf.hr_get(ctx))
-            await ctx.reply(msg)
+            # Why must you do this to me
+            whydoyoudothis = "" if op_conf.desc.endswith(".") else "."
+            prop_list = ["Description", "Acceptable Input", "Default Value", "Current Value"]
+            value_list = [op_conf.desc + whydoyoudothis, op_conf.accept, await op_conf.dyn_default(ctx), await op_conf.hr_get(ctx)]
+            desc = ctx.prop_tabulate(prop_list, value_list)
+            embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(ctx.params[0]), description=desc)
+            await ctx.reply(embed=embed)
         else:
             await serv_conf[ctx.params[0]].hr_set(ctx, ' '.join(ctx.params[1:]))
             if not ctx.cmd_err[0]:
-                await ctx.reply("The setting was set successfully")
+                await ctx.reply("The setting was set successfully.")

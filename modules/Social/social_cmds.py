@@ -22,7 +22,7 @@ async def cmd_profile(ctx):
     if ctx.arg_str != "":
         user = ctx.objs["found_user"]
         if not user:
-            await ctx.reply("I couldn't find any matching users in this server sorry!")
+            await ctx.reply("No matching users found!")
             return
 
     badge_dict = {"master_perm": "botowner",
@@ -40,7 +40,7 @@ async def cmd_profile(ctx):
     ctx.authid = tempid
 
     created_ago = ctx.strfdelta(datetime.utcnow() - user.created_at)
-    created = user.created_at.strftime("%-I:%M %p, %d/%m/%Y")
+    created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
     rep = await ctx.data.users.get(user.id, "rep")
     given_rep = await ctx.data.users.get(user.id, "given_rep")
 
@@ -65,7 +65,7 @@ async def cmd_profile(ctx):
         except Exception:
             await ctx.reply("An invalid timezone was provided in the database. Aborting... \n **Error Code:** `ERR_CORRUPTED_DB`")
             return
-        timestr = '%-I:%M %p on %a, %d/%m/%Y'
+        timestr = '%I:%M %p on %a, %d/%m/%Y'
         timestr = iso8601.parse_date(datetime.now().isoformat()).astimezone(TZ).strftime(timestr)
         embed.add_field(name="Current Time", value="{}".format(timestr), inline=False)
     embed.add_field(name="Created at",

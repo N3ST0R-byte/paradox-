@@ -33,11 +33,10 @@ async def cmd_feedback(ctx):
         elif response.lower() == "c":
             await ctx.reply("User cancelled, aborting!")
             return
-    embed = discord.Embed(title="Feedback", color=discord.Colour.green()) \
+    embed = discord.Embed(title="Feedback", color=discord.Colour.green(), timestamp=datetime.now(), description=response) \
         .set_author(name="{} ({})".format(ctx.author, ctx.authid),
                     icon_url=ctx.author.avatar_url) \
-        .add_field(name="Message", value=response, inline=False) \
-        .set_footer(text=datetime.utcnow().strftime("Sent from {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
+        .set_footer(text=datetime.utcnow().strftime("Sent from {}".format(ctx.server.name if ctx.server else "private message")))
     out_msg = await ctx.reply(embed=embed)
     response = await ctx.ask("Are you sure you wish to send the above message to the developers?")
     if not response:
@@ -46,7 +45,7 @@ async def cmd_feedback(ctx):
     await ctx.bot.send_message(ctx.bot.objects["feedback_channel"], embed=embed)
     if ctx.bot.objects["brief"]:
         await ctx.bot.delete_message(out_msg)
-    await ctx.reply("Thank you! Your feedback has been sent.")
+    await ctx.reply("Thank you! Your feedback has been sent.\nConsider joining our support guild below to discuss your feedback with the developers and stay updated on the latest changes!\n{}".format(ctx.bot.objects["support_guild"]))
 
 
 @cmds.cmd("abusereport",
@@ -69,6 +68,9 @@ async def cmd_cr(ctx):
     user = ctx.params[0]
     cheat = ' '.join(ctx.params[1:])
     evidence = ctx.flags['e'] if ctx.flags['e'] else "None. (Note that cheat reports without evidence are not recommended)"
+    if len(evidence) > 1000:
+        await ctx.reply("Your evidence must be less than 1k characters!")
+        return
     if not user.isdigit():
         if not ctx.server:
             await ctx.reply("Please provide a valid user ID when reporting from private message")
@@ -81,13 +83,12 @@ async def cmd_cr(ctx):
     if not user:
         await ctx.reply("Couldn't find this user!")
         return
-    embed = discord.Embed(title="Cheat Report", color=discord.Colour.red()) \
+    embed = discord.Embed(title="Cheat Report", color=discord.Colour.red(), description=cheat) \
         .set_author(name="{} ({})".format(ctx.author, ctx.authid),
-                    icon_url=ctx.author.avatar_url) \
+                    icon_url=ctx.author.avatar_url)\
         .add_field(name="Reported User", value="`{0}` (`{0.id}`)".format(user), inline=True) \
-        .add_field(name="Cheat", value=cheat, inline=True) \
         .add_field(name="Evidence", value=evidence, inline=False) \
-        .set_footer(text=datetime.utcnow().strftime("Reported in {} at %-I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
+        .set_footer(text=datetime.utcnow().strftime("Reported in {} at %I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
     out_msg = await ctx.reply(embed=embed)
     response = await ctx.ask("Are you sure you wish to send the above cheat report?")
     if not response:

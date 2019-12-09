@@ -2,13 +2,27 @@ from paraCH import paraCH
 import discord
 import aiohttp
 import asyncio
-from datetime import datetime, timedelta
 import urllib
 import random
 
 cmds = paraCH()
 
 # Provides cat, duck, dog, image
+"""
+Provides some image oriented fun commands
+
+Commands provided:
+    cat:
+        Sends cat images
+    dog:
+        Sends dog images
+    duck:
+        Sends duck images
+    holo:
+        Sends holo images (and quotes)
+    image:
+        Searches for an image on Pixabay
+"""
 
 
 @cmds.cmd("image",
@@ -22,6 +36,8 @@ async def cmd_image(ctx):
     Description:
         Replies with a random image matching the search description.
     """
+    # Pixabay API Key
+    # Yeah it shouldn't really be here, but it's a free key with no limitations
     API_KEY = "10259038-12ef42751915ae10017141c86"
     if not ctx.arg_str:
         await ctx.reply("Please enter something to search for")
@@ -123,7 +139,31 @@ async def cmd_cat(ctx, recursion=0):
                 pass
         else:
             if recursion < 10:
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
                 await cmd_cat(ctx, recursion=recursion+1)
                 return
         await ctx.reply("Sorry! The cats are too powerful right now. Please try again later!")
+
+
+@cmds.cmd("holo",
+          category="Fun",
+          short_help="Holo")
+async def cmd_holo(ctx):
+    """
+    Usage:
+        {prefix}holo
+    Image:
+        Sends a picture of holo, and a random quote
+    """
+    async with aiohttp.get('http://images.thewisewolf.dev/random') as r:
+        if r.status == 200:
+            js = await r.json()
+            quote = "\"{}\"".format(js["quote"])
+            embed = discord.Embed(description=quote, color=discord.Colour.light_grey())
+            embed.set_image(url=js['image'])
+            try:
+                await ctx.reply(embed=embed)
+                return
+            except Exception:
+                pass
+        await ctx.reply("Holo isn't available right now, please come back later")

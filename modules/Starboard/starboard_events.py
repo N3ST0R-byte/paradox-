@@ -1,5 +1,6 @@
 import discord
 from contextBot.Context import Context
+import datetime
 
 """
 star format:
@@ -46,23 +47,22 @@ async def starboard_listener(bot, reaction, user):
         return
 
     server_board = bot.objects["server_starboards"][ctx.server.id]
-
-    if reaction.count == 0:
+    threshold = await bot.data.servers.get(message.server.id, "starboard_threshold")
+    if reaction.count < threshold:
         if message.id in server_board:
             try:
                 await bot.delete_message(await bot.get_message(sb_channel, server_board[message.id]))
             except discord.NotFound:
                 pass
             server_board.pop(message.id, None)
-            return
+        return
 
     post_msg = "{} {} in {}".format(str(reaction.emoji), reaction.count, message.channel.mention)
 
-    embed = discord.Embed(colour=discord.Colour.light_grey(), description=message.content)
+    embed = discord.Embed(colour=discord.Colour.gold(), description=message.content, timestamp=datetime.datetime.now())
     embed.set_author(name="{user.name}".format(user=message.author),
                      icon_url=message.author.avatar_url)
     embed.add_field(name="Message link", value="[Click to jump to message]({})".format(ctx.msg_jumpto(message)), inline=False)
-    embed.set_footer(text=message.timestamp.strftime("Sent at %-I:%M %p, %d/%m/%Y"))
     if message.attachments and "height" in message.attachments[0]:
         embed.set_image(url=message.attachments[0]["proxy_url"])
 

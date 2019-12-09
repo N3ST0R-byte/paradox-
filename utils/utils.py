@@ -81,7 +81,7 @@ def load_into(bot):
         Parses flags in args from the flags given in flags.
         Flag formats:
             'a': boolean flag, checks if present.
-            'a=': Eats one "word", which may be in quotes
+            'a=': Eats one "word"
             'a==': Eats all words up until next flag
         Returns a tuple (params, args, flags_present).
         flags_present is a dictionary {flag: value} with value being:
@@ -90,53 +90,81 @@ def load_into(bot):
         If -- is present in the input as a word, all flags afterwards are ignored.
         TODO: Make this more efficient
         """
-        params = args.split(' ')
-        final_params = []
-        final_flags = {}
-        indexes = []
-        end_params = []
+        # Split across whitespace, keeping the whitespace
+        params = re.split(r'(\S+)', args)
+
+        final_params = []  # Final list of command parameters, excluding flags and flag arguments
+        final_flags = {}  # Dictionary of flags and flag values
+        indexes = []  # Indices in the params list where the flags appear
+        end_params = []  # The tail of the parameter list, after -- appears
+
+        # Handle appearence of the flag terminator
         if "--" in params:
-            end_params = params[params.index("--") + 1:]
-            params = params[:params.index("--")]
+            i = params.index('--')
+            end_params = params[i + 1:] if i < len(params) - 1 else []
+            params = params[:i]
+
+        # Find the param indicies of the flags
         for flag in flags:
             clean_flag = flag.strip("=")
-            index = None
-            if (("-" + clean_flag) in params):
-                index = params.index("-" + clean_flag)
-            elif (("--" + clean_flag) in params):
-                index = params.index("--" + clean_flag)
-            elif (("—" + clean_flag) in params):
-                index = params.index("—" + clean_flag)
 
-            if index is None:
+            if ("-" + clean_flag) in params:
+                index = params.index("-" + clean_flag)
+            elif ("--" + clean_flag) in params:
+                index = params.index("--" + clean_flag)
+            elif ("—" + clean_flag) in params:
+                index = params.index("—" + clean_flag)
+            else:
                 final_flags[clean_flag] = False
                 continue
             indexes.append((index, flag))
+
+        # Sort the indicies to ensure we step through the flags in order of appearance
         indexes = sorted(indexes)
+
+        # Add any parameters that appear before the first flag
         if len(indexes) > 0:
             final_params = params[0:indexes[0][0]]
         else:
             final_params = params
-        for (i, index) in enumerate(indexes):
-            if i == len(indexes) - 1:
-                flag_arg = " ".join(params[index[0] + 1:])
+
+        # Build the parameters and flag arguments
+        for (i, (index, flag)) in enumerate(indexes):
+            # Get the parameters between this flag and the next, or the end
+            if len(params) > index + 1:
+                if len(indexes) > i + 1:
+                    flag_params = params[index + 1:indexes[i + 1][0]]
+                else:
+                    flag_params = params[index + 1:]
             else:
-                flag_arg = " ".join(params[index[0] + 1:indexes[i + 1][0]])
-            flag_arg = flag_arg.strip()
-            if index[1].endswith("=="):
-                final_flags[index[1][:-2]] = flag_arg
-            elif index[1].endswith("="):
-                flag_split_arg = flag_arg.split(" ")
-                final_flags[index[1][:-1]] = flag_split_arg[0]
-                if len(flag_split_arg) > 1:
-                    final_params += flag_split_arg[1:]
+                flag_params = []
+
+            # Split these into flag arguments and final parameters depending on flag type
+            if flag.endswith('=='):
+                flag_arg = ''.join(flag_params).strip()
+            elif flag.endswith('='):
+                # Find the first non-whitespace param, if it exists
+                j, arg = next(((j, arg) for j, arg in enumerate(flag_params) if arg.strip()), (len(flag_params), None))
+
+                flag_arg = arg or ''
+
+                # If there are any more params, add them to the final bunch
+                if len(flag_params) > j + 1:
+                    final_params.append(''.join(flag_params[j+1:]).rstrip())
             else:
-                final_flags[index[1]] = True
-                final_params += flag_arg.split(" ")
+                flag_arg = True
+                final_params.append(''.join(flag_params).rstrip())
+
+            # Set the flag arguments
+            final_flags[flag.strip('=')] = flag_arg
+
+        # Add any tail parameters
         final_params += end_params
-        final_args = " ".join(final_params).strip()
-        final_params = final_args.split(" ")
-        return (final_params, " ".join(final_params), final_flags)
+
+        # Turn the parameter list into what we usually use, i.e. space split, and make the args
+        final_args = ''.join(final_params).strip()
+        final_params = final_args.split(' ')
+        return (final_params, final_args, final_flags)
 
     @bot.util
     async def emb_add_fields(ctx, embed, emb_fields):
@@ -152,7 +180,7 @@ def load_into(bot):
         return cmds
 
     @bot.util
-    async def pager(ctx, pages, embed=False, locked=True, **kwargs):
+    async def pager(ctx, pages, embed=False, locked=True, destination=None, **kwargs):
         """
         Replies with the first page and provides reactions to page back and forth.
         Reaction timeout is five minutes.
@@ -162,7 +190,11 @@ def load_into(bot):
         arg = "embed" if embed else "message"
         args = {}
         args[arg] = pages[0]
-        out_msg = await ctx.reply(**args, **kwargs)
+        if destination is None:
+            out_msg = await ctx.reply(**args, **kwargs)
+        else:
+            out_msg = await ctx.send(destination, **args, **kwargs)
+
         if len(pages) == 1:
             return out_msg
         args = {}
@@ -258,7 +290,7 @@ def load_into(bot):
 
     @bot.util
     def msg_string(ctx, msg, mask_link=False, line_break=False, tz=None, clean=True):
-        timestr = "%-I:%M %p, %d/%m/%Y"
+        timestr = "%I:%M %p, %d/%m/%Y"
         if tz:
             time = iso8601.parse_date(msg.timestamp.isoformat()).astimezone(tz).strftime(timestr)
         else:
@@ -272,7 +304,16 @@ def load_into(bot):
 
     @bot.util
     def msg_jumpto(ctx, msg):
-        return "https://discordapp.com/channels/{}/{}/{}".format(msg.server.id, msg.channel.id, msg.id)
+        return "https://discordapp.com/channels/{}/{}/{}".format(msg.server.id if msg.server else "@me", msg.channel.id, msg.id)
+
+    @bot.util
+    async def get_avatar(ctx, user):
+        if user.avatar:
+            dancingpictures = "gif" if user.avatar.startswith("a_") else "png"
+            avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, dancingpictures)
+        else:
+            avlink = user.default_avatar_url
+        return avlink
 
     @bot.util
     async def confirm_sent(ctx, msg=None, reply=None):
@@ -285,6 +326,22 @@ def load_into(bot):
     async def has_mod(ctx, user):
         (code, msg) = await ctx.CH.checks["in_server_has_mod"](ctx)
         return (code == 0)
+
+    @bot.util
+    def is_master(ctx, user):
+        return int(user.id) in ctx.bot.bot_conf.getintlist("masters")
+
+    @bot.util
+    def is_exec(ctx, user):
+        return ctx.is_master(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("execWhiteList"))
+
+    @bot.util
+    def is_dev(ctx, user):
+        return ctx.is_exec(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("developers"))
+
+    @bot.util
+    def is_manager(ctx, user):
+        return ctx.is_dev(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("managers"))
 
     @bot.util
     async def offer_delete(ctx, out_msg, to_delete=None):
@@ -359,3 +416,27 @@ def load_into(bot):
             pass
         except Exception:
             pass
+
+    @bot.util
+    def split_text(ctx, text, blocksize, code=True, syntax="", maxheight=50):
+        """
+        Break the text into blocks of maximum length blocksize
+        If possible, break across nearby newlines. Otherwise just break at blocksize chars
+        """
+        blocks = []
+        while True:
+            if len(text) <= blocksize:
+                blocks.append(text)
+                break
+
+            split_on = text[0:blocksize].rfind('\n')
+            split_on = blocksize if split_on == -1 else split_on
+
+            blocks.append(text[0:split_on])
+            text = text[split_on:]
+
+        # Add the codeblock ticks and the code syntax header, if required
+        if code:
+            blocks = ["```{}\n{}\n```".format(syntax, block) for block in blocks]
+
+        return blocks

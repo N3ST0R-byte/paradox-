@@ -143,7 +143,11 @@ async def cmd_prune(ctx):
         except discord.HTTPException:
             try:
                 for msg in message_list:
-                    await ctx.bot.delete_message(msg)
+                    try:
+                        await ctx.bot.delete_message(msg)
+                    except discord.NotFound:
+                        # The message may have been deleted in the meantime
+                        pass
             except discord.Forbidden:
                 await ctx.reply("I have insufficient permissions to delete these messages.")
                 abort = True
@@ -165,7 +169,7 @@ async def cmd_prune(ctx):
     embed = discord.Embed(title="Messages purged", color=discord.Colour.red(), description="**{}** messages purged in {}.".format(len(message_list), ctx.ch.mention))
     embed.add_field(name="Message Breakdown", value=counts, inline=False)
     embed.add_field(name="Reason", value=reason, inline=False)
-    embed.set_footer(icon_url=ctx.author.avatar_url, text=datetime.utcnow().strftime("Acting Moderator: {} at %-I:%M %p, %d/%m/%Y".format(ctx.author)))
+    embed.set_footer(icon_url=ctx.author.avatar_url, text=datetime.utcnow().strftime("Acting Moderator: {} at %I:%M %p, %d/%m/%Y".format(ctx.author)))
     try:
         await ctx.bot.send_message(modlog, embed=embed)
     except discord.Forbidden:

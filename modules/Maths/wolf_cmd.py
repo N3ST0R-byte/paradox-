@@ -289,6 +289,8 @@ async def cmd_query(ctx):
             await ctx.bot.add_reaction(out_msg, ctx.bot.objects["emoji_more"])
         except discord.Forbidden:
             pass
+        except discord.HTTPException:
+            pass
         else:
             res = await ctx.bot.wait_for_reaction(message=out_msg,
                                                   user=ctx.author,

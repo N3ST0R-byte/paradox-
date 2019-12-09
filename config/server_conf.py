@@ -74,6 +74,13 @@ class Server_Setting_StarChan(Server_Setting, settingTypes.CHANNEL):
     category = "Starboard"
     default = None
 
+@server_conf.setting
+class Server_Setting_StarThresh(Server_Setting, settingTypes.INT):
+    name = "starboard_threshold"
+    vis_name = "star_threshold"
+    desc = "Minimum stars a message must have to be posted in the starboard channel"
+    category = "Starboard"
+    default = 2
 
 @server_conf.setting
 class Server_Setting_StarEmoji(Server_Setting, settingTypes.EMOJI):
@@ -182,6 +189,24 @@ class Server_Setting_mute_role(Server_Setting, settingTypes.ROLE):
     desc = "Role given to mute users (automatically set, but can be overridden)"
     default = None
     category = "Moderation"
+
+
+@server_conf.setting
+class Server_Setting_Channel_Blacklist(Server_Setting, settingTypes.CHANNELLIST):
+    name = "channel_blacklist"
+    vis_name = "channel_blacklist"
+    desc = "Disable non-moderator command responses in these channels."
+    category = "Guild settings"
+    default = None
+
+    @classmethod
+    async def write(cls, ctx, value):
+        result = await super().write(ctx, value)
+        blacklist = ctx.bot.objects["channel_blacklists"]
+        if (ctx.cmd_err and ctx.cmd_err[0] != 0):
+            return
+        blacklist[ctx.server.id] = value if value else []
+        return result
 
 # Logging settings
 

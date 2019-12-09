@@ -34,6 +34,9 @@ async def cmd_bancmd(ctx):
         if cmd in bans:
             bans.remove(cmd)
             unbans.append(cmd)
+        elif cmd not in ctx.bot.cmd_cache:
+            await ctx.reply("Command `{}` not found!".format(cmd))
+            return
         else:
             if cmd == "bancmd":
                 await ctx.reply("You can't ban bancmd!")

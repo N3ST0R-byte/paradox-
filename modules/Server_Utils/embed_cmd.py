@@ -321,29 +321,42 @@ async def get_server_embed(ctx, emb_name):
 @cmds.cmd("buildembed",
           category="Server Admin",
           short_help="Interactively build an embed to be retrieved later",
-          aliases=["editembed", "embededitor"])
+          aliases=["editembed", "embededitor"],
+          flags=["delete"])
 @cmds.require("in_server")
 @cmds.require("in_server_has_mod")
 async def cmd_buildembed(ctx):
     """
     Usage:
-        {prefix}newembed
+        {prefix}buildembed
         {prefix}editembed <embedname>
+        {prefix}editembed --delete <embedname>
     Description:
         Interactively creates or edits an embed which may be used elsewhere in the server.
+        May also be used to delete an existing embed by name
     """
-    if ctx.used_cmd_name.lower() == "buildembed":
-        ctx.objs["embed_preview"] = await init_embed(ctx)
-    else:
+    if ctx.flags["delete"]:
         fetch_embed = await get_server_embed(ctx, ctx.arg_str)
         if fetch_embed is None:
             return
-        name, embed = fetch_embed
-        ctx.objs["embed_preview_msg"] = await ctx.reply("Preview:", embed=embed)
-        ctx.objs["embed_embed"] = embed
-        ctx.objs["embed_name"] = name
 
-    await ctx.outer_menu([item[0] for item in root_menu], root_callback, title="Embed Editor", prompt="Please type the number of your selection:")
+        server_embeds = await ctx.data.servers_long.get(ctx.server.id, "server_embeds")
+        server_embeds.pop(fetch_embed[0], None)
+        await ctx.data.servers_long.set(ctx.server.id, "server_embeds", server_embeds)
+        await ctx.reply("Deleted embed `{}`!".format(fetch_embed[0]))
+    else:
+        if ctx.used_cmd_name.lower() == "buildembed":
+            ctx.objs["embed_preview"] = await init_embed(ctx)
+        else:
+            fetch_embed = await get_server_embed(ctx, ctx.arg_str)
+            if fetch_embed is None:
+                return
+            name, embed = fetch_embed
+            ctx.objs["embed_preview_msg"] = await ctx.reply("Preview:", embed=embed)
+            ctx.objs["embed_embed"] = embed
+            ctx.objs["embed_name"] = name
+
+        await ctx.outer_menu([item[0] for item in root_menu], root_callback, title="Embed Editor", prompt="Please type the number of your selection:")
 
 
 @cmds.cmd("embedinto",

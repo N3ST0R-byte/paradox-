@@ -9,7 +9,7 @@ cmds = paraCH()
 @cmds.cmd("help",
           category="Meta",
           short_help="Provides some detailed help on a command.",
-          aliases=["h"])
+          aliases=['h', 'man'])
 async def cmd_help(ctx):
     """
     Usage:
@@ -50,8 +50,12 @@ async def cmd_help(ctx):
             else:
                 emb_fields = [(field[0], field[1].format(**help_keys), 0) for field in fields]
                 await ctx.emb_add_fields(embed, emb_fields)
-                await ctx.reply(embed=embed)
+                embed.add_field(name="Have more questions?", value="Visit our support server [here]({}) to speak to our friendly support team!".format(ctx.bot.objects['support_guild']))
+                await ctx.offer_delete(await ctx.reply(embed=embed))
         else:
+            if ctx.arg_str.strip() == "cmd":
+                await ctx.reply("~~You really shouldn't take it literally.~~ Please type `{0.used_prefix}help rolemod` for example. Full command list can be found with `{0.used_prefix}list`.".format(ctx))
+                return
             msg += "I couldn't find a command named `{}`. Please make sure you have spelled the command correctly. \n".format(cmd)
         if msg:
             await ctx.reply(msg, split=True, code=False)
@@ -60,20 +64,23 @@ async def cmd_help(ctx):
 @cmds.cmd("list",
           category="Meta",
           short_help="Lists all my commands!",
+          aliases=['ls'],
           flags=["brief"])
 async def cmd_list(ctx):
     """
     Usage:
         {prefix}list [--brief]
+        {prefix}ls
     Description:
         Replies with a list of my commands.
-        Use --brief to get a briefer listing.
+        Use as ls or with --brief to get a briefer listing.
     """
     msg = ""
     commands = await ctx.get_raw_cmds()
     sorted_cats = ctx.bot.objects["sorted cats"]
 
-    if ctx.flags["brief"]:
+    brief = ctx.flags['brief'] or ctx.used_cmd_name == 'ls'
+    if brief:
         cats = {}
         for cmd in sorted(commands):
             command = commands[cmd]

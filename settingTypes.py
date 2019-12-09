@@ -70,7 +70,7 @@ class LIMITED_STR(STR):
 
 
 class USEREVENT(LIMITED_STR):
-    acceptable = ["username, nickname, roles, avatar"]
+    acceptable = ["username", "nickname", "roles", "avatar"]
     accept = "One of {}".format(", ".join(acceptable))
 
 
@@ -218,7 +218,7 @@ class CHANNEL(paraSetting):
         else:
             def is_ch(ch):
                 return userstr.lower() in ch.name.lower()
-        ch = discord.utils.find(is_ch, ctx.server.channels)
+        ch = discord.utils.find(is_ch, [c for c in ctx.server.channels if c.type == discord.ChannelType.text])
         if ch:
             return ch.id
         else:
@@ -258,6 +258,32 @@ class SETTING_LIST(paraSetting):
                 return None
             items.append(item)
         return items
+
+class INT(paraSetting):
+    """
+    Check for a valid number.
+    """
+    accept = "Any number between 1-100"
+    @classmethod
+    async def humanise(self, ctx, raw):
+        """
+        idk
+        """
+        if raw:
+            return "{}".format(raw)
+    @classmethod
+    async def understand(self, ctx, userstr):
+        """
+        Check if the number is valid
+        """
+        if not userstr.isdigit():
+            ctx.cmd_err = (1, "Please provide a valid number!")
+            return None
+        elif not int(userstr) in range(1, 100):
+            ctx.cmd_err = (1, "Please provide a number between 1-100!")
+            return None
+        else:
+            return int(userstr)
 
 
 class CHANNELLIST(SETTING_LIST):
