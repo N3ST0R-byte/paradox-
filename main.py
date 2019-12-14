@@ -1,5 +1,6 @@
 import sys
 import logging
+import traceback
 from cachetools import LRUCache
 
 import discord
@@ -56,10 +57,10 @@ else:
 botdata = BotData(app=CURRENT_APP, **dbopts)
 
 # Initialise the logger
-LOGFILE = conf.get("LOGNAME")
+LOGFILE = conf.get("LOGNAME") + ".log"
 
 logger = logging.getLogger()
-log_fmt = logging.Formatter(fmt='[{asctime}][{levelname:^7}] {message}', datefmt='%m/%d | %H:%M:%S', style='{')
+log_fmt = logging.Formatter(fmt='[{asctime}][{levelname:^7}] {message}', datefmt='%d/%m | %H:%M:%S', style='{')
 file_handler = logging.FileHandler(filename=LOGFILE, encoding='utf-8', mode='a')
 term_handler = logging.StreamHandler(sys.stdout)
 file_handler.setFormatter(log_fmt)
@@ -100,12 +101,17 @@ async def log(bot, logMessage, chid="Global".center(18, '='), error=False, level
     for line in logMessage.split('\n'):
         logger.log(level, '[{}] {}'.format(chid, line))
 
-    if bot.DEBUG > 1:
-        ctx = Context(bot=bot)
-        log_splits = await ctx.msg_split(logMessage, True)
-        dest = discord.utils.get(bot.get_all_channels(), id=ERROR_CHANNEL if error else LOG_CHANNEL)
-        for log in log_splits:
-            await bot.send_message(dest, log)
+    try:
+        if bot.DEBUG > 1:
+            ctx = Context(bot=bot)
+            log_splits = await ctx.msg_split(logMessage, True)
+            dest = discord.utils.get(bot.get_all_channels(), id=ERROR_CHANNEL if error else LOG_CHANNEL)
+            for log in log_splits:
+                await bot.send_message(dest, log)
+    except Exception:
+        logger.log(logging.CRITICAL, "Errors occurred while logging this message in channel!")
+        for line in traceback.format_exc().splitlines():
+            logger.log(logging.CRITICAL, line)
 
 Bot.log = log
 

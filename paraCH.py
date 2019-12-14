@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import traceback
 
 import discord
 
@@ -92,9 +93,45 @@ class paraCH(CommandHandler):
                 except discord.Forbidden:
                     pass
             else:
-                await ctx.log("There was a permission error running the command \n{}".format(ctx.cmd.name, ctx.err[2]), error=True, level=logging.ERROR, chid=ctx.ch.id)
+                await ctx.log(
+                    "There was a permission error running the command \n{}".format(ctx.cmd.name, ctx.err[2]),
+                    error=False,
+                    level=logging.WARN,
+                    chid=ctx.ch.id
+                )
         else:
-            await ctx.reply("Something went wrong while running your command. The error has been logged and will be fixed soon!")
-            await ctx.log("There was an exception while running the command \n{}\nStack trace:{}".format(ctx.cmd.name, ctx.err[2]), error=True, level=logging.ERROR, chid=ctx.ch.id)
-            if ctx.bot.DEBUG > 2:
-                await ctx.reply("Stack trace:\n```{}```".format(ctx.err[2]))
+            logmsg = ("Exception encountered executing command '{ctx.cmd.name}' "
+                      "from user '{ctx.author}' ({ctx.user.id}) in '{server}' (channel {ctx.ch.id}).\n"
+                      "{traceback}"
+                      "Original command message:\n"
+                      "{msg}").format(
+                          ctx=ctx,
+                          server=ctx.server or "DMs",
+                          traceback=ctx.err[2],
+                          msg='\n'.join("\t"+line for line in ctx.msg.content.splitlines())
+                      )
+            try:
+                try:
+                    # Embeded error
+                    desc = ("An unexpected error occurred while processing your command!\n"
+                            "The error has been reported to my dev team and should be fixed soon.\n"
+                            "If the error persists, please contact our friendly support team at the [support guild]({})!").format(
+                                ctx.bot.objects["support_guild"])
+                    await ctx.reply(embed=discord.Embed(title="Something went wrong!", description=desc, color=discord.Colour.red()))
+                except discord.Forbidden:
+                    msg = ("An unexpected error occurred while processing your command! "
+                           "The error has been reported to my dev team and should be fixed soon.\n"
+                           "If the error persists, please contact our friendly support team here: {}!").format(
+                            ctx.bot.objects["support_guild"])
+                    await ctx.reply(msg)
+                if ctx.bot.DEBUG > 2:
+                    await ctx.reply("Stack trace:\n```{}```".format(ctx.err[2]))
+            except Exception:
+                logmsg += "\nAdditionally, the following exception occurred while reporting the above exception:\n"
+                logmsg += traceback.format_exc()
+            await ctx.log(
+                logmsg,
+                error=True,
+                level=logging.ERROR,
+                chid=ctx.ch.id
+            )
