@@ -1,10 +1,12 @@
-from paraCH import paraCH
 import asyncio
-import discord
-import aiohttp
-from PIL import Image
+import mimetypes as mtypes
 from io import BytesIO
 
+import aiohttp
+from PIL import Image
+import discord
+
+from paraCH import paraCH
 
 cmds = paraCH()
 # Provides rotate
@@ -37,12 +39,19 @@ async def cmd_rotate(ctx):
         return
     image_url = None
     async for message in message_list:
-        if message.attachments and "height" in message.attachments[0]:
+        if (message.attachments and
+                "height" in message.attachments[0] and
+                "filename" in message.attachments[0] and
+                (mtypes.guess_type(message.attachments[0]["filename"])[0] or "").startswith('image')):
             image_url = message.attachments[0].get('url', None)
             break
         if message.embeds and message.embeds[0].get('type', None) == 'image':
             image_url = message.embeds[0].get('url', None)
             break
+        if message.embeds and message.embeds[0].get('type', None) == 'rich':
+            if 'image' in message.embeds[0]:
+                image_url = message.embeds[0]['image'].get('url', None)
+                break
 
     if image_url is None:
         await ctx.reply("Couldn't find an attached image in the last 10 messages")
