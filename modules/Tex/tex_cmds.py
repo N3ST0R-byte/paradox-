@@ -279,10 +279,10 @@ async def parse_tex(ctx, source):
                 splits = line.split("```")
                 for split in splits:
                     if in_block and split not in ["", "tex", "latex"]:
-                        to_compile.append("{}\\\\".format(split))
+                        to_compile.append("{}\n".format(split))
                     in_block = not in_block
                 if in_block:
-                    to_compile.append("\\hfill\\break")
+                    to_compile.append("\n")
                 in_block = not in_block
             elif in_block:
                 to_compile.append(line)
