@@ -471,6 +471,9 @@ async def register_tex_listeners(bot):
 
 async def tex_listener(ctx):
     # Handle exit conditions
+    if not ctx.bot.objects.get("ready", False):
+        # Bot is not yet ready to handle events
+        return
     if ctx.author.bot and int(ctx.authid) not in ctx.bot.bot_conf.getintlist("whitelisted_bots"):
         # No listening to non whitelisted bots
         return
@@ -525,6 +528,8 @@ async def tex_listener(ctx):
 
 
 async def tex_edit_listener(bot, before, after):
+    if not bot.objects.get("ready", False):
+        return
     if before.id not in bot.objects["latex_messages"]:
         ctx = MCtx(bot=bot, message=after)
         await tex_listener(ctx)
