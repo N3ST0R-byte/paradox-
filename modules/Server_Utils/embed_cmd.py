@@ -206,8 +206,11 @@ async def save_and_exit(ctx):
             if resp is None or resp == 0:
                 return None
         server_embeds[embed_name] = ctx.objs["embed_embed"].to_dict()
-        await ctx.data.servers_long.set(ctx.server.id, "server_embeds", server_embeds)
-        await ctx.reply("The embed has been saved!\n To view the embed use `{prefix}embed {name}`, and reopen the Embed Editor with `{prefix}editembed {name}`.".format(prefix=ctx.used_prefix, name=embed_name))
+        try:
+            await ctx.data.servers_long.set(ctx.server.id, "server_embeds", server_embeds)
+            await ctx.reply("The embed has been saved!\n To view the embed use `{prefix}embed {name}`, and reopen the Embed Editor with `{prefix}editembed {name}`.".format(prefix=ctx.used_prefix, name=embed_name))
+        except Exception:
+            await ctx.reply("Sorry, you have exceeded the total embed size limit for this server! Your embed couldn't be saved.")
         await ctx.bot.edit_message(ctx.objs["embed_preview_msg"], " ")
         asyncio.ensure_future(ctx.offer_delete(ctx.objs["embed_preview_msg"]))
         ctx.objs["menu"]["done"] = True
