@@ -1,6 +1,7 @@
 import discord
 import re
 
+
 def load_into(bot):
     @bot.util
     async def listen_for(ctx, chars=[], check=None, timeout=30, lower=True):
@@ -152,7 +153,6 @@ def load_into(bot):
             await ctx.reply(error.args)
         return []
 
-
     def parse_multi_select_message(text: str, size: int) -> list:
         if text is None or len(text) == 0:
             return []
@@ -161,7 +161,7 @@ def load_into(bot):
             normal = parse_multi_select_message(text[1:], size)
             inverted = []
             for i in range(1, size):
-                if not i in normal:
+                if i not in normal:
                     inverted.append(i)
             return inverted
 
@@ -210,7 +210,7 @@ def load_into(bot):
             pass
         except discord.NotFound:
             pass
-        if result == "c":
+        if result in ['c', 'C']:
             return None
         return int(result_msg.content) - 1
 
@@ -253,7 +253,7 @@ def load_into(bot):
                     pass
 
                 result = result.content
-                if result != "c":
+                if result.lower() != "c":
                     try:
                         await menu["callback"](ctx, int(result) - 1)
                     except ctx.TimedOut:
@@ -308,7 +308,7 @@ def load_into(bot):
             if output is None:
                 break
 
-            if output.content != "c":
+            if output.content.lower() != "c":
                 if check is not None:
                     err = check(ctx, output)
                     if err:

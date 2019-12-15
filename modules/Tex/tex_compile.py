@@ -14,7 +14,7 @@ def gencolour(colour, negate=True):
     """
     Build the colour conversion command for the provided colour, negating black text if required
     """
-    return r"convert {{image}} {} -bordercolor transparent -border 40 \
+    return r"convert {{image}} {} -bordercolor transparent -border 50 \
         -background {} -flatten {{image}}".format("+negate" if negate else "", colour)
 
 
@@ -54,13 +54,13 @@ fi
 compile_path = os.path.join(__location__, "texcompile.sh")
 
 # Header for every LaTeX source file
-header = "\\documentclass[preview, border=10pt, 13pt]{standalone}\
+header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
     \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
     \n\\nonstopmode"
 
 """
 # Alternative header to support discord emoji, but not other unicode
-header = "\\documentclass[preview, border=10pt, 13pt]{standalone}\
+header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
     \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
     \\usepackage{discord-emoji}
     \n\\nonstopmode"

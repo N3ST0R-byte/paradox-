@@ -164,7 +164,7 @@ async def cmd_roledesc(ctx):
         Set or clear the description for the provided role.
         The role description is shown in {prefix}roleinfo.
     Examples:
-        {prefix}roledesc {msg.server.owner.top_role.name} --set The all powerful.
+        {prefix}roledesc Owner --set The all powerful.
     "
     role = await ctx.find_role(ctx.arg_str, create=True, interactive=True)
     if role is None:

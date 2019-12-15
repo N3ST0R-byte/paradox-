@@ -63,8 +63,8 @@ async def cmd_rolemod(ctx):
         Modifies the specified user(s) roles.
         Roles may be specified either as flag arguments or after + or -.
     Example:
-        {prefix}rmod {msg.server.me.name} +{msg.server.owner.top_role.name}
-        {prefix}rmod {msg.author.name} +{msg.server.owner.top_role.name}, root -Members, Bots
+        {prefix}rmod {msg.author.name} --add Owner, root --remove bots, member
+        {prefix}rmod {msg.author.name} +Owner, root -bots, member
     """
     if ctx.flags['add'] or ctx.flags['remove']:
         userblock = ctx.arg_str

@@ -703,7 +703,7 @@ async def cmd_preamble(ctx):
         new_submission = new_source
 
         # Confirm submission
-        prompt = "Please confirm your submission of the following preamble."
+        prompt = "Please confirm you want to submit the following preamble."
         result = await confirm(ctx, prompt, new_submission)
         if result is None:
             await ctx.reply("Query timed out, aborting.")
@@ -748,7 +748,7 @@ async def cmd_preamble(ctx):
                 return
 
         # Confirm submission
-        prompt = "Please confirm your submission of the following preamble."
+        prompt = "Please confirm you want to submit the following preamble."
         result = await confirm(ctx, prompt, new_submission)
         if result is None:
             await ctx.reply("Query timed out, aborting.")
