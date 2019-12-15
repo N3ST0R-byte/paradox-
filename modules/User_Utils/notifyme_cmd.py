@@ -354,6 +354,8 @@ async def register_notifyme_listeners(bot):
 async def fire_listeners(ctx):
     if not ctx.server:
         return
+    if not ctx.bot.objects.get("ready", False):
+        return
     listeners = ctx.bot.objects["notifyme_listeners"]
     active_in_server = [user.id for user in ctx.server.members if user.id in listeners]
     for userid in active_in_server:

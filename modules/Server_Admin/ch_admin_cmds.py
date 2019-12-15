@@ -30,6 +30,8 @@ async def cmd_cleanch(ctx):
 
 
 async def channel_cleaner(ctx):
+    if not ctx.bot.objects.get("ready", False):
+        return
     if not ctx.server:
         return
     if not (ctx.server.id in ctx.bot.objects["cleaned_channels"] and ctx.ch.id in ctx.bot.objects["cleaned_channels"][ctx.server.id]):

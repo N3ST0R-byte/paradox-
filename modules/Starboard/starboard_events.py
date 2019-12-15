@@ -25,6 +25,9 @@ async def starboard_listener(bot, reaction, user):
     if not message.server:
         return
 
+    if not bot.objects.get("ready", False):
+        return
+
     if message.server.id not in bot.objects["server_starboard_emojis"]:
         return
     sb_emoji = bot.objects["server_starboard_emojis"][message.server.id]
