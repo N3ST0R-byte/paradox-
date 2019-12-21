@@ -105,7 +105,7 @@ async def log(bot, logMessage, chid="Global".center(18, '='), error=False, level
         if bot.DEBUG > 1:
             ctx = Context(bot=bot)
             log_splits = await ctx.msg_split(logMessage, True)
-            dest = discord.utils.get(bot.get_all_channels(), id=ERROR_CHANNEL if error else LOG_CHANNEL)
+            dest = discord.utils.get(bot.get_all_channels(), id=ERROR_CHANNEL if level >= logging.ERROR else LOG_CHANNEL)
             for log in log_splits:
                 await bot.send_message(dest, log)
     except Exception:
