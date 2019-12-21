@@ -318,54 +318,60 @@ async def make_latex(ctx):
     source = ctx.msg.clean_content if ctx.objs["latex_listening"] else ctx.msg.clean_content.partition(ctx.used_cmd_name)[2].strip()
     ctx.objs["latex_source"] = await parse_tex(ctx, source)
 
-    # Compile the source
-    error = await texcomp(ctx)
-    err_msg = ""
+    # Retrieve the user id lock, creating it if required
+    if ctx.authid not in ctx.bot.objects['latex_locks']:
+        ctx.bot.objects['latex_locks'][ctx.authid] = asyncio.Lock()
+    lock = ctx.bot.objects['latex_locks'][ctx.authid]
 
-    # Check if the user wants to keep the source message
-    keep = await ctx.data.users.get(ctx.authid, "latex_keep_message")
-    keep = keep or (keep is None)
+    async with lock:
+        # Compile the source
+        error = await texcomp(ctx)
+        err_msg = ""
 
-    # Make the error message if required
-    # If there's no error and the user doesn't want to keep the source, delete it
-    if error != "":
-        err_msg = "Compile error! Output:\n```\n{}\n```".format(error)
-    elif not keep:
-        ctx.objs["latex_source_deleted"] = True
-        await ctx.del_src()
+        # Check if the user wants to keep the source message
+        keep = await ctx.data.users.get(ctx.authid, "latex_keep_message")
+        keep = keep or (keep is None)
 
-    ctx.objs["latex_errmsg"] = err_msg
+        # Make the error message if required
+        # If there's no error and the user doesn't want to keep the source, delete it
+        if error != "":
+            err_msg = "Compile error! Output:\n```\n{}\n```".format(error)
+        elif not keep:
+            ctx.objs["latex_source_deleted"] = True
+            await ctx.del_src()
 
-    # If the latex source is too long for in-channel display, set it to be dmmed.
-    # In either case, build the display message.
-    if len(ctx.objs["latex_source"]) > 1000:
-        ctx.objs["dm_source"] = True
-        ctx.objs["latex_source_msg"] = "```fix\nLaTeX source sent via direct message.\n```{}".format(err_msg)
-    else:
-        ctx.objs["dm_source"] = False
-        ctx.objs["latex_source_msg"] = "```tex\n{}\n```{}".format(ctx.objs["latex_source"], err_msg)
+        ctx.objs["latex_errmsg"] = err_msg
 
-    ctx.objs["latex_del_emoji"] = ctx.bot.objects["emoji_tex_del"]
-    ctx.objs["latex_delsource_emoji"] = ctx.bot.objects["emoji_tex_delsource"]
-    ctx.objs["latex_show_emoji"] = ctx.bot.objects["emoji_tex_errors" if error else "emoji_tex_show"]
+        # If the latex source is too long for in-channel display, set it to be dmmed.
+        # In either case, build the display message.
+        if len(ctx.objs["latex_source"]) > 1000:
+            ctx.objs["dm_source"] = True
+            ctx.objs["latex_source_msg"] = "```fix\nLaTeX source sent via direct message.\n```{}".format(err_msg)
+        else:
+            ctx.objs["dm_source"] = False
+            ctx.objs["latex_source_msg"] = "```tex\n{}\n```{}".format(ctx.objs["latex_source"], err_msg)
 
-    # Clean up the author's name and store it
-    ctx.objs["latex_name"] = "**{}**:\n".format(ctx.author.name.replace("*", "\\*")) if (await ctx.data.users.get(ctx.authid, "latex_showname")) in [None, True] else ""
+        ctx.objs["latex_del_emoji"] = ctx.bot.objects["emoji_tex_del"]
+        ctx.objs["latex_delsource_emoji"] = ctx.bot.objects["emoji_tex_delsource"]
+        ctx.objs["latex_show_emoji"] = ctx.bot.objects["emoji_tex_errors" if error else "emoji_tex_show"]
 
-    # Send the final output, or a failure image if there is no output
-    file_name = "tex/staging/{id}/{id}.png".format(id=ctx.authid)
-    exists = True if os.path.isfile(file_name) else False
-    if exists and ctx.objs["latex_spoiler"]:
-        new_filename = "tex/staging/{id}/SPOILER_{id}.png".format(id=ctx.authid)
-        os.rename(file_name, new_filename)
-        file_name = new_filename
-    out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
-                              message="{}{}".format(ctx.objs["latex_name"],
-                                                    ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
+        # Clean up the author's name and store it
+        ctx.objs["latex_name"] = "**{}**:\n".format(ctx.author.name.replace("*", "\\*")) if (await ctx.data.users.get(ctx.authid, "latex_showname")) in [None, True] else ""
 
-    # Remove the output image and clean up
-    if exists:
-        os.remove(file_name)
+        # Send the final output, or a failure image if there is no output
+        file_name = "tex/staging/{id}/{id}.png".format(id=ctx.authid)
+        exists = True if os.path.isfile(file_name) else False
+        if exists and ctx.objs["latex_spoiler"]:
+            new_filename = "tex/staging/{id}/SPOILER_{id}.png".format(id=ctx.authid)
+            os.rename(file_name, new_filename)
+            file_name = new_filename
+            out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
+                                      message="{}{}".format(ctx.objs["latex_name"],
+                                                            ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
+
+        # Remove the output image and clean up
+        if exists:
+            os.remove(file_name)
     ctx.objs["latex_show"] = 0
     ctx.objs["latex_out_msg"] = out_msg
     return out_msg
@@ -549,6 +555,8 @@ async def tex_edit_listener(bot, before, after):
 
 
 def load_into(bot):
+    bot.objects['latex_locks'] = {}
+
     bot.data.users.ensure_exists("tex_listening", "latex_keepmsg", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname", shared=False)
     bot.data.servers.ensure_exists("maths_channels", "latex_listen_enabled", shared=False)
 
