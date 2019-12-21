@@ -266,9 +266,6 @@ class INT(paraSetting):
     accept = "Any number between 1-100"
     @classmethod
     async def humanise(self, ctx, raw):
-        """
-        idk
-        """
         if raw:
             return "{}".format(raw)
     @classmethod
