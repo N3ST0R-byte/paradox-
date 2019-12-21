@@ -103,7 +103,12 @@ async def multi_action(ctx, user_strs, action, finder, result_func, start_str, *
             continue
         old_msg = msg
         msg += "\t{}".format(user_str)
-        await ctx.bot.edit_message(out_msg, msg)
+
+        # Attempt to edit message with new string, or repost
+        try:
+            await ctx.bot.edit_message(out_msg, msg)
+        except discord.NotFound:
+            out_msg = await ctx.reply(msg)
         found, msg = await finder(ctx, user_str, old_msg)
         if found is None:
             continue
@@ -114,7 +119,12 @@ async def multi_action(ctx, user_strs, action, finder, result_func, start_str, *
         if result == 0:
             founds.append(found)
         msg += "\n"
-    await ctx.bot.edit_message(out_msg, msg)
+
+    # Attempt to edit message with final string, or repost
+    try:
+        await ctx.bot.edit_message(out_msg, msg)
+    except discord.NotFound:
+        out_msg = await ctx.reply(msg)
     return founds
 
 
