@@ -440,3 +440,16 @@ def load_into(bot):
             blocks = ["```{}\n{}\n```".format(syntax, block) for block in blocks]
 
         return blocks
+
+    @bot.util
+    async def soft_delete(ctx, msg):
+        """
+        Deletes the provided message if possible.
+        Quietly exits if an expected error occurs.
+        """
+        try:
+            await ctx.bot.delete_message(msg)
+        except discord.NotFound:
+            pass
+        except discord.HTTPException:
+            pass
