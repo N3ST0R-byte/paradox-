@@ -40,7 +40,7 @@ def load_into(bot):
         stdout, stderr = await process.communicate()
         if ctx.bot.DEBUG > 2:
             await ctx.log("Completed the shell command:\n{}\n{}".format(to_run, "with errors." if process.returncode != 0 else ""))
-        return stdout.decode().strip()
+        return stdout.decode(errors='backslashreplace').strip()
 
     @bot.util
     async def tail(ctx, filename, n):
