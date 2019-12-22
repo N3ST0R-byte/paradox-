@@ -40,7 +40,7 @@ def load_into(bot):
         stdout, stderr = await process.communicate()
         if ctx.bot.DEBUG > 2:
             await ctx.log("Completed the shell command:\n{}\n{}".format(to_run, "with errors." if process.returncode != 0 else ""))
-        return stdout.decode().strip()
+        return stdout.decode(errors='backslashreplace').strip()
 
     @bot.util
     async def tail(ctx, filename, n):
@@ -440,3 +440,16 @@ def load_into(bot):
             blocks = ["```{}\n{}\n```".format(syntax, block) for block in blocks]
 
         return blocks
+
+    @bot.util
+    async def soft_delete(ctx, msg):
+        """
+        Deletes the provided message if possible.
+        Quietly exits if an expected error occurs.
+        """
+        try:
+            await ctx.bot.delete_message(msg)
+        except discord.NotFound:
+            pass
+        except discord.HTTPException:
+            pass

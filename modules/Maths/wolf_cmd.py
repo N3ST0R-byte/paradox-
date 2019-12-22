@@ -245,11 +245,11 @@ async def cmd_query(ctx):
         await ctx.reply("An unknown exception occurred while fetching the Wolfram Alpha query. If the problem persists please contact support.")
         return
     if not result:
-        await ctx.bot.delete_message(temp_msg)
+        await ctx.soft_delete(temp_msg)
         await ctx.reply("Failed to get a response from Wolfram Alpha. If the problem persists, please contact support.")
         return
     if "queryresult" not in result:
-        await ctx.bot.delete_message(temp_msg)
+        await ctx.soft_delete(temp_msg)
         await ctx.reply("Did not get a valid response from Wolfram Alpha. If the problem persists, please contact support.")
         return
 
@@ -258,7 +258,7 @@ async def cmd_query(ctx):
         desc = "Wolfram Alpha doesn't understand your query!\n Perhaps try rephrasing your question?\n{}".format(link)
         embed = discord.Embed(description=desc)
         embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
-        await ctx.bot.delete_message(temp_msg)
+        await ctx.soft_delete(temp_msg)
         await ctx.offer_delete(await ctx.reply(embed=embed))
         return
 
@@ -267,7 +267,7 @@ async def cmd_query(ctx):
         embed = discord.Embed(description=link)
         embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
         await ctx.emb_add_fields(embed, fields)
-        await ctx.bot.delete_message(temp_msg)
+        await ctx.soft_delete(temp_msg)
         out_msg = await ctx.reply(embed=embed)
         await ctx.offer_delete(out_msg)
         return
@@ -309,8 +309,8 @@ async def cmd_query(ctx):
                 output_data[0].seek(0)
                 output_data.extend(await pods_to_filedata(extra))
                 try:
-                    await ctx.bot.delete_message(out_msg)
-                    await ctx.bot.delete_message(temp_msg)
+                    await ctx.soft_delete(out_msg)
+                    await ctx.soft_delete(temp_msg)
                 except discord.NotFound:
                     pass
 

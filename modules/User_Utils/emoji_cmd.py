@@ -110,7 +110,7 @@ async def cmd_emoji(ctx):
         return
 
     # If there's no arg_str now that means we're reacting, and default reaction is reeeeeee
-    em_str = ctx.arg_str.lower() or "reeeeeeeeeee"
+    em_str = ctx.arg_str.lower().strip(":") or "reeeeeeeeeee" 
 
     # Time to find the emoji.
     emoji = None  # The found emoji, if any. If we can't see the emoji, this might be missing most info.
@@ -166,7 +166,7 @@ async def cmd_emoji(ctx):
         emojis = await get_custom_emojis(ctx, ctx.server.id)
         if emojis:
             # Check exact matches
-            index = next((i for i, emoji in enumerate(emojis) if ctx.arg_str == emoji['name'].lower()), None)
+            index = next((i for i, emoji in enumerate(emojis) if em_str == emoji['name'].lower()), None)
             if index is None:
                 # Check inexact matches
                 index = next((i for i, emoji in enumerate(emojis) if em_str in emoji['name'].lower()), None)

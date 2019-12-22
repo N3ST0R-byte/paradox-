@@ -85,10 +85,18 @@ async def recall_roles(bot, member):
         return
 
     # Build a list of roles which we have permission to add
+    # First figure out which of our roles has the manage_roles permission
     manager_roles = [r.position for r in member.server.me.roles if r.permissions.manage_roles or r.permissions.administrator]
-    my_top_managerrole = max(manager_roles)
-    roles_to_add = []
 
+    # Quit if we don't have the manage_roles permission at all
+    if not manager_roles:
+        return
+
+    # Get our top role with manage_roles
+    my_top_managerrole = max(manager_roles)
+
+    # Collect all the roles to add that we can add
+    roles_to_add = []
     for role in stored:
         actual_role = discord.utils.get(member.server.roles, id=role)
         if actual_role and actual_role.position < my_top_managerrole:

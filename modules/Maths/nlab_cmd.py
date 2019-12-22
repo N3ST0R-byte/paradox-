@@ -111,8 +111,9 @@ async def cmd_nlab(ctx):
     direct_found = False if not direct_soup.find("title") or "Page not found" in direct_soup.find("title").contents[0] else True
     direct_str = "\nDirect page found at: [{}]({})".format(ctx.arg_str, direct_page) if direct_found else ""
 
-    if "Search results" not in soup.find("title").contents[0]:
-        await ctx.bot.edit_message(out_msg, "Nlab directed us to this page which I don't understand:\n{}".format(soup.find("a").attrs["href"]))
+    title = soup.find("title")
+    if title is None or "Search results" not in title.contents[0]:
+        await ctx.bot.edit_message(out_msg, "Nlab redirected the search to the following page:\n{}".format(soup.find("a").attrs["href"]))
         return
     parsed = await search_page_parse(soup)
     if not parsed:
