@@ -365,9 +365,9 @@ async def make_latex(ctx):
             new_filename = "tex/staging/{id}/SPOILER_{id}.png".format(id=ctx.authid)
             os.rename(file_name, new_filename)
             file_name = new_filename
-            out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
-                                      message="{}{}".format(ctx.objs["latex_name"],
-                                                            ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
+        out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
+                                  message="{}{}".format(ctx.objs["latex_name"],
+                                                        ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
 
         # Remove the output image and clean up
         if exists:
