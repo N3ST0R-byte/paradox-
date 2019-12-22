@@ -51,6 +51,7 @@ async def starboard_listener(bot, reaction, user):
 
     server_board = bot.objects["server_starboards"][ctx.server.id]
     threshold = await bot.data.servers.get(message.server.id, "starboard_threshold")
+    threshold = threshold if threshold else bot.s_conf.starboard_threshold.default
     if reaction.count < threshold:
         if message.id in server_board:
             try:
