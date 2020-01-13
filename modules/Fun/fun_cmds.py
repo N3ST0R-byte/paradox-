@@ -5,42 +5,42 @@ cmds = paraCH()
 
 # Provides bin2ascii, lenny
 
-#"""
-#Some simple fun utility commands
+"""
+Some simple fun utility commands
 
-#Commands provided:
-#    bin2ascii:
-#        Translates a binary string to ascii
-#    lenny:
-#        Sends a lenny face
-#    sorry:
-#        Sends a sorry image
-#    discrim:
-#        Sends a list of users with matching discriminator
-#"""
+Commands provided:
+    bin2ascii:
+        Translates a binary string to ascii
+    lenny:
+        Sends a lenny face
+    sorry:
+        Sends a sorry image
+    discrim:
+        Sends a list of users with matching discriminator
+"""
 
 
-#@cmds.cmd("bin2ascii",
-#          category="Fun",
-#          short_help="Converts binary to ascii",
-#          aliases=["bin2a", "binarytoascii"])
-#async def cmd_bin2ascii(ctx):
-#    """
-#    Usage:
-#        {prefix}bin2ascii <binary string>
-#    Description:
-#        Converts the provided binary string into ascii, then sends the output.
-#    Examples:
-#        {prefix}bin2ascii 01001000 01101001 00100001
-#    """
-#    # Would be cool if example could use username
-#    bitstr = ctx.arg_str.replace(' ', '')
-#    if (not bitstr.isdigit()) or (len(bitstr) % 8 != 0):
-#        await ctx.reply("Please provide a valid binary string!")
-#        return
-#    bytelist = map(''.join, zip(*[iter(bitstr)] * 8))
-#    asciilist = [chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist]
-#    await ctx.reply("Output: `{}`".format(''.join(asciilist)))
+@cmds.cmd("bin2ascii",
+          category="Fun",
+          short_help="Converts binary to ascii",
+          aliases=["bin2a", "binarytoascii"])
+async def cmd_bin2ascii(ctx):
+    """
+    Usage:
+        {prefix}bin2ascii <binary string>
+    Description:
+        Converts the provided binary string into ascii, then sends the output.
+    Examples:
+        {prefix}bin2ascii 01001000 01101001 00100001
+    """
+    # Would be cool if example could use username
+    bitstr = ctx.arg_str.replace(' ', '')
+    if (not bitstr.isdigit()) or (len(bitstr) % 8 != 0):
+        await ctx.reply("Please provide a valid binary string!")
+        return
+    bytelist = map(''.join, zip(*[iter(bitstr)] * 8))
+    asciilist = [chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist]
+    await ctx.reply("Output: `{}`".format(''.join(asciilist)))
 
 
 @cmds.cmd("lenny",
