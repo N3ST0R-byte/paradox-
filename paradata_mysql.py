@@ -82,17 +82,10 @@ class _propTableManipulator:
             raise Exception("Improper number of keys passed to set.")
         prop = self.map_prop(args[-2])
         value = json.dumps(args[-1])
-        criteria = " AND ".join("{} = %s" for key in args[:-1])
         values = ", ".join("%s" for key in args)
 
         cursor = self.conn.cursor()
-        cursor.execute("SELECT 1 from {} where {}".format(self.table, criteria).format(*self.keys, 'property'), tuple([*args[:-2], prop]))
-        exists = cursor.fetchone()
-
-        if exists is None:
-            cursor.execute('INSERT INTO {} VALUES ({})'.format(self.table, values), tuple([*args[:-2], prop, value]))
-        else:
-            cursor.execute('UPDATE {} SET value = %s WHERE {}'.format(self.table, criteria).format(*self.keys, 'property'), tuple([value, *args[:-2], prop]))
+        cursor.execute('REPLACE INTO {} VALUES ({})'.format(self.table, values), tuple([*args[:-2], prop, value]))
 
     async def find(self, prop, value, read=False):
         if len(self.keys) > 1:
