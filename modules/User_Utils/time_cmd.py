@@ -265,7 +265,10 @@ async def cmd_time(ctx):
         # All flags have been handled, all that remains is time reporting for targeted user or author.
 
         # Find the user
-        user = (await ctx.find_user(ctx.arg_str, interactive=True, in_server=True)) if ctx.arg_str else ctx.author
+        if not ctx.server:
+            user = ctx.author
+        else:
+            user = (await ctx.find_user(ctx.arg_str, interactive=True, in_server=True)) if ctx.arg_str else ctx.author
         if user is None:
             # Failed to find the target user
             msg = "No matching users found!"
