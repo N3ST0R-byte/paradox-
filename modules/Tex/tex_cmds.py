@@ -249,6 +249,11 @@ async def cmd_tex(ctx):
     # Compile and send the final output message
     out_msg = await make_latex(ctx)
 
+    # If we failed to send any output, pop the context and go home
+    if out_msg is None:
+        ctx.bot.objects["latex_messages"].pop(ctx.msg.id, None)
+        return
+
     # Start the reaction handler
     asyncio.ensure_future(reaction_edit_handler(ctx, out_msg), loop=ctx.bot.loop)
 
@@ -365,9 +370,14 @@ async def make_latex(ctx):
             new_filename = "tex/staging/{id}/SPOILER_{id}.png".format(id=ctx.authid)
             os.rename(file_name, new_filename)
             file_name = new_filename
-        out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
-                                  message="{}{}".format(ctx.objs["latex_name"],
-                                                        ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
+
+        # Send the output, if we are allowed to
+        try:
+            out_msg = await ctx.reply(file_name=file_name if exists else "tex/failed.png",
+                                      message="{}{}".format(ctx.objs["latex_name"],
+                                                            ("Compile Error! Click the {} reaction for details. (You may edit your message)".format(ctx.objs["latex_show_emoji"])) if error else ""))
+        except discord.Forbidden:
+            out_msg = None
 
         # Remove the output image and clean up
         if exists:
@@ -516,13 +526,18 @@ async def tex_listener(ctx):
     ctx.bot.objects["latex_messages"][ctx.msg.id] = ctx
     ctx.objs["latex_spoiler"] = False
 
-    # Generate the LaTeX
+    # Generate the LaTeX and post the result, if possible
     out_msg = await make_latex(ctx)
 
-    ctx.objs["latex_out_msg"] = out_msg
+    # If we failed to send any output, pop the context and go home
+    if out_msg is None:
+        ctx.bot.objects["latex_messages"].pop(ctx.msg.id, None)
+        return
 
     # Start the reaction handler
     asyncio.ensure_future(reaction_edit_handler(ctx, out_msg), loop=ctx.bot.loop)
+
+    # Message cache deletion timer
     if not ctx.objs["latex_source_deleted"]:
         ctx.objs["latex_edit_renew"] = False
         while True:
@@ -534,30 +549,47 @@ async def tex_listener(ctx):
 
 
 async def tex_edit_listener(bot, before, after):
+    # Quit if the bot receives an edit but isn't setup yet
     if not bot.objects.get("ready", False):
         return
+
+    # If we haven't seen the message before, generate a context for it and pass it to the main listener
     if before.id not in bot.objects["latex_messages"]:
         ctx = MCtx(bot=bot, message=after)
         await tex_listener(ctx)
         return
+
+    # Otherwise retrieve the previous context, update the message, and set the renew flag
     ctx = bot.objects["latex_messages"][before.id]
     ctx.objs["latex_edit_renew"] = True
     ctx.msg = after
 
-    old_out_msg = ctx.objs["latex_out_msg"] if "latex_out_msg" in ctx.objs else None
-    if old_out_msg:
+    # Get the previous output message and delete it if possible
+    old_out_msg = ctx.objs.get("latex_out_msg", None)
+    if old_out_msg is not None:
         try:
             await ctx.bot.delete_message(old_out_msg)
         except discord.NotFound:
             pass
+
+    # Compile the LaTeX and post the results, if possible
     out_msg = await make_latex(ctx)
-    asyncio.ensure_future(reaction_edit_handler(ctx, out_msg), loop=ctx.bot.loop)
+    if out_msg is not None:
+        asyncio.ensure_future(reaction_edit_handler(ctx, out_msg), loop=ctx.bot.loop)
 
 
 def load_into(bot):
     bot.objects['latex_locks'] = {}
 
-    bot.data.users.ensure_exists("tex_listening", "latex_keepmsg", "latex_colour", "latex_alwaysmath", "latex_allowother", "latex_showname", shared=False)
+    bot.data.users.ensure_exists(
+        "tex_listening",
+        "latex_keepmsg",
+        "latex_colour",
+        "latex_alwaysmath",
+        "latex_allowother",
+        "latex_showname",
+        shared=False
+    )
     bot.data.servers.ensure_exists("maths_channels", "latex_listen_enabled", shared=False)
 
     bot.add_after_event("ready", register_tex_listeners)
