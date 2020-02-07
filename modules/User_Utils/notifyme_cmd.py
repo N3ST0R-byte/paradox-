@@ -13,7 +13,7 @@ skeleton = {
     "from": {"id": 0},
     "mentions": {"id": 0},
     "rolementions": {"id": 0},
-    "contains": {"text": "", "whole_word": False},
+    "contains": {"text": "", "whole_word": False, "case_insensitive": False},
     "in": {"id": ""}
 }
 
@@ -28,14 +28,21 @@ def check_listen(user, checks, msg_ctx):
     result = True
     result = result and ("server" not in checks or msg_ctx.server.id == checks["server"]["id"])
     result = result and ("from" not in checks or msg_ctx.authid == checks["from"]["id"])
-    result = result and ("mentions" not in checks or checks["mentions"]["id"] in msg_ctx.msg.raw_mentions)
-    result = result and ("rolementions" not in checks or checks["rolementions"]["id"] in msg_ctx.msg.raw_role_mentions)
-    result = result and ("contains" not in checks or (
-        (checks["contains"]["text"] in msg_ctx.msg.content) and
-        ("whole_word" not in checks["contains"] or wholeword_check(msg_ctx.msg.content, checks['contains']['text']))
-    ))
     result = result and ("in" not in checks or msg_ctx.ch.id == checks["in"]["id"])
     result = result and ("notbot" not in checks or not msg_ctx.author.bot)
+    result = result and ("mentions" not in checks or checks["mentions"]["id"] in msg_ctx.msg.raw_mentions)
+    result = result and ("rolementions" not in checks or checks["rolementions"]["id"] in msg_ctx.msg.raw_role_mentions)
+    if "contains" in checks:
+        content = msg_ctx.msg.content
+        text = checks['contains']['text']
+        if "case_insensitive" in checks["contains"]:
+            content = content.lower()
+            text = text.lower()
+
+        contains_result = (text in content)
+        contains_result = contains_result and ("whole_word" not in checks["contains"] or
+                                               wholeword_check(content, text))
+        result = result and contains_result
     return result
 
 
@@ -58,6 +65,7 @@ async def check_to_str(ctx, check, markdown=True):
         items.append("(Mentions role {})".format(discord.utils.get(server.roles, id=check["rolementions"]["id"])))
     if "contains" in check:
         extra = " as a whole word" if 'whole_word' in check['contains'] else ''
+        extra += " (case insensitive)" if 'case_insensitive' in check['contains'] else '(case sensitive)'
         items.append("(Contains \"{}\"{})".format(check["contains"]["text"], extra))
     if "in" in check:
         items.append("(Channel {})".format(discord.utils.get(ctx.bot.get_all_channels, id=check["in"]["id"])))
@@ -140,6 +148,10 @@ async def build_trigger_from_flags(ctx, flags):
         if flags['word']:
             trigger['contains']['whole_word'] = True
 
+        # Option: case_insensitive
+        if flags['ignorecase']:
+            trigger['contains']['case_insensitive'] = True
+
     return trigger
 
 
@@ -151,7 +163,7 @@ async def build_trigger_from_flags(ctx, flags):
     "block", "unblock", "remove", "interactive",
     "smart", "delay",
     "mentions==", "contains==", "rolementions==",
-    "from==", "in==", "here", "notbot", "word"
+    "from==", "in==", "here", "notbot", "word", "ignorecase"
 ])
 async def cmd_notifyme(ctx):
     """
@@ -168,6 +180,7 @@ async def cmd_notifyme(ctx):
         (WIP command, more soon)
     Options:8
         word:: Given `text` must appear as a word.
+        ignorecase:: Case will be ignored when checking message content.
         here:: Message must be from this server.
         from:: Message must be from this specified user.
         notbot:: Message was not sent by a bot.
@@ -181,7 +194,7 @@ async def cmd_notifyme(ctx):
         unblock:: Get pounces from this user again after blocking them.
     Examples:
         {prefix}pounce --mentions me
-        {prefix}pounce {msg.author.name} --notbot --word --smart
+        {prefix}pounce {msg.author.name} --notbot --word --smart --ignorecase
         {prefix}pounce --rolementions moderator
     """
     checks = await ctx.data.users_long.get(ctx.authid, "notifyme")
