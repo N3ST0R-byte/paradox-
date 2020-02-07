@@ -12,6 +12,7 @@ cmds = paraCH()
 
 ENDPOINT = "http://api.wolframalpha.com/v2/query?"
 WEB = "https://www.wolframalpha.com/"
+WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-small.jpg"
 
 # truetype/liberation2/LiberationSans-Bold.ttf
 FONT = ImageFont.truetype("resources/wolf_font.ttf", 15, encoding="unic")
@@ -253,11 +254,12 @@ async def cmd_query(ctx):
         await ctx.reply("Did not get a valid response from Wolfram Alpha. If the problem persists, please contact support.")
         return
 
-    link = "[Display results online and refine query]({})".format(build_web_url(ctx.arg_str))
+    link = "[Display results on WolframAlpha site and refine query]({})".format(build_web_url(ctx.arg_str))
     if not result["queryresult"]["success"] or result["queryresult"]["numpods"] == 0:
         desc = "Wolfram Alpha doesn't understand your query!\n Perhaps try rephrasing your question?\n{}".format(link)
         embed = discord.Embed(description=desc)
         embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
+        embed.set_thumbnail(url=WOLF_ICON)
         await ctx.soft_delete(temp_msg)
         await ctx.offer_delete(await ctx.reply(embed=embed))
         return
@@ -266,6 +268,7 @@ async def cmd_query(ctx):
         fields = await pods_to_textdata(result["queryresult"]["pods"])
         embed = discord.Embed(description=link)
         embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
+        embed.set_thumbnail(url=WOLF_ICON)
         await ctx.emb_add_fields(embed, fields)
         await ctx.soft_delete(temp_msg)
         out_msg = await ctx.reply(embed=embed)
@@ -279,6 +282,7 @@ async def cmd_query(ctx):
 
     embed = discord.Embed(description=link)
     embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
+    embed.set_thumbnail(url=WOLF_ICON)
 
     await ctx.safe_delete_msgs([temp_msg])
     out_msg = await ctx.reply(file_data=data, file_name="wolf.png", embed=embed)
