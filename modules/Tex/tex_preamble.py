@@ -64,11 +64,11 @@ def split_text(text, blocksize, code=True, syntax="", maxheight=50):
             blocks.append(text)
             break
 
-        split_on = text[0:blocksize].rfind('\n')
+        split_on = text.rfind('\n', 0, blocksize)
         split_on = blocksize if split_on == -1 else split_on
 
         blocks.append(text[0:split_on])
-        text = text[split_on:]
+        text = text[split_on:].strip()
 
     # Add the codeblock ticks and the code syntax header, if required
     if code:
