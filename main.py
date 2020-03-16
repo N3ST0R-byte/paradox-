@@ -13,7 +13,7 @@ from contextBot.Bot import Bot
 
 # Configuration file for environment variables.
 
-CONF_FILE = "paradox.conf"
+CONF_FILE = sys.argv[1] if len(sys.argv) > 1 else "paradox.conf"
 
 conf = Conf(CONF_FILE)
 
@@ -32,6 +32,10 @@ ERROR_CHANNEL = conf.get("ERROR_CHANNEL") or LOG_CHANNEL
 
 # Server where the referenced emojis live
 EMOJI_SERVER = conf.get("EMOJI_SERVER")
+
+# Shard info
+SHARD_ID = conf.get("SHARD_ID") or 0
+SHARD_COUNT = conf.get("SHARD_COUNT") or 1
 
 
 # ------------------------------
@@ -91,7 +95,9 @@ bot = Bot(data=botdata,
           bot_conf=conf,
           prefix=PREFIX,
           prefix_func=get_prefixes,
-          log_file=LOGFILE)
+          log_file=LOGFILE,
+          shard_id = SHARD_ID,
+          shard_count = SHARD_COUNT)
 
 bot.DEBUG = conf.get("DEBUG")
 bot.objects["logfile"] = open(bot.LOGFILE, 'a+')
