@@ -360,7 +360,7 @@ async def approve_submission(ctx, userid, manager):
     await ctx.data.users.set(userid, "pending_preamble_info", None)
 
     # Find the user
-    user = await ctx.find_user(userid, in_server=False, interactive=True)
+    user = await ctx.bot.get_user_info(userid)
     if not user:
         await ctx.reply("Couldn't find the user to DM them!")
     else:
@@ -396,7 +396,7 @@ async def deny_submission(ctx, userid, manager):
     ctx.author = manager  # Hack so that ask and input work properly
 
     # Find the user
-    user = await ctx.find_user(userid, in_server=False, interactive=True)
+    user = await ctx.bot.get_user_info(userid)
     if not user:
         await ctx.reply("Couldn't find the user to DM them!")
     else:
