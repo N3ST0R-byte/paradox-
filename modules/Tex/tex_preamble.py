@@ -962,7 +962,11 @@ async def approval_queue(ctx):
     # Run the whole thing in a loop, so we keep asking for judgements until there are none left
     while True:
         # Generate the list of users waiting for judgement
-        userids = list(await ctx.bot.data.users_long.find_not_empty("pending_preamble"))
+        raw_userids = list(await ctx.bot.data.users_long.find_not_empty("pending_preamble"))
+        userids = []
+        for userid in raw_userids:
+            if (await ctx.bot.data.users_long.get(userid, "pending_preamble")) is not None:
+                userids.append(str(userid))
 
         # Quit if there is nothing to approve
         if len(userids) == 0:
