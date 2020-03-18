@@ -159,10 +159,10 @@ async def sendfile_reaction_handler(ctx, out_msg, contents, title):
     temp_file.close()
 
 
-async def view_preamble(ctx, preamble, title, header=None,
+async def view_preamble(ctx, preamble, title, header=None, start_page=0,
                         file_react=False, file_message=None, destination=None, author=None, time=None):
     pages = tex_pagination(preamble, basetitle=title, header=header, author=author, time=time)
-    out_msg = await ctx.pager(pages, embed=True, locked=False, destination=destination)
+    out_msg = await ctx.pager(pages, embed=True, locked=False, destination=destination, start_page=start_page)
 
     if file_react and out_msg is not None:
         # Add the sendfile reaction if required
@@ -266,7 +266,7 @@ async def submit_preamble(ctx, user, submission, info):
     time = datetime.utcnow()
 
     submission_channel = ctx.bot.objects["latex_preamble_subch"]
-    sub_msg = await view_preamble(ctx, submission, title,
+    sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
                                   author=author, time=time, header=info,
                                   destination=submission_channel)
 
@@ -757,7 +757,7 @@ async def cmd_preamble(ctx):
 
         # Confirm submission
         prompt = "Please confirm you want to submit the following preamble."
-        result = await confirm(ctx, prompt, new_submission)
+        result = await confirm(ctx, prompt, new_submission, start_page=-1)
         if result is None:
             await ctx.reply("Query timed out, aborting.")
             return
@@ -936,7 +936,7 @@ async def cmd_serverpreamble(ctx):
     if new_preamble:
         # Confirm submission
         prompt = "Please confirm the following update to the server preamble"
-        result = await confirm(ctx, prompt, new_preamble)
+        result = await confirm(ctx, prompt, new_preamble, start_page=-1)
         if result is None:
             await ctx.reply("Query timed out, aborting.")
             return
@@ -999,7 +999,7 @@ async def approval_queue(ctx):
 
         (time, info, _) = info_pack
 
-        sub_msg = await view_preamble(ctx, submission, title,
+        sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
                                       author=author, time=time, header=info,
                                       destination=ctx.ch)
 
@@ -1147,7 +1147,7 @@ async def user_admin(ctx, userid):
 
         (time, info, _) = info_pack
 
-        sub_msg = await view_preamble(ctx, submission, title,
+        sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
                                       author=author, time=time, header=info,
                                       destination=ctx.ch)
 
@@ -1598,7 +1598,7 @@ async def cmd_ppr(ctx):
 
         if new_preset:
             # Confirm new content
-            prompt = "Please confirm the following udate for the preset {}".format(name)
+            prompt = "Please confirm the following update for the preset {}".format(name)
             result = await confirm(ctx, prompt, new_preset)
             if result is None:
                 await ctx.reply("Query timed out, aborting.")
