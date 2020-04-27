@@ -220,6 +220,9 @@ async def cmd_notifyme(ctx):
             await ctx.reply("The selected pounce has been removed!")
     elif ctx.flags['block']:
         # Block user
+        if not ctx.server:
+            await ctx.reply("`--block` can only be used in servers.")
+            return
         user = await ctx.find_user(ctx.arg_str, interactive=True, in_server=True)
         if not user:
             await ctx.reply("I couldn't find this user!")
@@ -232,6 +235,10 @@ async def cmd_notifyme(ctx):
         await ctx.reply("You will no longer recieve notifications triggered by this user!")
     elif ctx.flags['unblock']:
         # Unblock user
+        if not ctx.server:
+            await ctx.reply("`--unblock` can only be used in servers.")
+            return
+
         user = await ctx.find_user(ctx.arg_str, interactive=True, in_server=True)
         if not user:
             await ctx.reply("I couldn't find this user!")
