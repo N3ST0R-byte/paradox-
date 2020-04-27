@@ -238,7 +238,7 @@ async def cmd_serverinfo(ctx):
             await ctx.confirm_sent(reply="Icon sent!")
         return
 
-    regions = ctx.bot.objects["regions"]
+    region = str(ctx.server.region) if not str(ctx.server.region) in ctx.bot.objects["regions"] else ctx.bot.objects["regions"][str(ctx.server.region)]
     ver = {
         "none": "None",
         "low": "Level 1 (Must have a verified email)",
@@ -290,7 +290,7 @@ async def cmd_serverinfo(ctx):
 
     prop_list = ["Owner", "Region", "Icon", "Large server?", "Verification", "2FA", "Roles", "Members", "Channels", "Created at", ""]
     value_list = [owner,
-                  regions[str(ctx.server.region)],
+                  region,
                   icon,
                   is_large,
                   ver[str(ctx.server.verification_level)],
