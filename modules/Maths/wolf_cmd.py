@@ -12,7 +12,9 @@ cmds = paraCH()
 
 ENDPOINT = "http://api.wolframalpha.com/v2/query?"
 WEB = "https://www.wolframalpha.com/"
-WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-small.jpg"
+# WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-small.jpg"
+WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-med.jpg"
+WOLF_SMALL_ICON = "https://media.discordapp.net/attachments/670154440413675540/703864724122632253/a.png"
 
 # truetype/liberation2/LiberationSans-Bold.ttf
 FONT = ImageFont.truetype("resources/wolf_font.ttf", 15, encoding="unic")
@@ -102,12 +104,12 @@ async def glue_pods(flat_pods):
     splits = []
     atoms = []
     y_coord = 5
-    max_width = 0
+    max_width = 380
 
     for pod in flat_pods:
         if y_coord > split_height:
             splits.append((atoms, (max_width, y_coord)))
-            max_width = 0
+            max_width = 380
             y_coord = 5
             atoms = []
 
@@ -158,7 +160,8 @@ async def handle_image(image_data):
         async with session.get(target, allow_redirects=False) as resp:
             response = await resp.read()
     image = Image.open(BytesIO(response))
-    return smart_trim(image, border=10)
+    return image
+    # return smart_trim(image, border=10)
 
 
 def smart_trim(im, border=0):
@@ -254,7 +257,8 @@ async def cmd_query(ctx):
         await ctx.reply("Did not get a valid response from Wolfram Alpha. If the problem persists, please contact support.")
         return
 
-    link = "[Display results on WolframAlpha site and refine query]({})".format(build_web_url(ctx.arg_str))
+    link = "[Click here to refine your query online]({})".format(build_web_url(ctx.arg_str))
+    link2 = "[Upgrade to WolframAlpha Pro!]({})".format("http://www.wolframalpha.com/pro/")
     if not result["queryresult"]["success"] or result["queryresult"]["numpods"] == 0:
         desc = "Wolfram Alpha doesn't understand your query!\n Perhaps try rephrasing your question?\n{}".format(link)
         embed = discord.Embed(description=desc)
@@ -280,14 +284,20 @@ async def cmd_query(ctx):
     data = (await pods_to_filedata(important))[0]
     output_data = [data]
 
-    embed = discord.Embed(description=link)
+    embed = discord.Embed(description=link + '\n' + link2)
+    embed.set_author(name="Results provided by WolframAlpha",
+                     icon_url=WOLF_SMALL_ICON,
+                     url="http://www.wolframalpha.com/pro/")
     embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
     embed.set_thumbnail(url=WOLF_ICON)
+    embed.set_image(url="attachment://wolf.png")
+    # embed.set_image(url="https://content.wolfram.com/uploads/sites/10/2016/12/WolframAlphaLogo_Web_sanstagline-med.jpg")
 
     await ctx.safe_delete_msgs([temp_msg])
     out_msg = await ctx.reply(file_data=data, file_name="wolf.png", embed=embed)
     asyncio.ensure_future(ctx.offer_delete(out_msg))
 
+    embed.set_image(url="")
     if extra:
         try:
             await ctx.bot.add_reaction(out_msg, ctx.bot.objects["emoji_more"])
