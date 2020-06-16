@@ -46,7 +46,7 @@ async def starboard_listener(bot, reaction, user):
     if not sb_channel:
         return
 
-    if message.embeds:
+    if message.embeds and message.embeds[0]["type"] == "rich":
         return
 
     server_board = bot.objects["server_starboards"][ctx.server.id]
@@ -67,7 +67,9 @@ async def starboard_listener(bot, reaction, user):
     embed.set_author(name="{user.name}".format(user=message.author),
                      icon_url=message.author.avatar_url)
     embed.add_field(name="Message link", value="[Click to jump to message]({})".format(ctx.msg_jumpto(message)), inline=False)
-    if message.attachments and "height" in message.attachments[0]:
+    if message.embeds and "url" in message.embeds[0]:
+        embed.set_image(url=message.embeds[0]["url"])
+    elif message.attachments and "height" in message.attachments[0]:
         embed.set_image(url=message.attachments[0]["proxy_url"])
 
     if message.id in server_board:
