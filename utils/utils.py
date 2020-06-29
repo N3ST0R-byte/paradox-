@@ -180,7 +180,7 @@ def load_into(bot):
         return cmds
 
     @bot.util
-    async def pager(ctx, pages, embed=False, locked=True, destination=None, **kwargs):
+    async def pager(ctx, pages, embed=False, locked=True, destination=None, start_page=0, **kwargs):
         """
         Replies with the first page and provides reactions to page back and forth.
         Reaction timeout is five minutes.
@@ -189,7 +189,7 @@ def load_into(bot):
         """
         arg = "embed" if embed else "message"
         args = {}
-        args[arg] = pages[0]
+        args[arg] = pages[start_page]
         if destination is None:
             out_msg = await ctx.reply(**args, **kwargs)
         else:
@@ -212,7 +212,7 @@ def load_into(bot):
             return
 
         async def paging():
-            page = 0
+            page = start_page
             while True:
                 res = await ctx.bot.wait_for_reaction(message=out_msg,
                                                       timeout=300,
