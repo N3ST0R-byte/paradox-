@@ -59,6 +59,7 @@ async def log_joined_server(bot, server):
     bots = "`{}`".format(bots)
     total = "`{}`".format(server.member_count)
     mem_str = "{0:<5}\t{4},\n{1:<5}\t{5},\n{2:<5}\t{6}, and\n{3:<5}\t{7}.".format(known, unknown, bots, total, mem1, mem2, mem3, mem4)
+    region = str(server.region) if not str(server.region) in bot.objects["regions"] else bot.objects["regions"][str(server.region)]
 
     created = server.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
@@ -66,7 +67,7 @@ async def log_joined_server(bot, server):
     embed.set_author(name="Joined server!")
     embed.set_thumbnail(url=icon)
     embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
-    embed.add_field(name="Region", value=bot.objects["regions"][str(server.region)], inline=False)
+    embed.add_field(name="Region", value=region, inline=False)
     embed.add_field(name="Created at", value="{}".format(created), inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
     embed.add_field(name="Now playing in", value="{} servers".format(len(bot.servers)), inline=False)

@@ -1,4 +1,5 @@
 import asyncio
+import datetime as dt
 import discord
 
 from paraCH import paraCH
@@ -108,10 +109,19 @@ async def recall_roles(bot, member):
         await bot.add_roles(member, *roles_to_add)
     except discord.Forbidden:
         pass
+    except discord.NotFound:
+        pass
 
 
 async def store_roles(bot, member):
+    # Collect a list of member roles
     role_list = [role.id for role in member.roles]
+
+    # Don't update if the member joined in the last 10 seconds, to allow time for autoroles and role addition
+    if dt.datetime.utcnow().timestamp() - member.joined_at.timestamp() < 10:
+        return
+
+    # Update the stored roles
     await bot.data.members_long.set(member.server.id, member.id, "persistent_roles", role_list)
 
 

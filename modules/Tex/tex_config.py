@@ -68,7 +68,7 @@ async def show_config(ctx, user=None):
     field_lines.append("Use `{}preamble` to see or modify the current preamble.".format(ctx.used_prefix))
 
     # Identify whether the user has a pending preamble, and if so add it as the last line
-    pending = ctx.bot.objects['pending_preambles'].get(user.id, None)
+    pending = await ctx.bot.data.users_long.get(user.id, 'pending_preamble')
     if pending is not None:
         field_lines.append("New custom preamble submitted and awaiting approval.")
 

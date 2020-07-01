@@ -163,7 +163,10 @@ async def cmd_emoji(ctx):
     else:
         # Time to do a lookup
         # First, grab the emojis in the current server and see if any of them match
-        emojis = await get_custom_emojis(ctx, ctx.server.id)
+        if not ctx.server:
+            emojis = None
+        else:
+            emojis = await get_custom_emojis(ctx, ctx.server.id)
         if emojis:
             # Check exact matches
             index = next((i for i, emoji in enumerate(emojis) if em_str == emoji['name'].lower()), None)

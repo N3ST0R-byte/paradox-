@@ -64,11 +64,11 @@ def split_text(text, blocksize, code=True, syntax="", maxheight=50):
             blocks.append(text)
             break
 
-        split_on = text[0:blocksize].rfind('\n')
+        split_on = text.rfind('\n', 0, blocksize)
         split_on = blocksize if split_on == -1 else split_on
 
         blocks.append(text[0:split_on])
-        text = text[split_on:]
+        text = text[split_on:].strip()
 
     # Add the codeblock ticks and the code syntax header, if required
     if code:
@@ -159,10 +159,10 @@ async def sendfile_reaction_handler(ctx, out_msg, contents, title):
     temp_file.close()
 
 
-async def view_preamble(ctx, preamble, title, header=None,
+async def view_preamble(ctx, preamble, title, header=None, start_page=0,
                         file_react=False, file_message=None, destination=None, author=None, time=None):
     pages = tex_pagination(preamble, basetitle=title, header=header, author=author, time=time)
-    out_msg = await ctx.pager(pages, embed=True, locked=False, destination=destination)
+    out_msg = await ctx.pager(pages, embed=True, locked=False, destination=destination, start_page=start_page)
 
     if file_react and out_msg is not None:
         # Add the sendfile reaction if required
@@ -215,12 +215,15 @@ async def handled_preamble(ctx, userid, info, colour=None):
     Involves finding the message in the submission log,
     clearing the reactions and editing it.
     """
-    # If the user doesn't have a pending preamble, there isn't anything to do
-    if userid not in ctx.bot.objects["pending_preambles"]:
+    # Retrieve the pending preamble info
+    info_pack = await ctx.bot.data.users.get(userid, "pending_preamble_info")
+
+    # Return if there is no pending preamble
+    if not info_pack:
         return
 
-    # Retrieve the message id of the submision message
-    msgid = ctx.bot.objects["pending_preambles"][userid][1][2]
+    # Retrieve the message id of the submission message
+    msgid = info_pack[2]
 
     # Find the message in the submission channel
     subch = ctx.bot.objects["latex_preamble_subch"]
@@ -251,9 +254,8 @@ async def submit_preamble(ctx, user, submission, info):
     """
     Make a new preamble submission
     """
-    # If there is a previous active request, mark it as outdated
-    if user.id in ctx.bot.objects["pending_preambles"]:
-        await handled_preamble(ctx, user.id, "New preamble request submitted", colour=discord.Colour.red())
+    # Mark any previous preamble request as outdated
+    await handled_preamble(ctx, user.id, "New preamble request submitted", colour=discord.Colour.red())
 
     # Set the new pending preamble
     await ctx.data.users_long.set(ctx.authid, "pending_preamble", submission)
@@ -264,16 +266,13 @@ async def submit_preamble(ctx, user, submission, info):
     time = datetime.utcnow()
 
     submission_channel = ctx.bot.objects["latex_preamble_subch"]
-    sub_msg = await view_preamble(ctx, submission, title,
+    sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
                                   author=author, time=time, header=info,
                                   destination=submission_channel)
 
     # Store the pending preamble info
     info_pack = (datetime.timestamp(time), info, sub_msg.id)
     await ctx.data.users.set(ctx.authid, "pending_preamble_info", info_pack)
-
-    # Add or update the pending preamble in the cached list
-    ctx.bot.objects["pending_preambles"][user.id] = (submission, info_pack)
 
     # Add the approval/denial/testing emojis to the submission
     # Create a new context so the judgement process doesn't interfere with the original user
@@ -290,13 +289,16 @@ async def judgement_reactions(ctx, userid, msg):
         True, if the preamble was approved,
         False, if the preamble was denied.
     """
+    # Load reaction emojis
     approve_emo = ctx.bot.objects["emoji_approve"]
     deny_emo = ctx.bot.objects["emoji_deny"]
     test_emo = ctx.bot.objects["emoji_test"]
 
+    # Checks whether the emoji is valid and whether the user has permission to review preambles
     def judgement_check(reaction, user):
         return (reaction.emoji in [approve_emo, deny_emo, test_emo]) and ctx.is_manager(user)
 
+    # Add the reactions, if possible
     try:
         await ctx.bot.add_reaction(msg, approve_emo)
         await ctx.bot.add_reaction(msg, deny_emo)
@@ -304,13 +306,19 @@ async def judgement_reactions(ctx, userid, msg):
     except discord.Forbidden:
         return
 
+    # Reaction action loop
     while True:
         res = await ctx.bot.wait_for_reaction(message=msg,
                                               check=judgement_check,
                                               timeout=600)
+
+        # On timeout
         if res is None:
-            if userid in ctx.bot.objects["pending_preambles"]:
+            # If the user still has a pending preamble, continue the loop
+            if await ctx.bot.data.users_long.get(userid, "pending_preamble"):
                 continue
+
+            # Otherwise, remove the reactions and return
             try:
                 await ctx.bot.remove_reaction(msg, approve_emo, ctx.me)
                 await ctx.bot.remove_reaction(msg, deny_emo, ctx.me)
@@ -318,9 +326,13 @@ async def judgement_reactions(ctx, userid, msg):
             except Exception:
                 pass
             return None
-        if userid not in ctx.bot.objects["pending_preambles"]:
+
+        # If the user no longer has a pending preamble, let the reviewer know and exit
+        if not await ctx.bot.data.users_long.get(userid, "pending_preamble"):
             await ctx.reply("Submission no longer exists!")
             return None
+
+        # Handle the reacted emoji as appropriate
         if res.reaction.emoji == approve_emo:
             if await approve_submission(ctx, userid, res.user):
                 return True
@@ -346,10 +358,9 @@ async def approve_submission(ctx, userid, manager):
 
     await ctx.data.users_long.set(userid, "pending_preamble", None)
     await ctx.data.users.set(userid, "pending_preamble_info", None)
-    ctx.bot.objects["pending_preambles"].pop(userid, None)
 
     # Find the user
-    user = await ctx.find_user(userid, in_server=False, interactive=True)
+    user = await ctx.bot.get_user_info(userid)
     if not user:
         await ctx.reply("Couldn't find the user to DM them!")
     else:
@@ -385,7 +396,7 @@ async def deny_submission(ctx, userid, manager):
     ctx.author = manager  # Hack so that ask and input work properly
 
     # Find the user
-    user = await ctx.find_user(userid, in_server=False, interactive=True)
+    user = await ctx.bot.get_user_info(userid)
     if not user:
         await ctx.reply("Couldn't find the user to DM them!")
     else:
@@ -416,7 +427,6 @@ async def deny_submission(ctx, userid, manager):
     # Deny the submission
     await ctx.data.users_long.set(userid, "pending_preamble", None)
     await ctx.data.users.set(userid, "pending_preamble_info", None)
-    ctx.bot.objects["pending_preambles"].pop(userid, None)
     return True
 
 
@@ -425,12 +435,12 @@ async def test_submission(ctx, userid, manager):
     Compile a piece of test LaTeX to test the provided userid's preamble.
     Replies with the compiled LaTeX output, and any error that occurs.
     """
-    if userid not in ctx.bot.objects["pending_preambles"]:
-        # The user no longer has a current submission. Quit silently
-        return
+    # Retrieve the pending preamble if it exists, otherwise return
+    preamble = await ctx.bot.data.users_long.get(userid, "pending_preamble")
 
-    # Get the pending preamble
-    preamble = ctx.bot.objects["pending_preambles"][userid][0]
+    if not preamble:
+        await ctx.reply("This user no longer has a pending preamble!")
+        return
 
     # Compile the latex with this preamble
     log = await ctx.makeTeX(preamble_test_code, manager.id, preamble=preamble)
@@ -495,7 +505,6 @@ async def cmd_preamble(ctx):
             await ctx.data.users.set(ctx.authid, "pending_preamble_info", None)
 
             await handled_preamble(ctx, ctx.authid, "Preamble was reset", colour=discord.Colour.red())
-            ctx.bot.objects["pending_preambles"].pop(ctx.authid, None)
             await ctx.reply("Your preamble has been reset!")
 
             await preamblelog(ctx, "Preamble has been reset to the default")
@@ -505,7 +514,7 @@ async def cmd_preamble(ctx):
 
     # Handle retracting a preamble request
     if ctx.flags["retract"]:
-        if ctx.authid not in ctx.bot.objects["pending_preambles"]:
+        if not await ctx.data.users_long.get(ctx.authid, "pending_preamble"):
             await ctx.reply("You don't have a pending preamble request to retract!")
             return
 
@@ -515,7 +524,6 @@ async def cmd_preamble(ctx):
         await ctx.reply("Your preamble request has been retracted!")
 
         await handled_preamble(ctx, ctx.authid, "Request retracted", colour=discord.Colour.red())
-        ctx.bot.objects["pending_preambles"].pop(ctx.authid, None)
         await preamblelog(ctx, "Preamble request was retracted")
         return
 
@@ -749,7 +757,7 @@ async def cmd_preamble(ctx):
 
         # Confirm submission
         prompt = "Please confirm you want to submit the following preamble."
-        result = await confirm(ctx, prompt, new_submission)
+        result = await confirm(ctx, prompt, new_submission, start_page=-1)
         if result is None:
             await ctx.reply("Query timed out, aborting.")
             return
@@ -928,7 +936,7 @@ async def cmd_serverpreamble(ctx):
     if new_preamble:
         # Confirm submission
         prompt = "Please confirm the following update to the server preamble"
-        result = await confirm(ctx, prompt, new_preamble)
+        result = await confirm(ctx, prompt, new_preamble, start_page=-1)
         if result is None:
             await ctx.reply("Query timed out, aborting.")
             return
@@ -954,7 +962,11 @@ async def approval_queue(ctx):
     # Run the whole thing in a loop, so we keep asking for judgements until there are none left
     while True:
         # Generate the list of users waiting for judgement
-        userids = list(ctx.bot.objects["pending_preambles"].keys())
+        raw_userids = list(await ctx.bot.data.users_long.find_not_empty("pending_preamble"))
+        userids = []
+        for userid in raw_userids:
+            if (await ctx.bot.data.users_long.get(userid, "pending_preamble")) is not None:
+                userids.append(str(userid))
 
         # Quit if there is nothing to approve
         if len(userids) == 0:
@@ -982,9 +994,16 @@ async def approval_queue(ctx):
         # Show the preamble and add judgement reactions
         title = "Preamble submission!"
         author = users[result]
-        submission, (time, info, _) = ctx.bot.objects["pending_preambles"][userids[result]]
+        submission = await ctx.bot.data.users_long.get(userids[result], "pending_preamble")
+        info_pack = await ctx.bot.data.users.get(userids[result], "pending_preamble_info")
 
-        sub_msg = await view_preamble(ctx, submission, title,
+        if not submission or not info_pack:
+            await ctx.reply("Malformed or nonexistent submission. This should never happen!")
+            reuturn
+
+        (time, info, _) = info_pack
+
+        sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
                                       author=author, time=time, header=info,
                                       destination=ctx.ch)
 
@@ -1012,7 +1031,7 @@ async def user_admin(ctx, userid):
     menu_message = "Preamble management menu for user {}".format(userid)
 
     # Add the judgement option if there is a pending preamble
-    if userid in ctx.bot.objects["pending_preambles"]:
+    if await ctx.bot.data.users_long.get(userid, "pending_preamble"):
         menu_items.append("Approve/Deny pending preamble")
 
     # Get the user, if possible
@@ -1111,7 +1130,6 @@ async def user_admin(ctx, userid):
         await ctx.data.users.set(userid, "pending_preamble_info", None)
 
         await handled_preamble(ctx, userid, "Preamble was reset", colour=discord.Colour.red())
-        ctx.bot.objects["pending_preambles"].pop(userid, None)
         await ctx.reply("The preamble was reset to the default!")
 
         await preamblelog(ctx, "Manual preamble reset",
@@ -1123,9 +1141,17 @@ async def user_admin(ctx, userid):
         # Show the preamble and add judgement reactions
         title = "Preamble submission!"
         author = userid
-        submission, (time, info, _) = ctx.bot.objects["pending_preambles"][userid]
 
-        sub_msg = await view_preamble(ctx, submission, title,
+        submission = await ctx.bot.data.users_long.get(userid, "pending_preamble")
+        info_pack = await ctx.bot.data.users.get(userid, "pending_preamble_info")
+
+        if not submission or not info_pack:
+            await ctx.reply("Malformed or nonexistent submission. This should never happen!")
+            return
+
+        (time, info, _) = info_pack
+
+        sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
                                       author=author, time=time, header=info,
                                       destination=ctx.ch)
 
@@ -1576,7 +1602,7 @@ async def cmd_ppr(ctx):
 
         if new_preset:
             # Confirm new content
-            prompt = "Please confirm the following udate for the preset {}".format(name)
+            prompt = "Please confirm the following update for the preset {}".format(name)
             result = await confirm(ctx, prompt, new_preset)
             if result is None:
                 await ctx.reply("Query timed out, aborting.")
@@ -1662,15 +1688,6 @@ async def load_channels(bot):
         bot.objects["latex_preamble_logch"] = bot.objects["latex_preamble_subch"]
 
 
-async def cache_pending_preambles(bot):
-    bot.objects["pending_preambles"] = {}
-    for userid in await bot.data.users_long.find_not_empty("pending_preamble"):
-        submission = await bot.data.users_long.get(userid, "pending_preamble")
-        info = await bot.data.users.get(userid, "pending_preamble_info")
-        if info is not None:
-            bot.objects["pending_preambles"][str(userid)] = (submission, info)
-
-
 async def get_preamble(ctx):
     """
     Retrieve the correct current preamble for ctx.author
@@ -1685,7 +1702,7 @@ async def get_preamble(ctx):
 
 def load_into(bot):
     bot.add_after_event("ready", load_channels, priority=10)
-    bot.add_after_event("ready", cache_pending_preambles, priority=10)
+    # bot.add_after_event("ready", cache_pending_preambles, priority=10)
     bot.data.users.ensure_exists("pending_preamble_info", shared=True)
     bot.data.users_long.ensure_exists("pending_preamble", "previous_preamble", "latex_preamble", shared=True)
 
