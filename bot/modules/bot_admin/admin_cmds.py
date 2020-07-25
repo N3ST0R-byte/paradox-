@@ -1,6 +1,7 @@
 import discord
 import aiohttp
 
+from cmdClient import Context
 from .module import bot_admin_module as module
 from wards import is_master, is_manager
 
@@ -43,7 +44,7 @@ activity_dict = {
             desc="Shut down the client.",
             aliases=["restart"])
 @is_manager()
-async def cmd_shutdown(ctx):
+async def cmd_shutdown(ctx: Context):
     """
     Usage``:
         {prefix}shutdown
@@ -61,7 +62,7 @@ async def cmd_shutdown(ctx):
             aliases=["status", "setgame", "setstatus"],
             flags=["type=", "desc==", "url==", "avatar==", "status="])
 @is_manager()
-async def cmd_setgame(ctx, flags):
+async def cmd_setgame(ctx: Context, flags):
     """
     Usage``:
         {prefix}setinfo [--type activity type] [--desc activity] [--url url] [--status status] [--avatar avatar_url]
@@ -107,7 +108,7 @@ async def cmd_setgame(ctx, flags):
 @module.cmd("dm",
             desc="Sends a direct message to a user, if possible.")
 @is_master()
-async def cmd_dm(ctx):
+async def cmd_dm(ctx: Context):
     """
     Usage``:
         {prefix}dm user_id message
@@ -144,7 +145,7 @@ async def cmd_dm(ctx):
 @module.cmd("logs",
             desc="Read and return the bot logs.")
 @is_master()
-async def cmd_logs(ctx):
+async def cmd_logs(ctx: Context):
     """
     Usage``:
         {prefix}logs [lines]

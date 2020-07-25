@@ -51,7 +51,7 @@ LOG_CHANNEL = conf.getint("LOG_CHANNEL")
 ERROR_CHANNEL = conf.getint("ERROR_CHANNEL") or LOG_CHANNEL
 
 # Shard info
-SHARD_COUNT = conf.get("SHARD_COUNT") or 1
+SHARD_COUNT = conf.getint("SHARD_COUNT") or 1
 
 
 # ------------------------------

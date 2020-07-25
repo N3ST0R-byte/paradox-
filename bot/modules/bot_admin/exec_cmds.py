@@ -3,6 +3,7 @@ from io import StringIO
 import traceback
 import asyncio
 
+from cmdClient import Context
 from utils.ctx_addons import run_in_shell  # noqa
 from wards import is_master
 
@@ -28,7 +29,7 @@ Commands provided:
 @module.cmd("async",
             desc="Executes async code and displays the output.")
 @is_master()
-async def cmd_async(ctx):
+async def cmd_async(ctx: Context):
     """
     Usage``:
         {prefix}async <code>
@@ -53,7 +54,7 @@ async def cmd_async(ctx):
             desc="Executes python code using exec and displays the output.",
             aliases=["ex"])
 @is_master()
-async def cmd_exec(ctx):
+async def cmd_exec(ctx: Context):
     """
     Usage``:
         {prefix}exec <code>
@@ -79,7 +80,7 @@ async def cmd_exec(ctx):
             aliases=["ev"],
             flags=['s'])
 @is_master()
-async def cmd_eval(ctx, flags, remaining):
+async def cmd_eval(ctx: Context, flags):
     """
     Usage``:
         {prefix}eval <code> [-s]
@@ -98,7 +99,7 @@ async def cmd_eval(ctx, flags, remaining):
         await ctx.reply("**Eval input:**\
                         \n```py\n{}\n```\
                         \n**Output {}:** \
-                        \n```py\n{}\n```".format(remaining,
+                        \n```py\n{}\n```".format(ctx.args,
                                                  "error" if error else "",
                                                  output))
 
@@ -127,7 +128,7 @@ async def cmd_shell(ctx):
 async def _eval(ctx):
     output = None
     try:
-        output = eval(ctx.arg_str)
+        output = eval(ctx.args)
     except Exception:
         return (str(traceback.format_exc()), 1)
     if asyncio.iscoroutine(output):
@@ -140,7 +141,7 @@ async def _exec(ctx):
     redirected_output = sys.stdout = StringIO()
     result = None
     try:
-        exec(ctx.arg_str)
+        exec(ctx.args)
         result = (redirected_output.getvalue(), 0)
     except Exception:
         result = (str(traceback.format_exc()), 1)
@@ -156,7 +157,7 @@ async def _async(ctx):
     redirected_output = sys.stdout = StringIO()
     result = None
     exec_string = "async def _temp_exec():\n"
-    exec_string += '\n'.join(' ' * 4 + line for line in ctx.arg_str.split('\n'))
+    exec_string += '\n'.join(' ' * 4 + line for line in ctx.args.split('\n'))
     try:
         exec(exec_string, env)
         result = (redirected_output.getvalue(), 0)
