@@ -1,5 +1,7 @@
 import datetime
 
+# from logger import log
+
 
 def prop_tabulate(prop_list, value_list):
     """
@@ -10,10 +12,10 @@ def prop_tabulate(prop_list, value_list):
 
     Parameters
     ----------
-    prop_list: List(str)
+    prop_list: List[str]
         List of short names to put on the right side of the list.
         Empty props are considered to be "newlines" for the corresponding value.
-    value_list: List(str)
+    value_list: List[str]
         List of values corresponding to the properties above.
 
     Returns: str
@@ -31,7 +33,7 @@ def paginate_list(item_list, block_length=20, style="markdown", title=None):
 
     Parameters
     ----------
-    item_list: List(str)
+    item_list: List[str]
         List of strings to paginate.
     block_length: int
         Maximum number of strings per page.
@@ -66,3 +68,52 @@ def timestamp_utcnow():
     Return the current integer UTC timestamp.
     """
     return int(datetime.datetime.timestamp(datetime.datetime.utcnow()))
+
+
+def split_text(text, blocksize=2000, code=True, syntax="", maxheight=50):
+    """
+    Break the text into blocks of maximum length blocksize
+    If possible, break across nearby newlines. Otherwise just break at blocksize chars
+
+    Parameters
+    ----------
+    text: str
+        Text to break into blocks.
+    blocksize: int
+        Maximum character length for each block.
+    code: bool
+        Whether to wrap each block in codeblocks (these are counted in the blocksize).
+    syntax: str
+        The markdown formatting language to use for the codeblocks, if applicable.
+    maxheight: int
+        The maximum number of lines in each block
+
+    Returns: List[str]
+        List of blocks,
+        each containing at most `block_size` characters,
+        of height at most `maxheight`.
+    """
+    # Adjust blocksize to account for the codeblocks if required
+    blocksize = blocksize - 8 - len(syntax) if code else blocksize
+
+    # Build the blocks
+    blocks = []
+    while True:
+        # If the remaining text is already small enough, append it
+        if len(text) <= blocksize:
+            blocks.append(text)
+            break
+
+        # Find the last newline in the prototype block
+        split_on = text[0:blocksize].rfind('\n')
+        split_on = blocksize if split_on == -1 else split_on
+
+        # Add the block and truncate the text
+        blocks.append(text[0:split_on])
+        text = text[split_on:]
+
+    # Add the codeblock ticks and the code syntax header, if required
+    if code:
+        blocks = ["```{}\n{}\n```".format(syntax, block) for block in blocks]
+
+    return blocks

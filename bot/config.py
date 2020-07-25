@@ -21,8 +21,9 @@ class Conf:
         )
         self.config.read(configfile)
 
-        self.section = self.config[section_name]
         self.default = self.config["DEFAULT"]
+        self.section = self.config[section_name]
+        self.emojis = self.config['EMOJIS'] if 'EMOJIS' in self.config else self.section
 
         global conf
         conf = self

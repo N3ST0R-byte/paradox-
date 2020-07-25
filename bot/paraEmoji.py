@@ -21,8 +21,7 @@ class configEmoji(PartialEmoji):
 
         fallback = splits[1] if len(splits) > 1 else None
         emojistr = splits[0].strip('<> ')
-        animated, name, id = emojistr.partition(':')
-
+        animated, name, id = emojistr.split(':')
         return cls(
             name=name,
             fallback=fallback,

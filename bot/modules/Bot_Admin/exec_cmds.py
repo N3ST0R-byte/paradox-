@@ -3,26 +3,25 @@ from io import StringIO
 import traceback
 import asyncio
 
+from utils.ctx_addons import run_in_shell  # noqa
+
 from .module import bot_admin_module as module
 from wards import is_master
 
 
 """
 Exec level commands to manage the bot.
+All commands require master permission.
 
 Commands provided:
     async:
         Executes provided code in an async executor.
-        Requires master permission.
     exec:
         Executes code using standard python exec.
-        Requires master permission.
     eval:
         Executes code and awaits it if required.
-        Requires master permission.
     shell:
         Runs a command in the executing environment
-        Requires master permission.
 """
 
 
@@ -95,12 +94,13 @@ async def cmd_eval(ctx, flags, remaining):
         return await ctx.error_reply("You must give me something to run!")
 
     output, error = await _eval(ctx)
-    await ctx.reply("**Eval input:**\
-                    \n```py\n{}\n```\
-                    \n**Output {}:** \
-                    \n```py\n{}\n```".format(ctx.arg_str,
-                                             "error" if error else "",
-                                             output))
+    if not flags['s'] or error:
+        await ctx.reply("**Eval input:**\
+                        \n```py\n{}\n```\
+                        \n**Output {}:** \
+                        \n```py\n{}\n```".format(remaining,
+                                                 "error" if error else "",
+                                                 output))
 
 
 @module.cmd("shell",
@@ -116,8 +116,7 @@ async def cmd_shell(ctx):
     if not ctx.arg_str:
         return await ctx.error_reply("You must give me something to run!")
 
-    # output = await ctx.run_sh(ctx.arg_str)
-    output = "Not yet implemented."
+    output = await ctx.run_in_shell(ctx.arg_str)
     await ctx.reply("**Command:**\
                     \n```sh\n{}\n```\
                     \n**Output:** \
@@ -130,7 +129,6 @@ async def _eval(ctx):
     try:
         output = eval(ctx.arg_str)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()))
         return (str(traceback.format_exc()), 1)
     if asyncio.iscoroutine(output):
         output = await output
@@ -145,7 +143,6 @@ async def _exec(ctx):
         exec(ctx.arg_str)
         result = (redirected_output.getvalue(), 0)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()))
         result = (str(traceback.format_exc()), 1)
     finally:
         sys.stdout = old_stdout
@@ -164,7 +161,6 @@ async def _async(ctx):
         exec(exec_string, env)
         result = (redirected_output.getvalue(), 0)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()), chid=ctx.ch.id)
         result = (str(traceback.format_exc()), 1)
         return result
     _temp_exec = env['_temp_exec']
@@ -176,7 +172,6 @@ async def _async(ctx):
         else:
             result = (value + '\n' + str(returnval), 0)
     except Exception:
-        await ctx.bot.log(str(traceback.format_exc()), chid=ctx.ch.id)
         result = (str(traceback.format_exc()), 1)
     finally:
         sys.stdout = old_stdout

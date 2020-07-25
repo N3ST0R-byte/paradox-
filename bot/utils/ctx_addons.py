@@ -1,6 +1,10 @@
 import asyncio
+import logging
+
 import discord
 from cmdClient import Context
+
+import logger
 
 
 @Context.util
@@ -71,3 +75,63 @@ async def _message_counter(client, channel, max_count):
         await client.wait_for('message', check=_check)
         count += 1
     return
+
+
+@Context.util
+def log(ctx: Context, *args, **kwargs):
+    """
+    Shortcut to the logger which automatically adds the context.
+    """
+    if "context" not in kwargs:
+        kwargs['context'] = "mid:{}".format(ctx.msg.id)
+    logger.log(*args, **kwargs)
+
+
+@Context.util
+async def run_in_shell(ctx: Context, script):
+    """
+    Execute a script or command asynchronously in a subprocess shell.
+    """
+    process = await asyncio.create_subprocess_shell(script, stdout=asyncio.subprocess.PIPE)
+    ctx.log(
+        "Executing the following script:\n{}\nwith pid '{}'.".format(
+            "\n".join("\t{}".format(line) for line in script.splitlines()),
+            process.pid
+        )
+    )
+    stdout, stderr = await process.communicate()
+    ctx.log("Completed the script with pid '{}'{}".format(
+        process.pid,
+        " with errors" if process.returncode != 0 else ""),
+        level=logging.DEBUG
+    )
+    return stdout.decode(errors='backslashreplace').strip()
+
+
+@Context.util
+def best_prefix(ctx: Context):
+    """
+    Returns the best default prefix in the current context.
+    This will be the server prefix if it is defined,
+    otherwise the default client prefix.
+    """
+    if ctx.guild:
+        prefix = ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix)
+    else:
+        prefix = ctx.client.prefix
+    return prefix
+
+
+@Context.util
+def format_usage(ctx: Context):
+    """
+    Formats the usage string of the current command.
+    Assumes the first section of the doc string is the usage string.
+    """
+    usage = ctx.cmd.long_help[0][1]
+    usage = usage.format(ctx=ctx, client=ctx.client, prefix=ctx.best_prefix())
+    return "**USAGE:**{}{}".format(
+        '\n' if '\n' in usage else ' ',
+        usage
+    )
+

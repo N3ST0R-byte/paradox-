@@ -186,7 +186,7 @@ async def _pager(ctx, out_msg, pages, locked):
     # Check function to determine whether a reaction is valid
     def check(reaction, user):
         result = reaction.message.id == out_msg.id
-        result = result and str(reaction.emoji) in [next_emoji, prev_emoji]
+        result = result and str(reaction.emoji) in [str(next_emoji), str(prev_emoji)]
         result = result and not (user.id == ctx.client.user.id)
         result = result and not (locked and user != ctx.author)
         return result
@@ -203,7 +203,7 @@ async def _pager(ctx, out_msg, pages, locked):
         asyncio.ensure_future(out_msg.remove_reaction(reaction.emoji, user))
 
         # Change the page number
-        page += 1 if reaction.emoji == next_emoji else -1
+        page += 1 if str(reaction.emoji) == str(next_emoji) else -1
         page %= len(pages)
 
         # Edit the message with the new page

@@ -89,8 +89,8 @@ LOGFILE = conf.get("LOGFILE")
 logger = logging.getLogger()
 file_handler = RotatingFileHandler(
     filename=LOGFILE,
-    maxBytes=10000000,
-    backupCount=5,
+    maxBytes=5000000,
+    backupCount=10,
     encoding='utf-8',
     mode='a'
 )

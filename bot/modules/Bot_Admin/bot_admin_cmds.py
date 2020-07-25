@@ -1,8 +1,13 @@
-from paraCH import paraCH
 import discord
 import aiohttp
 
-cmds = paraCH()
+from .module import bot_admin_module as module
+from wards import is_master, is_manager
+
+from utils.ctx_addons import format_usage  # noqa
+from utils.interactive import pager  # noqa
+from utils.lib import split_text
+
 
 """
 Administration level commands for the bot
@@ -26,86 +31,144 @@ status_dict = {"online": discord.Status.online,
                "invisible": discord.Status.invisible}
 
 
-@cmds.cmd("shutdown",
-          category="Bot admin",
-          aliases=["restart"])
-@cmds.require("manager_perm")
+activity_dict = {
+    "playing": discord.ActivityType.playing,
+    "streaming": discord.ActivityType.streaming,
+    "listening": discord.ActivityType.listening,
+    "watching": discord.ActivityType.watching
+}
+
+
+@module.cmd("shutdown",
+            desc="Shut down the client.",
+            aliases=["restart"])
+@is_manager()
 async def cmd_shutdown(ctx):
-    await ctx.reply("Shutting down...")
-    await ctx.bot.logout()
-
-
-@cmds.cmd("setinfo",
-          category="Bot admin",
-          short_help="Set my game, avatar, and status",
-          aliases=["status", "setgame", "setstatus"])
-@cmds.execute("flags", flags=["game==", "avatar==", "status="])
-@cmds.require("master_perm")
-async def cmd_setgame(ctx):
     """
-    Usage:
-        {prefix}setinfo --game game --status status --avatar avatar_url
+    Usage``:
+        {prefix}shutdown
     Description:
-        The following expansions are made in the game string
-            $users$: Number of users I can see.
-            $servers$: Number of servers I am in.
-            $channels$: Number of channels I am in.
-        The status must be one of online, idle, dnd, invisible.
+        Closes the client and shuts down the bot.
+
+        *Requires you to be an owner of the bot.*
     """
-    if ctx.flags["game"]:
-        game = ctx.flags["game"]
-        ctx.bot.objects["GAME"] = game
-        status = await ctx.ctx_format(game)
-        await ctx.bot.change_presence(game=discord.Game(name=status))
-        await ctx.reply("Game changed to: \'{}\'".format(status))
-    if ctx.flags["avatar"]:
-        avatar_url = ctx.flags["avatar"]
+    await ctx.reply("Shutting down...")
+    await ctx.client.logout()
+
+
+@module.cmd("setinfo",
+            desc="Set my game, avatar, and status",
+            aliases=["status", "setgame", "setstatus"],
+            flags=["type=", "desc==", "url==", "avatar==", "status="])
+@is_manager()
+async def cmd_setgame(ctx, flags):
+    """
+    Usage``:
+        {prefix}setinfo [--type activity type] [--desc activity] [--url url] [--status status] [--avatar avatar_url]
+    Description:
+        Sets the current bot status and activity.
+
+        *Requires you to be an owner of the bot.*
+    Flags::
+        type: Type of activity (see Activity Types section below).
+        desc: Name of activity to show (shown after `playing`, `listening` etc).
+        url: Streaming url if applicable.
+        status: Client status (see Status section below).
+        avatar: URL of the new avatar. Make sure you have a copy of the old one!
+    Activity Types:
+        One of `playing`, `streaming`, `listening` or `watching`.
+    Status:
+        One of `online`, `offline`, `idle` or `dnd`.
+    """
+    # Set the avatar if required
+    if flags["avatar"]:
+        avatar_url = flags["avatar"]
         async with aiohttp.get(avatar_url) as r:
             response = await r.read()
-        await ctx.bot.edit_profile(avatar=response)
-    if ctx.flags["status"]:
-        status = ctx.flags["status"]
-        if status not in status_dict:
-            await ctx.reply("Invalid status given!")
-        else:
-            await ctx.bot.change_presence(status=status_dict[status])
+        await ctx.client.user.edit(avatar=response)
+
+    # Build the activity
+    activity = None
+    if flags["desc"] or flags["type"]:
+        activity = discord.Activity(
+            type=activity_dict[flags["type"]] if flags["type"] else discord.ActivityType.playing,
+            name=flags["desc"] or None,
+            url=flags["url"] or None
+        )
+
+    # Change the presence
+    if flags["status"] or activity:
+        await ctx.client.change_presence(status=flags["status"] or None, activity=activity)
+
+    # Inform the user
+    await ctx.reply("Updated!")
 
 
-@cmds.cmd("dm",
-          category="Bot admin",
-          short_help="dms a user")
-@cmds.require("master_perm")
+@module.cmd("dm",
+            desc="Sends a direct message to a user, if possible.")
+@is_master()
 async def cmd_dm(ctx):
     """
-    Usage:
-        {prefix}dm user_info message
+    Usage``:
+        {prefix}dm user_id message
     Description:
-        Dms a user with the specified message.
-        Performs a bot wide interactive lookup on user_info.
+        Sends the specified message to the given `user_id` if possible.
     """
-    if len(ctx.params) < 2:
-        await ctx.reply("Please see Usage.")
-        return
-    await ctx.run("dm", user_info=ctx.params[0], message=" ".join(ctx.params[1:]))
-    await ctx.reply("Done.")
+    # Parse the arguments
+    splits = ctx.args.split(maxsplit=1)
+    if len(splits) < 2 or not splits[0].isdigit():
+        return await ctx.error_reply(ctx.format_usage())
+
+    userid, message = splits
+    userid = int(userid)
+
+    # Find the user
+    user = ctx.client.get_user(userid)
+    if user is None:
+        try:
+            user = await ctx.client.fetch_user(userid)
+        except discord.NotFound:
+            return await ctx.error_reply("This user does not exist!")
+
+    # Send the message
+    try:
+        await user.send(message)
+    except discord.Forbidden:
+        await ctx.error_reply(
+            "I couldn't send the message. Maybe we don't share any servers with this user or they have us blocked?"
+        )
+    else:
+        await ctx.reply("Message sent!")
 
 
-@cmds.cmd("logs",
-          category="Bot admin",
-          short_help="Reads and returns the logs")
-@cmds.require("master_perm")
+@module.cmd("logs",
+            desc="Read and return the bot logs.")
+@is_master()
 async def cmd_logs(ctx):
     """
-    Usage:
-        {prefix}logs [number]
+    Usage``:
+        {prefix}logs [lines]
     Description:
-        Sends the logfile or the last <number> lines of the log.
+        Sends the logfile or the last `<lines>` lines of the log.
     """
-    if ctx.arg_str == '':
+    # Get the path to the log file from config
+    logpath = ctx.client.conf.get('LOGFILE')
+
+    if not ctx.args:
+        # Attempt to send the logfile
+        logfile = discord.File(logpath)
         try:
-            await ctx.reply(file_name=ctx.bot.log_file)
-        except Exception:
-            await ctx.reply("I couldn't send you the logfile! Perhaps it is too big")
-    elif ctx.params[0].isdigit():
-        logs = await ctx.tail(ctx.bot.log_file, ctx.params[0])
-        await ctx.reply("Here are your logs:\n```{}```".format(logs))
+            await ctx.reply(file=logfile)
+        except discord.HTTPException:
+            await ctx.error_reply("Could not send the logfile. Perhaps it was too large?")
+    else:
+        # Retrieve the number of lines to send
+        if not ctx.args.isdigit():
+            return await ctx.error_reply(ctx.format_usage())
+        lines = int(ctx.args)
+
+        # Run tail to get the last <lines> lines of the log
+        logs = await ctx.run_in_shell("tail -n {} {}".format(lines, logpath))
+
+        # Split the log blocks and page the result
+        await ctx.pager(split_text(logs))
