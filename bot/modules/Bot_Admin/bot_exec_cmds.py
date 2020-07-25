@@ -2,47 +2,45 @@ import sys
 from io import StringIO
 import traceback
 import asyncio
-import inspect
 
-import discord
+from .module import bot_admin_module as module
+from wards import is_master
 
-from paraCH import paraCH
-
-cmds = paraCH()
 
 """
 Exec level commands to manage the bot.
 
 Commands provided:
     async:
-        Executes provided code in an async executor
+        Executes provided code in an async executor.
+        Requires master permission.
     exec:
-        Executes code using standard python exec
+        Executes code using standard python exec.
+        Requires master permission.
     eval:
-        Executes code and awaits it if required
+        Executes code and awaits it if required.
+        Requires master permission.
     shell:
         Runs a command in the executing environment
-    showcmd:
-        Views the source of a command
-        This does not need any special permissions, but is a hidden command
+        Requires master permission.
 """
 
 
-@cmds.cmd("async",
-          category="Bot admin",
-          short_help="Executes async code and displays the output",
-          edit_handler=cmds.edit_handler_rerun)
-@cmds.require("exec_perm")
+@module.cmd("async",
+            desc="Executes async code and displays the output.")
+@is_master()
 async def cmd_async(ctx):
     """
-    Usage:
+    Usage``:
         {prefix}async <code>
     Description:
-        Runs <code> as an asynchronous coroutine and prints the output or error.
+        Runs `<code>` as an asynchronous coroutine and prints the output or error.
+
+        *Requires you to be an owner of the bot.*
     """
-    if ctx.arg_str == "":
-        await ctx.reply("You must give me something to run!")
-        return
+    if not ctx.arg_str:
+        return await ctx.error_reply("You must give me something to run!")
+
     output, error = await _async(ctx)
     await ctx.reply("**Async input:**\
                     \n```py\n{}\n```\
@@ -52,22 +50,22 @@ async def cmd_async(ctx):
                                              output))
 
 
-@cmds.cmd("exec",
-          category="Bot admin",
-          short_help="Executes python code using exec and displays the output",
-          aliases=["ex"],
-          edit_handler=cmds.edit_handler_rerun)
-@cmds.require("exec_perm")
+@module.cmd("exec",
+            desc="Executes python code using exec and displays the output.",
+            aliases=["ex"])
+@is_master()
 async def cmd_exec(ctx):
     """
-    Usage:
+    Usage``:
         {prefix}exec <code>
     Description:
-    Runs <code> in current environment using exec() and prints the output or error.
+        Runs `<code>` in current environment using exec() and prints the output or error.
+
+        *Requires you to be an owner of the bot.*
     """
-    if ctx.arg_str == "":
-        await ctx.reply("You must give me something to run!")
-        return
+    if not ctx.arg_str:
+        return await ctx.error_reply("You must give me something to run!")
+
     output, error = await _exec(ctx)
     await ctx.reply("**Exec input:**\
                     \n```py\n{}\n```\
@@ -77,22 +75,25 @@ async def cmd_exec(ctx):
                                              output))
 
 
-@cmds.cmd("eval",
-          category="Bot admin",
-          short_help="Executes python code using eval and displays the output",
-          aliases=["ev"],
-          edit_handler=cmds.edit_handler_rerun)
-@cmds.require("exec_perm")
-async def cmd_eval(ctx):
+@module.cmd("eval",
+            desc="Executes python code using eval and displays the output.",
+            aliases=["ev"],
+            flags=['s'])
+@is_master()
+async def cmd_eval(ctx, flags, remaining):
     """
-    Usage:
-        {prefix}eval <code>
+    Usage``:
+        {prefix}eval <code> [-s]
     Description:
-        Runs <code> in current environment using eval() and prints the output or error.
+        Runs `<code>` in current environment using `eval()` and prints the output or error.
+
+        *Requires you to be an owner of the bot.*
+    Flags::
+        s: Eval silently and don't print any output unless there is an error.
     """
-    if ctx.arg_str == "":
-        await ctx.reply("You must give me something to run!")
-        return
+    if not ctx.arg_str:
+        return await ctx.error_reply("You must give me something to run!")
+
     output, error = await _eval(ctx)
     await ctx.reply("**Eval input:**\
                     \n```py\n{}\n```\
@@ -102,84 +103,26 @@ async def cmd_eval(ctx):
                                              output))
 
 
-@cmds.cmd("seval",
-          category="Bot admin",
-          short_help="Silent version of eval.",
-          edit_handler=cmds.edit_handler_rerun)
-@cmds.require("exec_perm")
-async def cmd_seval(ctx):
-    """
-    Usage:
-        {prefix}seval <code>
-    Description:
-        Runs <code> silently in current environment using eval().
-    """
-    if ctx.arg_str == "":
-        await ctx.reply("You must give me something to run!")
-        return
-    output, error = await _eval(ctx)
-    if error:
-        await ctx.reply("**Eval input:**\
-                        \n```py\n{}\n```\
-                        \n**Output (error):** \
-                        \n```py\n{}\n```".format(ctx.arg_str,
-                                                 output))
-
-
-@cmds.cmd("shell",
-          category="Bot admin",
-          short_help="Runs a command in the operating environment.",
-          edit_handler=cmds.edit_handler_rerun)
-@cmds.require("exec_perm")
+@module.cmd("shell",
+            desc="Runs a command in the operating environment.")
+@is_master()
 async def cmd_shell(ctx):
     """
-    Usage:
+    Usage``:
         {prefix}shell <command>
     Description:
-        Runs <command> in the operating environment and returns the output in a codeblock.
+        Runs `<command>` in the operating environment and returns the output in a codeblock.
     """
-    if ctx.arg_str == "":
-        await ctx.reply("You must give me something to run!")
-        return
-    output = await ctx.run_sh(ctx.arg_str)
-    if len(output) < 1800:
-        await ctx.reply("**Command:**\
-                        \n```sh\n{}\n```\
-                        \n**Output:** \
-                        \n```\n{}\n```".format(ctx.arg_str,
-                                               output))
-    else:
-        await ctx.reply("**Command:**\
-                        \n```sh\n{}\n```\
-                        \n**Output:**".format(ctx.arg_str))
-        await ctx.reply("{}".format(output), code=True, split=True)
-
-
-@cmds.cmd("showcmd",
-          category="Bot admin",
-          short_help="Shows the source of a command.",
-          edit_handler=cmds.edit_handler_rerun)
-async def cmd_showcmd(ctx):
-    """
-        Usage:
-            {prefix}showcmd cmdname
-        Description:
-            Replies with the source for the command <cmdname>
-    """
-    # Get the list of current active commands, including aliases
-    cmds = await ctx.get_cmds()
-
     if not ctx.arg_str:
-        await ctx.reply("You must give me with a command name!")
-    elif ctx.arg_str not in cmds:
-        await ctx.reply("I don't recognise this command.")
-    else:
-        cmd_func = cmds[ctx.arg_str].func
-        source = inspect.getsource(cmd_func)
-        source = source.replace('```', '[codeblock]')
-        blocks = ctx.split_text(source, 1800, syntax='python')
+        return await ctx.error_reply("You must give me something to run!")
 
-        await ctx.offer_delete(await ctx.pager(blocks, locked=False))
+    # output = await ctx.run_sh(ctx.arg_str)
+    output = "Not yet implemented."
+    await ctx.reply("**Command:**\
+                    \n```sh\n{}\n```\
+                    \n**Output:** \
+                    \n```\n{}\n```".format(ctx.arg_str,
+                                           output))
 
 
 async def _eval(ctx):
