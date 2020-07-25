@@ -1,3 +1,1 @@
-from .module import bot_admin_module
-from .exec_cmds import *
-from .admin_cmds import *
+from . import module, exec_cmds, admin_cmds, events

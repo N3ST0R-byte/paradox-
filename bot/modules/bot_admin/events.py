@@ -1,48 +1,52 @@
-from contextBot.Context import Context
 import discord
 from datetime import datetime
 
-# Provides logging events for when the bot joins and leaves servers
+from cmdClient import cmdClient
+import constants
+
+from .module import bot_admin_module as module
+
 
 """
-Event handlers for posting the leave/join server messages in the botlog
+Event handlers for posting the leave/join guild messages in the guild log
 
 Handlers:
-    log_left_server:
-        Posts to the botlog when the bot leaves a serer
-    log_joined_server:
-        Posts to the botlog when the bot joins a server
+    log_left_guild:
+        Posts to the guild log when the bot leaves a guild
+    log_joined_guild:
+        Posts to the guild log when the bot joins a guild
 """
 
 
-async def log_left_server(bot, server):
-    owner = server.owner
-    icon = server.icon_url
-    servers = bot.servers
+async def log_left_guild(client: cmdClient, guild: discord.Guild):
+    # Build embed
+    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(guild),
+                          colour=discord.Colour.red(),
+                          timestamp=datetime.now())
+    embed.set_author(name="Left guild!")
+    embed.set_thumbnail(url=guild.icon_url)
 
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.red(), timestamp=datetime.now())
-    embed.set_author(name="Left server!")
-    embed.set_thumbnail(url=icon)
-    embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(owner), inline=False)
-    embed.add_field(name="Now playing in", value="{} servers".format(len(servers)), inline=False)
-    log_ch = bot.objects["server_change_log_channel"]
+    # Add more specific information about the guild
+    embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(guild.owner), inline=False)
+    embed.add_field(name="Members (cached)", value="{}".format(len(guild.members)), inline=False)
+    embed.add_field(name="Now chatting in", value="{} guilds".format(len(client.guilds)), inline=False)
+
+    # Retrieve the guild log channel and log the event
+    log_ch = client.objects["guild_log_channel"]
     if log_ch:
-        await bot.send_message(log_ch, embed=embed)
-
-    status = await Context(bot=bot).ctx_format(bot.objects["GAME"])
-    await bot.change_presence(game=discord.Game(name=status))
+        await log_ch.send(embed=embed)
 
 
-async def log_joined_server(bot, server):
-    owner = server.owner
-    icon = server.icon_url
+async def log_joined_guild(client, guild):
+    owner = guild.owner
+    icon = guild.icon_url
 
     bots = 0
     known = 0
     unknown = 0
-    other_members = list(set([mem.id for mem in bot.get_all_members() if mem.server != server]))
+    other_members = list(set([mem.id for mem in client.get_all_members() if mem.guild != guild]))
 
-    for member in server.members:
+    for member in guild.members:
         if member.bot:
             bots += 1
         elif member.id in other_members:
@@ -57,29 +61,41 @@ async def log_joined_server(bot, server):
     known = "`{}`".format(known)
     unknown = "`{}`".format(unknown)
     bots = "`{}`".format(bots)
-    total = "`{}`".format(server.member_count)
-    mem_str = "{0:<5}\t{4},\n{1:<5}\t{5},\n{2:<5}\t{6}, and\n{3:<5}\t{7}.".format(known, unknown, bots, total, mem1, mem2, mem3, mem4)
-    region = str(server.region) if not str(server.region) in bot.objects["regions"] else bot.objects["regions"][str(server.region)]
+    total = "`{}`".format(guild.member_count)
+    mem_str = "{0:<5}\t{4},\n{1:<5}\t{5},\n{2:<5}\t{6}, and\n{3:<5}\t{7}.".format(
+        known,
+        unknown,
+        bots,
+        total,
+        mem1,
+        mem2,
+        mem3,
+        mem4
+    )
+    region = constants.region_map.get(guild.region, str(guild.region))
+    created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
-    created = server.created_at.strftime("%I:%M %p, %d/%m/%Y")
-
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(server), colour=discord.Colour.green(), timestamp=datetime.now())
-    embed.set_author(name="Joined server!")
+    embed = discord.Embed(
+        title="`{0.name} (ID: {0.id})`".format(guild),
+        colour=discord.Colour.green(),
+        timestamp=datetime.now()
+    )
+    embed.set_author(name="Joined guild!")
     embed.set_thumbnail(url=icon)
+
     embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
     embed.add_field(name="Region", value=region, inline=False)
     embed.add_field(name="Created at", value="{}".format(created), inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
-    embed.add_field(name="Now playing in", value="{} servers".format(len(bot.servers)), inline=False)
+    embed.add_field(name="Now chatting in", value="{} guilds".format(len(client.guilds)), inline=False)
 
-    log_ch = bot.objects["server_change_log_channel"]
+    # Retrieve the guild log channel and log the event
+    log_ch = client.objects["guild_log_channel"]
     if log_ch:
-        await bot.send_message(log_ch, embed=embed)
-
-    status = await Context(bot=bot).ctx_format(bot.objects["GAME"])
-    await bot.change_presence(game=discord.Game(name=status))
+        await log_ch.send(embed=embed)
 
 
-def load_into(bot):
-    bot.add_after_event("server_join", log_joined_server, priority=10)
-    bot.add_after_event("server_remove", log_left_server, priority=10)
+@module.init_task
+def attach_guild_events(client):
+    client.add_after_event('guild_join', log_joined_guild)
+    client.add_after_event('guild_remove', log_left_guild)

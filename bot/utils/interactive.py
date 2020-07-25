@@ -200,7 +200,7 @@ async def _pager(ctx, out_msg, pages, locked):
             break
 
         # Attempt to remove the user's reaction, silently ignore errors
-        asyncio.ensure_future(out_msg.remove_reaction(reaction.emoji, user))
+        asyncio.ensure_future(_safe_async_future(out_msg.remove_reaction(reaction.emoji, user)))
 
         # Change the page number
         page += 1 if str(reaction.emoji) == str(next_emoji) else -1
@@ -223,6 +223,17 @@ async def _pager(ctx, out_msg, pages, locked):
         except discord.NotFound:
             pass
     except discord.NotFound:
+        pass
+
+
+async def _safe_async_future(future):
+    """
+    Waits for the given future and ignores any errors that arise.
+    Use inside `asyncio.ensure_future` to silence errors.
+    """
+    try:
+        await future
+    except Exception:
         pass
 
 

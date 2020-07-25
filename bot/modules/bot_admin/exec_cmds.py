@@ -4,9 +4,9 @@ import traceback
 import asyncio
 
 from utils.ctx_addons import run_in_shell  # noqa
+from wards import is_master
 
 from .module import bot_admin_module as module
-from wards import is_master
 
 
 """

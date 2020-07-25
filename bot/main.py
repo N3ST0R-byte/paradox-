@@ -1,7 +1,5 @@
-import sys
 import logging
 from logging.handlers import RotatingFileHandler
-import traceback
 import argparse
 
 import discord
@@ -12,8 +10,7 @@ from logger import log, log_fmt
 from apps import load_app
 
 # Always load command modules last
-import modules
-
+import modules  # noqa
 
 
 # ------------------------------
@@ -49,7 +46,7 @@ PREFIX = conf.get("PREFIX")
 CHEAT_CH = conf.getint("CHEAT_CH")
 FEEDBACK_CH = conf.getint("FEEDBACK_CH")
 PREAMBLE_CH = conf.getint("PREAMBLE_CH")
-BOT_LOG_CH = conf.getint("BOT_LOG_CH")
+GUILD_LOG_CH = conf.getint("GUILD_LOG_CH")
 LOG_CHANNEL = conf.getint("LOG_CHANNEL")
 ERROR_CHANNEL = conf.getint("ERROR_CHANNEL") or LOG_CHANNEL
 
@@ -121,6 +118,7 @@ client.initialise_modules()
 client.objects["user_prefix_cache"] = {}
 client.objects["guild_prefix_cache"] = {}
 
+
 @client.set_valid_prefixes
 async def get_prefixes(client, message):
     """
@@ -179,8 +177,7 @@ async def on_ready():
     client.objects["cheat_report_channel"] = discord.utils.get(client.get_all_channels(), id=CHEAT_CH)
     client.objects["feedback_channel"] = discord.utils.get(client.get_all_channels(), id=FEEDBACK_CH)
     client.objects["preamble_channel"] = discord.utils.get(client.get_all_channels(), id=PREAMBLE_CH)
-    client.objects["server_change_log_channel"] = discord.utils.get(client.get_all_channels(), id=BOT_LOG_CH)
-
+    client.objects["guild_log_channel"] = discord.utils.get(client.get_all_channels(), id=GUILD_LOG_CH)
 
 
 @client.event
