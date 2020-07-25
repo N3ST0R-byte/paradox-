@@ -4,6 +4,12 @@
 # Conf files
 *.conf
 
+# Development cruft
+*.swo
+*.swp
+RCS
+tags
+
 # Nanny
 Nanny
 
