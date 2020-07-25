@@ -1,1 +1,1 @@
-from .Bot_Admin import *
+from .bot_admin import *

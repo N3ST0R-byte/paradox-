@@ -39,26 +39,3 @@ sorted_conf_pages = [
     ("Manual Moderation", ["Moderation", "Logging"]),
     ("Join/Leave Messages", ["Join message", "Leave message"])
 ]
-
-emojis = {
-    "emoji_tex_del": "delete",
-    "emoji_tex_show": "showtex",
-    "emoji_tex_errors": "errors",
-    "emoji_tex_delsource": "delete_source",
-    "emoji_bot": "parabot",
-    "emoji_botowner": "botowner",
-    "emoji_botmanager": "botmanager",
-    "emoji_online": "ParaOn",
-    "emoji_idle": "ParaIdle",
-    "emoji_dnd": "ParaDND",
-    "emoji_offline": "ParaInvis",
-    "emoji_next": "Next",
-    "emoji_more": "More",
-    "emoji_delete": "delete",
-    "emoji_loading": "loading",
-    "emoji_prev": "Previous",
-    "emoji_approve": "approve",
-    "emoji_deny": "deny",
-    "emoji_test": "test",
-    "emoji_sendfile": "send_file"
-}
