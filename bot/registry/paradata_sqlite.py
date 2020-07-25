@@ -3,10 +3,10 @@ import json
 
 prop_table_info = [
         ("users", "users", ["userid"]),
-        ("servers", "servers", ["serverid"]),
+        ("guilds", "servers", ["serverid"]),
         ("members", "members", ["serverid", "userid"]),
         ("users_long", "users_long", ["userid"]),
-        ("servers_long", "servers_long", ["serverid"]),
+        ("guilds_long", "servers_long", ["serverid"]),
         ("members_long", "members_long", ["serverid", "userid"])
 ]
 

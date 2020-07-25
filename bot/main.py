@@ -1,54 +1,74 @@
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 import traceback
-from cachetools import LRUCache
+import argparse
 
 import discord
+from cmdClient import cmdClient
 
-from botconf import Conf
+from config import Conf
+from logger import log, log_fmt
+from apps import load_app
 
-from contextBot.Context import Context
-from contextBot.Bot import Bot
+# Always load command modules last
+import modules
 
 
-# Configuration file for environment variables.
 
-CONF_FILE = sys.argv[1] if len(sys.argv) > 1 else "paradox.conf"
+# ------------------------------
+# Parse commandline arguments
+# ------------------------------
+parser = argparse.ArgumentParser()
+parser.add_argument('--conf',
+                    dest='config',
+                    default='config/paradox.conf',
+                    help="Path to configuration file.")
+parser.add_argument('--shard',
+                    dest='shard',
+                    default=None,
+                    type=int,
+                    help="Shard number to run, if applicable.")
 
-conf = Conf(CONF_FILE)
+args = parser.parse_args()
+config_file = args.config
+shard_num = args.shard or 0
+
+# ------------------------------
+# Load the configuration file
+# ------------------------------
+section_name = "SHARD {}".format(shard_num) if shard_num is not None else "DEFAULT"
+conf = Conf(config_file, section_name)
 
 # ------------------------------
 # Read the environment variables
-
+# ------------------------------
 PREFIX = conf.get("PREFIX")
 
 # Discord channel ids for logging endpoints and internal communication
-CHEAT_CH = conf.get("CHEAT_CH")
-FEEDBACK_CH = conf.get("FEEDBACK_CH")
-PREAMBLE_CH = conf.get("PREAMBLE_CH")
-BOT_LOG_CH = conf.get("BOT_LOG_CH")
-LOG_CHANNEL = conf.get("LOG_CHANNEL")
-ERROR_CHANNEL = conf.get("ERROR_CHANNEL") or LOG_CHANNEL
-
-# Server where the referenced emojis live
-EMOJI_SERVER = conf.get("EMOJI_SERVER")
+CHEAT_CH = conf.getint("CHEAT_CH")
+FEEDBACK_CH = conf.getint("FEEDBACK_CH")
+PREAMBLE_CH = conf.getint("PREAMBLE_CH")
+BOT_LOG_CH = conf.getint("BOT_LOG_CH")
+LOG_CHANNEL = conf.getint("LOG_CHANNEL")
+ERROR_CHANNEL = conf.getint("ERROR_CHANNEL") or LOG_CHANNEL
 
 # Shard info
-SHARD_ID = conf.get("SHARD_ID") or 0
 SHARD_COUNT = conf.get("SHARD_COUNT") or 1
 
 
 # ------------------------------
 # Initialise data
-CURRENT_APP = conf.get("APP")
+# ------------------------------
+CURRENT_APP = conf.get("APP", "")
 
 # Conditional import and setting of opts depending on the type of db
-DB_TYPE = conf.get("DB_TyPE")
+DB_TYPE = conf.get("DB_TYPE")
 if not DB_TYPE or DB_TYPE.lower() == "sqlite":
-    from paradata_sqlite import BotData
-    dbopts = {'data_file': conf.get("bot_data_file")}
+    from registry.paradata_sqlite import BotData
+    dbopts = {'data_file': conf.get("client_data_file")}
 elif DB_TYPE == "mysql":
-    from paradata_mysql import BotData
+    from registry.paradata_mysql import BotData
     dbopts = {
         'username': conf.get('username'),
         'password': conf.get('password'),
@@ -58,201 +78,135 @@ elif DB_TYPE == "mysql":
 else:
     raise Exception("Unknown data storage type {} in configuration".format(DB_TYPE))
 
-botdata = BotData(app=CURRENT_APP, **dbopts)
+clientdata = BotData(app=CURRENT_APP, **dbopts)
 
-# Initialise the logger
-LOGFILE = conf.get("LOGNAME") + ".log"
+
+# ------------------------------
+# Initialise the logger file handler
+# ------------------------------
+LOGFILE = conf.get("LOGFILE")
 
 logger = logging.getLogger()
-log_fmt = logging.Formatter(fmt='[{asctime}][{levelname:^7}] {message}', datefmt='%d/%m | %H:%M:%S', style='{')
-file_handler = logging.FileHandler(filename=LOGFILE, encoding='utf-8', mode='a')
-term_handler = logging.StreamHandler(sys.stdout)
+file_handler = RotatingFileHandler(
+    filename=LOGFILE,
+    maxBytes=10000000,
+    backupCount=5,
+    encoding='utf-8',
+    mode='a'
+)
 file_handler.setFormatter(log_fmt)
-term_handler.setFormatter(log_fmt)
 logger.addHandler(file_handler)
-logger.addHandler(term_handler)
-logger.setLevel(logging.INFO)
-
-# -------------------------------
-# Get the valid prefixes in given context
 
 
-async def get_prefixes(ctx):
+# ------------------------------
+# Set up the client
+# ------------------------------
+
+# Create the client
+client = cmdClient(
+    prefix=PREFIX,
+    shard_id=shard_num,
+    shard_count=SHARD_COUNT
+)
+client.data = clientdata
+client.conf = conf
+
+# Attach the relevant app information and hooks
+load_app(CURRENT_APP or "default", client)
+
+# Initialise modules
+client.initialise_modules()
+
+# Attach prefix function
+client.objects["user_prefix_cache"] = {}
+client.objects["guild_prefix_cache"] = {}
+
+@client.set_valid_prefixes
+async def get_prefixes(client, message):
     """
-    Returns a list of valid prefixes in this context.
-    Currently just bot and server prefixes
+    Returns a list of valid prefixes for this message.
     """
-    prefix = 0
-    prefix_conf = ctx.server_conf.guild_prefix
-    if ctx.server:
-        prefix = await prefix_conf.get(ctx)
-    user_prefix = await ctx.bot.data.users.get(ctx.authid, "custom_prefix")
-    prefix = prefix if prefix else ctx.bot.prefix
-    return [prefix, user_prefix] if user_prefix else [prefix]
+    prefixes = [client.user.mention]  # Mentions are always a valid prefix
 
-# Initialise the bot
-bot = Bot(data=botdata,
-          bot_conf=conf,
-          prefix=PREFIX,
-          prefix_func=get_prefixes,
-          log_file=LOGFILE,
-          shard_id = SHARD_ID,
-          shard_count = SHARD_COUNT)
+    # Add user prefix if it exists
+    user_prefix = client.objects["user_prefix_cache"].get(message.author.id, None)
+    if user_prefix is not None:
+        prefixes.append(user_prefix)
 
-bot.DEBUG = conf.get("DEBUG")
-bot.objects["logfile"] = open(bot.LOGFILE, 'a+')
+    # Add guild prefix if it exists, otherwise add default prefix
+    guild_prefix = None
+    if message.guild:
+        guild_prefix = client.objects["guild_prefix_cache"].get(message.guild.id, None)
+    if guild_prefix is not None:
+        prefixes.append(guild_prefix)
+    else:
+        prefixes.append(client.prefix)
 
-
-async def log(bot, logMessage, chid="Global".center(18, '='), error=False, level=logging.INFO):
-    for line in logMessage.split('\n'):
-        logger.log(level, '[{}] {}'.format(chid, line))
-
-    try:
-        if bot.DEBUG > 1:
-            ctx = Context(bot=bot)
-            log_splits = await ctx.msg_split(logMessage, True)
-            dest = discord.utils.get(bot.get_all_channels(), id=ERROR_CHANNEL if level >= logging.ERROR else LOG_CHANNEL)
-            for log in log_splits:
-                await bot.send_message(dest, log)
-    except Exception:
-        logger.log(logging.CRITICAL, "Errors occurred while logging this message in channel!")
-        for line in traceback.format_exc().splitlines():
-            logger.log(logging.CRITICAL, line)
-
-Bot.log = log
+    return prefixes
 
 
 # --------------------------------
+# Attach client event hooks
+# ------------------------------
 
-# Load shared config and utils
-bot.load("config", "global_events", "utils", ignore=["RCS", "__pycache__"])
-
-# Add shared bot info
-bot.objects["sorted cats"] = ["Info",
-                              "Fun",
-                              "Social",
-                              "Utility",
-                              "Moderation",
-                              "Server Admin",
-                              "Maths",
-                              "Meta",
-                              "Misc"]
-
-bot.objects["sorted_conf_pages"] = [("General", ["Guild settings", "Starboard", "Mathematical settings"]),
-                                    ("Manual Moderation", ["Moderation", "Logging"]),
-                                    ("Join/Leave Messages", ["Join message", "Leave message"])]
-
-# Pass to app to load app-specific objects and resources
-bot.load("apps/shared",
-         "apps/{}".format(CURRENT_APP if CURRENT_APP else "default"),
-         ignore=["RCS", "__pycache__"])
-
-
-bot.objects["regions"] = {
-    "brazil": "Brazil",
-    "eu-central": "Central Europe",
-    "hongkong": "Hong Kong",
-    "japan": "Japan",
-    "russia": "Russia",
-    "singapore": "Singapore",
-    "sydney": "Sydney",
-    "us-central": "Central United States",
-    "us-east": "Eastern United States",
-    "us-south": "Southern United States",
-    "us-west": "Western United States",
-    "eu-west": "Western Europe",
-    "vip-amsterdam": "Amsterdam (VIP)",
-    "vip-us-east": "Eastern United States (VIP)",
-    "india": "India",
-    "europe": "Europe",
-    "southafrica": "South Africa",
-    "frankfurt": "Frankfurt",
-    "south-korea": "South Korea",
-    "london": "London",
-    "amsterdam": "Amsterdam"
-}
-
-emojis = {"emoji_tex_del": "delete",
-          "emoji_tex_show": "showtex",
-          "emoji_tex_errors": "errors",
-          "emoji_tex_delsource": "delete_source",
-          "emoji_bot": "parabot",
-          "emoji_botowner": "botowner",
-          "emoji_botmanager": "botmanager",
-          "emoji_online": "ParaOn",
-          "emoji_idle": "ParaIdle",
-          "emoji_dnd": "ParaDND",
-          "emoji_offline": "ParaInvis",
-          "emoji_next": "Next",
-          "emoji_more": "More",
-          "emoji_delete": "delete",
-          "emoji_loading": "loading",
-          "emoji_prev": "Previous",
-          "emoji_approve": "approve",
-          "emoji_deny": "deny",
-          "emoji_test": "test",
-          "emoji_sendfile": "send_file"}
-
-
-# Initialise bot objects
-
-bot.objects["ready"] = False
-bot.objects["command_cache"] = LRUCache(300)
-
-
-# ----Discord event handling----
-
-
-def get_emoji(name):
-    emojis = bot.get_server(id=EMOJI_SERVER).emojis
-    return discord.utils.get(emojis, name=name)
-
-
-@bot.event
+@client.event
 async def on_ready():
-    GAME = conf.getStr("GAME")
-    if GAME == "":
-        GAME = "Type {}help for usage!".format(PREFIX)
-    bot.objects["GAME"] = GAME
-    GAME = await Context(bot=bot).ctx_format(GAME)
-    await bot.change_presence(status=discord.Status.online, game=discord.Game(name=GAME))
-    log_msg = "Logged in as\n{bot.user.name}\n{bot.user.id}\
-        \nUsing configuration {app}.\
-        \nLogged into {n} servers.\
-        \nLoaded {CH} command handlers.\
-        \nListening for {cmds} command keywords.\
-        \nReady to process commands.".format(bot=bot,
-                                             app=bot.objects["app"],
-                                             n=len(bot.servers),
-                                             CH=len(bot.handlers),
-                                             cmds=len(bot.cmd_cache))
+    activity_name = "Type {}help for usage!".format(client.prefix)
+    client.objects["activity_name"] = activity_name
+    await client.change_presence(
+        status=discord.Status.online,
+        activity=discord.Game(name=activity_name)
+    )
 
-    for emoji in emojis:
-        bot.objects[emoji] = get_emoji(emojis[emoji])
+    await client.launch_modules()
+    log_msg = ("Logged in as\n{client.user.name}\n{client.user.id}\n"
+               "Using configuration {app}.\n"
+               "Logged into {n} guilds on shard {shard}/{shard_count}.\n"
+               "Loaded {m} modules with {mn} commands.\n"
+               "Listening for {mnn} command keywords.\n"
+               "Ready to take commands.".format(
+                   client=client,
+                   app=client.app_info['app'],
+                   shard=shard_num,
+                   shard_count=SHARD_COUNT,
+                   n=len(client.guilds),
+                   m=len(client.modules),
+                   mn=len(client.cmds),
+                   mnn=len(client.cmd_names)
+               ))
+    log(log_msg)
 
-    bot.objects["cheat_report_channel"] = discord.utils.get(bot.get_all_channels(), id=CHEAT_CH)
-    bot.objects["feedback_channel"] = discord.utils.get(bot.get_all_channels(), id=FEEDBACK_CH)
-    bot.objects["preamble_channel"] = discord.utils.get(bot.get_all_channels(), id=PREAMBLE_CH)
-    bot.objects["server_change_log_channel"] = discord.utils.get(bot.get_all_channels(), id=BOT_LOG_CH)
-
-    await bot.log(log_msg)
-
-    """
-    ctx = Context(bot=bot)
-    # This log isn't really needed. If it doesn't start up, it won't log anyway.
-    with open(LOGFILE, "r") as f:
-        log_splits = await ctx.msg_split(f.read(), True)
-        for log in log_splits:
-            await bot.send_message(discord.utils.get(bot.get_all_channels(), id=LOG_CHANNEL), log)
-    """
+    client.objects["cheat_report_channel"] = discord.utils.get(client.get_all_channels(), id=CHEAT_CH)
+    client.objects["feedback_channel"] = discord.utils.get(client.get_all_channels(), id=FEEDBACK_CH)
+    client.objects["preamble_channel"] = discord.utils.get(client.get_all_channels(), id=PREAMBLE_CH)
+    client.objects["server_change_log_channel"] = discord.utils.get(client.get_all_channels(), id=BOT_LOG_CH)
 
 
-async def publish_ready(bot):
-    bot.objects["ready"] = True
 
-bot.add_after_event("ready", publish_ready, priority=100)
-# ----Event loops----
-# ----End event loops----
+@client.event
+async def on_message(message: discord.Message):
+    # Handle messages from bot accounts
+    if message.author.bot and message.author.id not in conf.getintlist("whitelisted_bots", []):
+        return
 
-# ----Everything is defined, start the bot!----
-bot.run(conf.get("TOKEN"))
+    # Handle messages from blacklisted users
+    if message.author.id in conf.getintlist("blacklisted_users", []):
+        return
+    await client.parse_message(message)
+
+    if message.guild:
+        # Handle messages from blacklisted guilds
+        if message.author.id in conf.getintlist("blacklisted_guilds", []):
+            return
+
+        # Handle blacklisted guild channels
+        # if (
+        #     message.id in client.objects["guild_channel_blacklists"] and
+        #     message.channel.id in client.objects["guild_channel_blacklists"][message.guild.id] and
+        #     not message.author.server_permissions.administrator
+        # ):
+        #     return
+
+
+# ----Everything is set up, start the client!----
+client.run(conf.get("TOKEN"))
