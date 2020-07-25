@@ -1,45 +1,54 @@
-'''
-    Extremely rudimentary configuration class.
-    Used for grabbing general settings from a file.
-    Needs much improvement.
-'''
-import configparser as cfgp
-import json
 import os
+import configparser as cfgp
+
+from paraEmoji import configEmoji
+
+
+conf = None  # type: Conf
 
 
 class Conf:
-    Section = 'General'
+    def __init__(self, configfile, section_name="DEFAULT"):
+        self.configfile = configfile
+        self.section_name = section_name
 
-    def __init__(self, conffile):
-        self.conffile = conffile
-        if not os.path.isfile(conffile):
-            with open(conffile, 'a+') as configfile:
-                configfile.write('')
-        config = cfgp.ConfigParser()
-        config.read(conffile)
-        if self.Section not in config.sections():
-            config[self.Section] = {}
-        self.settings = config[self.Section]
-        self.config = config
+        self.config = cfgp.ConfigParser(
+            converters={
+                "intlist": self._getintlist,
+                "list": self._getlist,
+                "emoji": configEmoji.from_str,
+            }
+        )
+        self.config.read(configfile)
 
-    def get(self, settingName, default=None):
-        if settingName not in self.settings:
-            return default
-        setting = self.settings[settingName]
+        self.section = self.config[section_name]
+        self.default = self.config["DEFAULT"]
 
-        return json.loads(setting)
+        global conf
+        conf = self
 
-    def getintlist(self, settingName, default=[]):
-        return self.get(settingName, default)
+    def __getitem__(self, key):
+        return self.section[key].strip()
 
-    def getStr(self, settingName, default=""):
-        return self.get(settingName, default)
+    def __getattr__(self, name):
+        return getattr(self.section, name)
 
-    def set(self, settingName, value):
-        self.settings[settingName] = str(value)
-        self.write()
+    def get(self, name, fallback=None):
+        result = self.section.get(name, fallback)
+        return result.strip() if result else result
+
+    def _getintlist(self, value):
+        return [int(item.strip()) for item in value.split(',')]
+
+    def _getlist(self, value):
+        return [item.strip() for item in value.split(',')]
 
     def write(self):
-        with open(self.conffile, 'w') as configfile:
-            self.config.write(configfile)
+        with open(self.configfile, 'w') as conffile:
+            self.config.write(conffile)
+
+
+def get_conf():
+    if conf is None:
+        raise Exception("Retrieving configuration without initialisation.")
+    return conf
