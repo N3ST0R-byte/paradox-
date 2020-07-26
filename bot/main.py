@@ -75,7 +75,7 @@ elif DB_TYPE == "mysql":
 else:
     raise Exception("Unknown data storage type {} in configuration".format(DB_TYPE))
 
-clientdata = BotData(app=CURRENT_APP, **dbopts)
+clientdata = BotData(app=CURRENT_APP if CURRENT_APP is not "default" else "", **dbopts)
 
 
 # ------------------------------
