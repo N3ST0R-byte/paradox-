@@ -117,3 +117,68 @@ def split_text(text, blocksize=2000, code=True, syntax="", maxheight=50):
         blocks = ["```{}\n{}\n```".format(syntax, block) for block in blocks]
 
     return blocks
+
+
+def strfdelta(delta, sec=False, minutes=True, short=False):
+    """
+    Convert a datetime.timedelta object into an easily readable duration string.
+
+    Parameters
+    ----------
+    delta: datetime.timedelta
+        The timedelta object to convert into a readable string.
+    sec: bool
+        Whether to include the seconds from the timedelta object in the string.
+    minutes: bool
+        Whether to include the minutes from the timedelta object in the string.
+    short: bool
+        Whether to abbreviate the units of time ("hour" to "h", "minute" to "m", "second" to "s").
+
+    Returns: str
+        A string containing a time from the datetime.timedelta object, in a readable format.
+        Time units will be abbreviated if short was set to True.
+    """
+
+    output = [[delta.days, 'd' if short else ' day'],
+              [delta.seconds // 3600, 'h' if short else ' hour']]
+    if minutes:
+        output.append([delta.seconds // 60 % 60, 'm' if short else ' minute'])
+    if sec:
+        output.append([delta.seconds % 60, 's' if short else ' second'])
+    for i in range(len(output)):
+        if output[i][0] != 1 and not short:
+            output[i][1] += 's'
+    reply_msg = []
+    if output[0][0] != 0:
+        reply_msg.append("{}{} ".format(output[0][0], output[0][1]))
+    for i in range(1, len(output) - 1):
+        reply_msg.append("{}{} ".format(output[i][0], output[i][1]))
+    if not short and reply_msg:
+        reply_msg.append("and ")
+        reply_msg.append("{}{}".format(output[len(output) - 1][0], output[len(output) - 1][1]))
+        return "".join(reply_msg)
+
+
+def parse_dur(time_str):
+    """
+    Parses a user provided time duration string into a timedelta object.
+
+    Parameters
+    ----------
+    time_str: str
+        The time string to parse. String can include days, hours, minutes, and seconds.
+
+    Returns: str
+        A string with a formatted timedelta object.
+    """
+    funcs = {'d': lambda x: x * 24 * 60 * 60,
+             'h': lambda x: x * 60 * 60,
+             'm': lambda x: x * 60,
+             's': lambda x: x}
+    time_str = time_str.strip(" ,")
+    found = re.findall(r'(\d+)\s?(\w+?)', time_str)
+    seconds = 0
+    for bit in found:
+        if bit[1] in funcs:
+            seconds += funcs[bit[1]](int(bit[0]))
+    return datetime.timedelta(seconds=seconds)
