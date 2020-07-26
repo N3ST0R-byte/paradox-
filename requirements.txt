@@ -1,4 +1,4 @@
-discord<1.0.0
+discord.py
 psutil
 iso8601
 pytz
