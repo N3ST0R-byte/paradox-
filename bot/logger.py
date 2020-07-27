@@ -1,8 +1,6 @@
 import sys
 import logging
 
-from config import conf
-
 
 # Setup the logger
 logger = logging.getLogger()
@@ -15,4 +13,4 @@ logger.setLevel(logging.INFO)
 
 def log(message, context="Global".center(22, '='), level=logging.INFO):
     for line in message.split('\n'):
-        logger.log(level, '[{}] {}'.format(str(context).center(18, '='), line))
+        logger.log(level, '[{}] {}'.format(str(context).center(22, '='), line))
