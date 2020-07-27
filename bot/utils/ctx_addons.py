@@ -135,3 +135,80 @@ def format_usage(ctx: Context):
         usage
     )
 
+
+@Context.util
+async def confirm_sent(ctx: Context, msg=None, reply=None):
+    """
+    Confirms to a user that the bot has DMed them by adding a tick reaction to the command message.
+    If the bot doesn't have permission to add reactions, it will respond with a message if reply is provided.
+    Parameters
+    ----------
+    msg: Message
+        The message to add the reaction to, otherwise assumes ctx.msg.
+    reply: str
+        A custom response to confirm the message has been sent, if the bot lacks permission to add reactions.
+    """
+    try:
+        if not msg:
+            await ctx.msg.add_reaction("✅")
+        else:
+            await msg.add_reaction("✅")
+    except discord.Forbidden:
+        return await ctx.reply(reply if reply else "Check your DMs!")
+
+
+@Context.util
+async def offer_delete(ctx: Context, msg, *to_delete):
+    """
+    Offers to delete the output message by adding a reaction.
+
+    Parameters
+    ----------
+    msg: Message
+        The output message to offer to delete.
+    to_delete: list(Message):
+        Multiple messages to delete if the user reacts.
+    """
+    emoji = ctx.client.conf.emojis.getemoji("delete")
+
+    if msg is None and to_delete is None:
+        return
+
+    # !!! Needs updating for rewrite !!! #
+    # mod_role = await ctx.server_conf.mod_role.get(ctx) if ctx.server else None
+    mod_role = None
+
+    if ctx.guild:
+        def check(reaction, user):
+            # !!! Needs updating for rewrite !!! #
+            """
+            if user == ctx.client.user:
+                return False
+            result = user == ctx.author           
+            result = result or (mod_role and mod_role in [role.id for role in user.roles])
+            result = result or user.server_permissions.administrator
+            result = result or user.server_permissions.manage_messages
+            """
+            return user == ctx.author and msg == msg and reaction.emoji == emoji
+    else:
+        def check(reaction, user):
+            return user == ctx.author and msg == msg and reaction.emoji == emoji
+    try:
+        await msg.add_reaction(emoji)
+    except discord.Forbidden:
+        return
+
+    try:
+        reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=300)
+        if reaction.emoji == emoji:
+            to_delete = to_delete if to_delete is not None else [msg]
+            for m in to_delete:
+                try:
+                    await m.delete()
+                except Exception:
+                    pass
+    except asyncio.TimeoutError:
+        try:
+            await msg.remove_reaction(emoji, ctx.client.user)
+        except Exception:
+            pass

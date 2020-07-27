@@ -1,4 +1,5 @@
 import datetime
+import iso8601
 
 # from logger import log
 
@@ -181,4 +182,75 @@ def parse_dur(time_str):
     for bit in found:
         if bit[1] in funcs:
             seconds += funcs[bit[1]](int(bit[0]))
+    return datetime.timedelta(seconds=seconds)
+
+
+def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
+    """
+    Format a message into a string with various information, such as:
+    the timestamp of the message, author, message content, and attachments.
+
+    Parameters
+    ----------
+    msg: Message
+        The message to format.
+    mask_link: bool
+        Whether to mask the URLs of any attachments.
+    line_break: bool
+        Whether a line break should be used in the string.
+    tz: Timezone
+        The timezone to use in the formatted message.
+    clean: bool
+        Whether to use the clean content of the original message.
+
+    Returns: str
+        A formatted string containing various information:
+        User timezone, message author, message content, attachments
+    """
+    timestr = "%I:%M %p, %d/%m/%Y"
+    if tz:
+        time = iso8601.parse_date(msg.timestamp.isoformat()).astimezone(tz).strftime(timestr)
+    else:
+        time = msg.timestamp.strftime(timestr)
+    user = str(msg.author)
+    attach_list = [attach["url"] for attach in msg.attachments if "url" in attach]
+    if mask_link:
+        attach_list = ["[Link]({})".format(url) for url in attach_list]
+    attachments = "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
+    return "`[{time}]` **{user}:** {line_break}{message} {attachments}".format(time=time, user=user, line_break="\n" if line_break else "", message=msg.clean_content if clean else msg.content, attachments=attachments)
+
+
+def convdatestring(datestring):
+    """
+    Convert a date string into a datetime.timedelta object.
+
+    Parameters
+    ----------
+    datestring: str
+        The string to convert to a datetime.timedelta object.
+
+    Returns: datetime.timedelta
+        A datetime.timedelta object formed from the string provided.  
+    """
+    datestring = datestring.strip(' ,')
+    datearray = []
+    funcs = {'d': lambda x: x * 24 * 60 * 60,
+             'h': lambda x: x * 60 * 60,
+             'm': lambda x: x * 60,
+             's': lambda x: x}
+    currentnumber = ''
+    for char in datestring:
+        if char.isdigit():
+            currentnumber += char
+        else:
+            if currentnumber == '':
+                continue
+            datearray.append((int(currentnumber), char))
+            currentnumber = ''
+    seconds = 0
+    if currentnumber:
+        seconds += int(currentnumber)
+    for i in datearray:
+        if i[1] in funcs:
+            seconds += funcs[i[1]](i[0])
     return datetime.timedelta(seconds=seconds)

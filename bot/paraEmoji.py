@@ -26,5 +26,5 @@ class configEmoji(PartialEmoji):
             name=name,
             fallback=PartialEmoji(name=fallback),
             animated=bool(animated),
-            id=id
+            id=int(id)
         )
