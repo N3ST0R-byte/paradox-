@@ -158,57 +158,84 @@ async def confirm_sent(ctx: Context, msg=None, reply=None):
 
 
 @Context.util
-async def offer_delete(ctx: Context, msg, *to_delete):
+async def offer_delete(ctx: Context, *to_delete, timeout=300):
     """
-    Offers to delete the output message by adding a reaction.
+    Offers to delete the provided messages via a reaction on the last message.
+    Removes the reaction if the offer times out.
+
+    If any exceptions occur, handles them silently and returns.
 
     Parameters
     ----------
-    msg: Message
-        The output message to offer to delete.
-    to_delete: list(Message):
-        Multiple messages to delete if the user reacts.
+    to_delete: List[Message]
+        The messages to delete.
+
+    timeout: int
+        Time in seconds after which to remove the delete offer reaction.
     """
+    # Get the delete emoji from the config
     emoji = ctx.client.conf.emojis.getemoji("delete")
 
-    if msg is None and to_delete is None:
+    # Return if there are no messages to delete
+    if not to_delete:
         return
+
+    # The message to add the reaction to
+    react_msg = to_delete[-1]
 
     # !!! Needs updating for rewrite !!! #
     # mod_role = await ctx.server_conf.mod_role.get(ctx) if ctx.server else None
-    mod_role = None
 
+    # Build the reaction check function
     if ctx.guild:
         def check(reaction, user):
             # !!! Needs updating for rewrite !!! #
             """
             if user == ctx.client.user:
                 return False
-            result = user == ctx.author           
+            result = user == ctx.author
             result = result or (mod_role and mod_role in [role.id for role in user.roles])
             result = result or user.server_permissions.administrator
             result = result or user.server_permissions.manage_messages
             """
-            return user == ctx.author and msg == msg and reaction.emoji == emoji
+            return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
     else:
         def check(reaction, user):
-            return user == ctx.author and msg == msg and reaction.emoji == emoji
-    try:
-        await msg.add_reaction(emoji)
-    except discord.Forbidden:
-        return
+            return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
 
     try:
-        reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=300)
-        if reaction.emoji == emoji:
-            to_delete = to_delete if to_delete is not None else [msg]
-            for m in to_delete:
+        # Add the reaction to the message
+        await react_msg.add_reaction(emoji)
+
+        # Wait for the user to press the reaction
+        reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=timeout)
+
+        # Since the check was satisfied, the reaction is correct. Delete the messages, ignoring any exceptions
+        deleted = False
+        # First try to bulk delete if we have the permissions
+        if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
+            try:
+                await ctx.ch.delete_messages(to_delete)
+                deleted = True
+            except Exception:
+                deleted = False
+
+        # If we couldn't bulk delete, delete them one by one
+        if not deleted:
+            for message in to_delete:
                 try:
-                    await m.delete()
+                    await message.delete()
                 except Exception:
                     pass
     except asyncio.TimeoutError:
+        # Timed out waiting for the reaction, attempt to remove the delete reaction
         try:
-            await msg.remove_reaction(emoji, ctx.client.user)
+            await react_msg.remove_reaction(emoji, ctx.client.user)
         except Exception:
             pass
+    except discord.Forbidden:
+        pass
+    except discord.NotFound:
+        pass
+    except discord.HTTPException:
+        pass
