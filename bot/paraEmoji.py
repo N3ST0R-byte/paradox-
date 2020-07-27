@@ -17,14 +17,14 @@ class configEmoji(PartialEmoji):
             `<a:name:id>`
             `<:name:id>`
         """
-        splits = emojistr.rsplit('or', maxsplit=1)
+        splits = emojistr.rsplit(' or ', maxsplit=1)
 
         fallback = splits[1] if len(splits) > 1 else None
         emojistr = splits[0].strip('<> ')
         animated, name, id = emojistr.split(':')
         return cls(
             name=name,
-            fallback=fallback,
+            fallback=PartialEmoji(name=fallback),
             animated=bool(animated),
             id=id
         )
