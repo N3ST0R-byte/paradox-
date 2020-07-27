@@ -66,7 +66,7 @@ class _propTableManipulator:
                 cursor.execute('INSERT INTO {}_props VALUES (%s,%s)'.format(self.table), (prop, shared))
                 self.propmap = self.get_propmap()
 
-    async def get(self, *args, default=None):
+    def get(self, *args, default=None):
         if len(args) != len(self.keys) + 1:
             raise Exception("Improper number of keys passed to get.")
         prop = self.map_prop(args[-1])
@@ -77,7 +77,7 @@ class _propTableManipulator:
         value = cursor.fetchone()
         return json.loads(value[0]) if (value and value[0]) else default
 
-    async def set(self, *args):
+    def set(self, *args):
         if len(args) != len(self.keys) + 2:
             raise Exception("Improper number of keys passed to set.")
         prop = self.map_prop(args[-2])
@@ -87,7 +87,7 @@ class _propTableManipulator:
         cursor = self.conn.cursor()
         cursor.execute('REPLACE INTO {} VALUES ({})'.format(self.table, values), tuple([*args[:-2], prop, value]))
 
-    async def find(self, prop, value, read=False):
+    def find(self, prop, value, read=False):
         if len(self.keys) > 1:
             raise Exception("This method cannot currently be used when there are multiple keys")
         prop = self.map_prop(prop)
@@ -98,7 +98,7 @@ class _propTableManipulator:
         cursor.execute('SELECT {} FROM {} WHERE property = %s AND value = %s'.format(self.keys[0], self.table), (prop, value))
         return [value[0] for value in cursor.fetchall()]
 
-    async def find_not_empty(self, prop):
+    def find_not_empty(self, prop):
         if len(self.keys) > 1:
             raise Exception("This method cannot currently be used when there are multiple keys")
         prop = self.map_prop(prop)

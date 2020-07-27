@@ -111,8 +111,6 @@ client.conf = conf
 # Attach the relevant app information and hooks
 load_app(CURRENT_APP or "default", client)
 
-# Initialise modules
-client.initialise_modules()
 
 # Attach prefix function
 client.objects["user_prefix_cache"] = {}
@@ -124,7 +122,8 @@ async def get_prefixes(client, message):
     """
     Returns a list of valid prefixes for this message.
     """
-    prefixes = [client.user.mention]  # Mentions are always a valid prefix
+    # Add both types of mentions, which are always valid prefixes
+    prefixes = [client.user.mention, "<@!{}>".format(client.user.id)]
 
     # Add user prefix if it exists
     user_prefix = client.objects["user_prefix_cache"].get(message.author.id, None)
@@ -204,6 +203,9 @@ async def on_message(message: discord.Message):
         # ):
         #     return
 
+
+# Initialise modules
+client.initialise_modules()
 
 # ----Everything is set up, start the client!----
 client.run(conf.get("TOKEN"))

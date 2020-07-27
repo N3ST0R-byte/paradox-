@@ -69,7 +69,7 @@ class _propTableManipulator:
                 self.propmap = self.get_propmap()
                 self.conn.commit()
 
-    async def get(self, *args, default=None):
+    def get(self, *args, default=None):
         if len(args) != len(self.keys) + 1:
             raise Exception("Improper number of keys passed to get.")
         prop = self.map_prop(args[-1])
@@ -80,7 +80,7 @@ class _propTableManipulator:
         value = cursor.fetchone()
         return json.loads(value[0]) if (value and value[0]) else default
 
-    async def set(self, *args):
+    def set(self, *args):
         if len(args) != len(self.keys) + 2:
             raise Exception("Improper number of keys passed to set.")
         prop = self.map_prop(args[-2])
@@ -98,7 +98,7 @@ class _propTableManipulator:
             cursor.execute('UPDATE {} SET value = ? WHERE {}'.format(self.table, criteria).format(*self.keys, 'property'), tuple([value, *args[:-2], prop]))
         self.conn.commit()
 
-    async def find(self, prop, value, read=False):
+    def find(self, prop, value, read=False):
         if len(self.keys) > 1:
             raise Exception("This method cannot currently be used when there are multiple keys")
         prop = self.map_prop(prop)
@@ -109,7 +109,7 @@ class _propTableManipulator:
         cursor.execute('SELECT {} FROM {} WHERE property = ? AND value = ?'.format(self.keys[0], self.table), (prop, value))
         return [value[0] for value in cursor.fetchall()]
 
-    async def find_not_empty(self, prop):
+    def find_not_empty(self, prop):
         if len(self.keys) > 1:
             raise Exception("This method cannot currently be used when there are multiple keys")
         prop = self.map_prop(prop)
@@ -117,3 +117,17 @@ class _propTableManipulator:
         cursor = self.conn.cursor()
         cursor.execute('SELECT {} FROM {} WHERE property = ? AND value IS NOT NULL AND value != \'\''.format(self.keys[0], self.table), (prop,))
         return [value[0] for value in cursor.fetchall()]
+
+    def select_not_empty(self, prop):
+        if len(self.keys) > 1:
+            raise Exception("This method cannot currently be used when there are multiple keys")
+        prop = self.map_prop(prop)
+
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT {}, value FROM {} WHERE property = ? AND value IS NOT NULL AND value != ''".format(
+                self.keys[0], self.table
+            ),
+            (prop,)
+        )
+        return [(key, json.loads(value)) for key, value in cursor.fetchall()]

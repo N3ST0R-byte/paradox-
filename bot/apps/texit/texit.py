@@ -31,13 +31,13 @@ disabled_modules = [
 
 
 async def enable_latex_listening(client, guild):
-    listening = await client.data.guilds.get(guild.id, "latex_listen_enabled")
+    listening = client.data.guilds.get(guild.id, "latex_listen_enabled")
 
     if listening is None:
-        await client.data.guilds.set(guild.id, "latex_listen_enabled", True)
+        client.data.guilds.set(guild.id, "latex_listen_enabled", True)
 
         listens = client.objects["guild_tex_listeners"]
-        channels = await client.data.guilds.get(guild.id, "maths_channels")
+        channels = client.data.guilds.get(guild.id, "maths_channels")
         listens[str(guild.id)] = channels if channels else []
 
 
