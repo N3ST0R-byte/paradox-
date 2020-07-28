@@ -98,21 +98,22 @@ async def cmd_prefix(ctx, flags):
         )
 
 
-@module.init_task
-def load_user_prefixes(client):
+@module.launch_task
+async def ensure_prefix_properties(client):
+    client.data.users.ensure_exists("custom_prefix", shared=False)
+    client.data.guilds.ensure_exists("guild_prefix", shared=False)
+
+
+@module.launch_task
+async def load_user_prefixes(client):
     """
     Retrieve the user prefixes from the database and fill the cache
     """
     user_prefix_cache = {}
-    for userid, prefix in client.data.users.select_not_empty("custom_prefix"):
-        user_prefix_cache[int(userid)] = prefix
+    for row in client.data.users.get_all_with("custom_prefix"):
+        user_prefix_cache[int(row['userid'])] = row['value']
+
     client.objects["user_prefix_cache"] = user_prefix_cache
 
     log("Loaded {} custom user prefixes.".format(len(user_prefix_cache)),
-        context="{}_INIT".format(module.name))
-
-
-@module.init_task
-def ensure_prefix_properties(client):
-    client.data.users.ensure_exists("custom_prefix", shared=False)
-    client.data.guilds.ensure_exists("guild_prefix", shared=False)
+        context="LOAD_USER_PREFIXES")

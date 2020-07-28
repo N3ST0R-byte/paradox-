@@ -29,8 +29,9 @@ disabled_modules = [
     "emoji",
 ]
 
-
+# TODO: (rewrite) this will be added as a launch task for the TeX module
 async def enable_latex_listening(client, guild):
+    client.data.guilds.ensure_exists("latex_listen_enabled", shared=False)
     listening = client.data.guilds.get(guild.id, "latex_listen_enabled")
 
     if listening is None:
@@ -42,8 +43,7 @@ async def enable_latex_listening(client, guild):
 
 
 def load_into(client):
-    client.data.guilds.ensure_exists("latex_listen_enabled", shared=False)
-    client.add_after_event("guild_join", enable_latex_listening)
+    # client.add_after_event("guild_join", enable_latex_listening)
     client.app_info = info
 
     for module in client.modules:

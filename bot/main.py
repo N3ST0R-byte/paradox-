@@ -9,6 +9,9 @@ from config import Conf
 from logger import log, log_fmt
 from apps import load_app
 
+from registry import mysqlConnector, sqliteConnector
+from paraProps import propertyModule
+
 # Always load command modules last
 import modules  # noqa
 
@@ -26,10 +29,16 @@ parser.add_argument('--shard',
                     default=None,
                     type=int,
                     help="Shard number to run, if applicable.")
+parser.add_argument('--writeschema',
+                    dest='schemafile',
+                    default=None,
+                    type=str,
+                    help="If provided, writes the db schema to the provided file and exits.")
 
 args = parser.parse_args()
 config_file = args.config
 shard_num = args.shard or 0
+schema_file = args.schemafile
 
 # ------------------------------
 # Load the configuration file
@@ -40,7 +49,8 @@ conf = Conf(config_file, section_name)
 # ------------------------------
 # Read the environment variables
 # ------------------------------
-PREFIX = conf.get("PREFIX")
+PREFIX = conf.get("PREFIX", "~")
+CURRENT_APP = conf.get("APP", "")
 
 # Discord channel ids for logging endpoints and internal communication
 CHEAT_CH = conf.getint("CHEAT_CH")
@@ -57,25 +67,22 @@ SHARD_COUNT = conf.getint("SHARD_COUNT") or 1
 # ------------------------------
 # Initialise data
 # ------------------------------
-CURRENT_APP = conf.get("APP", "")
 
-# Conditional import and setting of opts depending on the type of db
 DB_TYPE = conf.get("DB_TYPE")
+
+# Attach the appropriate database connector
 if not DB_TYPE or DB_TYPE.lower() == "sqlite":
-    from registry.paradata_sqlite import BotData
-    dbopts = {'data_file': conf.get("client_data_file")}
-elif DB_TYPE == "mysql":
-    from registry.paradata_mysql import BotData
+    clientdata = sqliteConnector(db_file=conf.get("sqlite_db", "data/paradox.db"))
+elif DB_TYPE.lower() == "mysql":
     dbopts = {
-        'username': conf.get('username'),
-        'password': conf.get('password'),
-        'host': conf.get('host'),
-        'database': conf.get('database')
+        'username': conf.get('db_username'),
+        'password': conf.get('db_password'),
+        'host': conf.get('db_host'),
+        'database': conf.get('db_name')
     }
+    clientdata = mysqlConnector(**dbopts)
 else:
     raise Exception("Unknown data storage type {} in configuration".format(DB_TYPE))
-
-clientdata = BotData(app=CURRENT_APP if CURRENT_APP is not "default" else "", **dbopts)
 
 
 # ------------------------------
@@ -107,6 +114,9 @@ client = cmdClient(
 )
 client.data = clientdata
 client.conf = conf
+
+# Attach the generic property tables by initialising the property module
+propertyModule.initialise(client)
 
 # Attach the relevant app information and hooks
 load_app(CURRENT_APP or "default", client)
@@ -206,6 +216,13 @@ async def on_message(message: discord.Message):
 
 # Initialise modules
 client.initialise_modules()
+
+# If the schema is requested, write it here and exit
+if schema_file is not None:
+    with open(schema_file, "w") as f:
+        f.write(client.data.get_schema())
+    exit()
+
 
 # ----Everything is set up, start the client!----
 client.run(conf.get("TOKEN"))
