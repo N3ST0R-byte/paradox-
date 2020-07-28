@@ -5,6 +5,7 @@ import discord
 from cmdClient import Context
 
 import logger
+from . import lib
 
 
 @Context.util
@@ -239,3 +240,14 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
         pass
     except discord.HTTPException:
         pass
+
+
+@Context.util
+async def mail(ctx, channelid, content=None, **kwargs):
+    """
+    Mails a message to a channel not necessarially seen by the gateway.
+    (e.g. on another shard.)
+    All arguments apart from `channelid` are passed transparently to `lib.mail`
+    and then onto a minimal `Messageable` instance created from `channelid`.
+    """
+    return await lib.mail(ctx.client, channelid, content=content, **kwargs)

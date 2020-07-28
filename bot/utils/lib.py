@@ -1,5 +1,8 @@
 import datetime
 import iso8601
+import re
+
+import discord
 
 # from logger import log
 
@@ -217,7 +220,13 @@ def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
     if mask_link:
         attach_list = ["[Link]({})".format(url) for url in attach_list]
     attachments = "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
-    return "`[{time}]` **{user}:** {line_break}{message} {attachments}".format(time=time, user=user, line_break="\n" if line_break else "", message=msg.clean_content if clean else msg.content, attachments=attachments)
+    return "`[{time}]` **{user}:** {line_break}{message} {attachments}".format(
+        time=time,
+        user=user,
+        line_break="\n" if line_break else "",
+        message=msg.clean_content if clean else msg.content,
+        attachments=attachments
+    )
 
 
 def convdatestring(datestring):
@@ -230,7 +239,7 @@ def convdatestring(datestring):
         The string to convert to a datetime.timedelta object.
 
     Returns: datetime.timedelta
-        A datetime.timedelta object formed from the string provided.  
+        A datetime.timedelta object formed from the string provided.
     """
     datestring = datestring.strip(' ,')
     datearray = []
@@ -254,3 +263,34 @@ def convdatestring(datestring):
         if i[1] in funcs:
             seconds += funcs[i[1]](i[0])
     return datetime.timedelta(seconds=seconds)
+
+
+class _rawChannel(discord.abc.Messageable):
+    """
+    Raw messageable class representing an arbitrary channel,
+    not necessarially seen by the gateway.
+    """
+    def __init__(self, state, id):
+        self._state = state
+        self.id = id
+
+    async def _get_channel(self):
+        return discord.Object(self.id)
+
+
+async def mail(client: discord.Client, channelid: int, **msg_args):
+    """
+    Mails a message to a channelid which may be invisible to the gateway.
+
+    Parameters:
+        client: discord.Client
+            The client to use for mailing.
+            Must at least have static authentication and have a valid `_connection`.
+        channelid: int
+            The channel id to mail to.
+        msg_args: Any
+            Message keyword arguments which are passed transparently to `_rawChannel.send(...)`.
+    """
+    # Create the raw channel
+    channel = _rawChannel(client._connection,  channelid)
+    return await channel.send(**msg_args)
