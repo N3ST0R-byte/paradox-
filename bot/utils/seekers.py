@@ -304,3 +304,52 @@ async def find_member(ctx, userstr, interactive=False, collection=None):
         await ctx.error_reply("Couldn't find a member matching `{}`!".format(userstr))
 
     return member
+
+@Context.util
+"""
+Finds a message given a message id
+-------
+msgid: int
+    Message ID is obtained from the user
+chlist: List(discord.Channel)
+    Channel list is given by the user
+ignore: list
+    Another list of channels is given by the user and these channels are not
+    considered.
+
+Returns
+-------
+discord.message if a message is found
+None if a message is not found
+
+Raises
+-------
+NotFound:
+    If the specified message was not found.
+
+Forbidden:
+ If the permissions are insufficient to get a message.
+
+HTTPException:
+    If retrieving the message failed.
+"""
+
+async def find_message(ctx, msgid, chlist=None, ignore=[]):
+    message = None
+    chlist = ctx.guild.text_channels if chlist is None else chlist
+    #builds a channel list of all the channels if a list was not prescribed
+
+    #iterates through the channel list looking for the message
+    for channel in chlist:
+        #Avoids non-text channels
+        if channel.type != discord.ChannelType.text:
+            continue
+        if channel in ignore:
+            continue
+        try:
+            message = await channel.fetch_message(msgid)
+        except Exception:
+            pass
+        if message:
+            break
+    return message
