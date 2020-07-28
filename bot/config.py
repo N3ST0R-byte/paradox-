@@ -25,6 +25,17 @@ class Conf:
         self.section = self.config[section_name]
         self.emojis = self.config['EMOJIS'] if 'EMOJIS' in self.config else self.section
 
+        # Config file recursion, read in configuration files specified in every "ALSO_READ" key.
+        more_to_read = self.section.getlist("ALSO_READ", [])
+        read = set()
+        while more_to_read:
+            to_read = more_to_read.pop(0)
+            read.add(to_read)
+            self.config.read(to_read)
+            new_paths = [path for path in self.section.getlist("ALSO_READ", [])
+                         if path not in read and path not in more_to_read]
+            more_to_read.extend(new_paths)
+
         global conf
         conf = self
 
