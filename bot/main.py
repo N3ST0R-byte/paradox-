@@ -9,6 +9,7 @@ from config import Conf
 from logger import log, log_fmt
 from apps import load_app
 
+from registry.connectors import mysqlConnector, sqliteConnector
 from paraProps import propertyModule
 
 # Always load command modules last
@@ -70,12 +71,9 @@ SHARD_COUNT = conf.getint("SHARD_COUNT") or 1
 DB_TYPE = conf.get("DB_TYPE")
 
 # Attach the appropriate database connector
-# Conditional import here so the other connector type doesn't need to be installed
 if not DB_TYPE or DB_TYPE.lower() == "sqlite":
-    from registry import sqliteConnector
     clientdata = sqliteConnector(db_file=conf.get("sqlite_db", "data/paradox.db"))
 elif DB_TYPE.lower() == "mysql":
-    from registry import mysqlConnector
     dbopts = {
         'username': conf.get('db_username'),
         'password': conf.get('db_password'),

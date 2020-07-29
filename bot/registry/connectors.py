@@ -1,5 +1,10 @@
 import sqlite3 as sq
-import mysql.connector
+
+try:
+    import mysql.connector
+    MYSQL = True
+except ImportError:
+    MYSQL = False
 
 from .Connector import Connector
 
@@ -11,6 +16,9 @@ class mysqlConnector(Connector):
 
     def __init__(self, **dbopts):
         super().__init__(**dbopts)
+
+        if not MYSQL:
+            raise ImportError("No MySQL connector available in your system, please install MySQL.")
 
         self.conn = mysql.connector.connect(**dbopts)
 
