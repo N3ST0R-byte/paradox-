@@ -15,7 +15,7 @@ propertyModule = paraModule(
 )
 
 
-@propertyModule.init_task
+@propertyModule.data_init_task
 def load_property_tables(client):
     # Get the current app name
     app = client.conf.get("APP", "")

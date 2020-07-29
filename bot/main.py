@@ -65,27 +65,6 @@ SHARD_COUNT = conf.getint("SHARD_COUNT") or 1
 
 
 # ------------------------------
-# Initialise data
-# ------------------------------
-
-DB_TYPE = conf.get("DB_TYPE")
-
-# Attach the appropriate database connector
-if not DB_TYPE or DB_TYPE.lower() == "sqlite":
-    clientdata = sqliteConnector(db_file=conf.get("sqlite_db", "data/paradox.db"))
-elif DB_TYPE.lower() == "mysql":
-    dbopts = {
-        'username': conf.get('db_username'),
-        'password': conf.get('db_password'),
-        'host': conf.get('db_host'),
-        'database': conf.get('db_name')
-    }
-    clientdata = mysqlConnector(**dbopts)
-else:
-    raise Exception("Unknown data storage type {} in configuration".format(DB_TYPE))
-
-
-# ------------------------------
 # Initialise the logger file handler
 # ------------------------------
 LOGFILE = conf.get("LOGFILE")
@@ -103,24 +82,58 @@ logger.addHandler(file_handler)
 
 
 # ------------------------------
-# Set up the client
+# Create the client
 # ------------------------------
 
-# Create the client
 client = cmdClient(
     prefix=PREFIX,
     shard_id=shard_num,
     shard_count=SHARD_COUNT
 )
-client.data = clientdata
 client.conf = conf
 
-# Attach the generic property tables by initialising the property module
-propertyModule.initialise(client)
-
-# Attach the relevant app information and hooks
+# Attach the relevant app information, app modules, and hooks
 load_app(CURRENT_APP or "default", client)
 
+
+# ------------------------------
+# Initialise data
+# ------------------------------
+
+DB_TYPE = conf.get("DB_TYPE")
+
+# Attach the appropriate database connector
+if not DB_TYPE or DB_TYPE.lower() == "sqlite":
+    client.data = sqliteConnector(db_file=conf.get("sqlite_db", "data/paradox.db"))
+elif DB_TYPE.lower() == "mysql":
+    dbopts = {
+        'username': conf.get('db_username'),
+        'password': conf.get('db_password'),
+        'host': conf.get('db_host'),
+        'database': conf.get('db_name')
+    }
+    client.data = mysqlConnector(**dbopts)
+else:
+    raise Exception("Unknown data storage type {} in configuration".format(DB_TYPE))
+
+# Initialise the module data interfaces
+log("Initialising data for all client modules.")
+for module in client.modules:
+    if module.enabled:
+        module.initialise_data(client)
+
+# If the schema was requested, write it here and exit
+if schema_file is not None:
+    log("Writing schema.")
+    with open(schema_file, "w") as f:
+        f.write(client.data.get_schema())
+    exit()
+
+
+
+# ------------------------------
+# Set up the client
+# ------------------------------
 
 # Attach prefix function
 client.objects["user_prefix_cache"] = {}
@@ -216,12 +229,6 @@ async def on_message(message: discord.Message):
 
 # Initialise modules
 client.initialise_modules()
-
-# If the schema is requested, write it here and exit
-if schema_file is not None:
-    with open(schema_file, "w") as f:
-        f.write(client.data.get_schema())
-    exit()
 
 
 # ----Everything is set up, start the client!----

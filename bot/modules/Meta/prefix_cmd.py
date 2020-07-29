@@ -98,14 +98,14 @@ async def cmd_prefix(ctx, flags):
         )
 
 
-@module.launch_task
-async def ensure_prefix_properties(client):
+@module.init_task
+def ensure_prefix_properties(client):
     client.data.users.ensure_exists("custom_prefix", shared=False)
     client.data.guilds.ensure_exists("guild_prefix", shared=False)
 
 
-@module.launch_task
-async def load_user_prefixes(client):
+@module.init_task
+def load_user_prefixes(client):
     """
     Retrieve the user prefixes from the database and fill the cache
     """
