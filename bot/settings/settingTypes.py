@@ -1,402 +1,563 @@
-import re
+from typing import Any, Optional, List
+
 import discord
-from paraSetting import paraSetting
+from cmdClient import cmdClient, Context
+
+from utils import seekers  # noqa
+
+from .errors import BadUserInput
+
+"""
+Mixins for guild settings that provide converter methods for common types.
+
+Setting types will typically only implement the converters and the `accepts` string.
+Some setting types offer "configuration" via class attributes.
+"""
 
 
-class BOOL(paraSetting):
+class SettingType:
     """
-    A sort of boolean type, more like a wrapper for a boolean.
+    Abstract class representing a setting type.
+    Intended to be used as a mixin for a GuildSetting,
+    with the provided methods implementing converter methods for the setting.
+    """
+    accepts: str = None  # User readable description of the acceptable values
+
+    # Raw converters
+    @classmethod
+    def _data_from_value(cls, client: cmdClient, guildid: int, value, **kwargs):
+        """
+        Convert a high-level setting value to internal data.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
+        """
+        Convert internal data to high-level setting value.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Parse user provided input into internal data.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
+        """
+        Convert internal data into a formatted user-readable string.
+        """
+        raise NotImplementedError
+
+
+class Boolean(SettingType):
+    """
+    Boolean type, supporting truthy and falsey user input.
+    Configurable to change truthy and falsey values, and the output map.
+
+    Types:
+        data: Optional[bool]
+            The stored boolean value.
+        value: Optional[bool]
+            The stored boolean value.
     """
     accept = "Yes/No, On/Off, True/False, Enabled/Disabled"
-    inputexps = {"^yes$": True,
-                 "^true$": True,
-                 "^on$": True,
-                 "^enabled?$": True,
-                 "^no$": False,
-                 "^false$": False,
-                 "^off$": False,
-                 "^disabled?$": False}
-    outputs = {True: "",
-               False: ""}
+
+    # Values that are accepted as truthy and falsey by the parser
+    _truthy = {"yes", "true", "on", "enable", "enabled"}
+    _falsey = {"no", "false", "off", "disable", "disabled"}
+
+    # The user-friendly output strings to use for each value
+    _outputs = {True: "On", False: "Off"}
 
     @classmethod
-    async def humanise(cls, ctx, raw):
-        return cls.outputs[raw]
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[bool], **kwargs):
+        """
+        Both data and value are of type Optional[bool].
+        Directly return the provided value as data.
+        """
+        return value
 
     @classmethod
-    async def understand(cls, ctx, userstr):
-        for pattern in cls.inputexps:
-            if re.match(pattern, userstr, re.I):
-                return cls.inputexps[pattern]
-        ctx.cmd_err = (1, "I don't understand this value. Acceptable values are: {}".format(cls.accept))
-        return None
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[bool], **kwargs):
+        """
+        Both data and value are of type Optional[bool].
+        Directly return the internal data as the value.
+        """
+        return data
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Looks up the provided string in the truthy and falsey tables.
+        """
+        _userstr = userstr.lower()
+        if _userstr in cls._truthy:
+            return True
+        elif _userstr in cls._falsey:
+            return False
+        else:
+            raise BadUserInput("Unknown boolean type `{}`".format(userstr))
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: bool, **kwargs):
+        """
+        Pass the provided value through the outputs map.
+        """
+        return cls._outputs[data]
 
 
-class STR(paraSetting):
+class Integer(SettingType):
     """
-    Just a plain string, nothing special
+    Integer type. Storing any integer.
+
+    Types:
+        data: Optional[int]
+            The stored integer value.
+        value: Optional[int]
+            The stored integer value.
+    """
+    accept = "Any number"
+
+    @classmethod
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[bool], **kwargs):
+        """
+        Both data and value are of type Optional[int].
+        Directly return the provided value as data.
+        """
+        return value
+
+    @classmethod
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[bool], **kwargs):
+        """
+        Both data and value are of type Optional[int].
+        Directly return the internal data as the value.
+        """
+        return data
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Relies on integer casting to convert the user string
+        """
+        try:
+            return int(userstr)
+        except Exception:
+            raise BadUserInput("Couldn't parse number.") from None
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
+        """
+        Return the string version of the data.
+        """
+        if data is None:
+            return None
+        else:
+            return str(data)
+
+
+class String(SettingType):
+    """
+    String type, storing arbitrary text.
+    Configurable to limit text length and restrict input options.
+
+    Types:
+        data: Optional[str]
+            The stored string.
+        value: Optional[str]
+            The stored string.
     """
     accept = "Any text"
 
-    @classmethod
-    async def humanise(cls, ctx, raw):
-        return "\"{}\"".format(str(raw))
+    # Maximum length of string to accept
+    _maxlen: int = None
+
+    # Set of input options to accept
+    _options: set = None
 
     @classmethod
-    async def understand(cls, ctx, userstr):
-        if userstr.startswith("\"") and userstr.endswith("\""):
-            return userstr[1:-1]
-        if userstr.startswith("'") and userstr.endswith("'"):
-            return userstr[1:-1]
-        return userstr
-
-class LIMITED_STR(STR):
-    """
-    One of a specific set of acceptable strings.
-    """
-    acceptable = ["None"]
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[str], **kwargs):
+        """
+        Return the provided value string as the data string.
+        """
+        return value
 
     @classmethod
-    async def humanise(cls, ctx, raw):
-        return "{}".format(str(raw))
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[str], **kwargs):
+        """
+        Return the provided data string as the value string.
+        """
+        return data
 
     @classmethod
-    async def understand(cls, ctx, userstr):
-        userstr = await STR.understand(ctx, userstr)
-        if userstr not in cls.acceptable:
-            ctx.cmd_err = (1, "I don't understand \"{}\". Acceptable values are: {}".format(userstr, ",".join(cls.acceptable)))
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Check that the user-entered string is of the correct length.
+        Accept "None" to unset.
+        """
+        if userstr == "None":
+            # Unsetting case
             return None
-        return userstr
-
-
-class USEREVENT(LIMITED_STR):
-    acceptable = ["username", "nickname", "roles", "avatar"]
-    accept = "One of {}".format(", ".join(acceptable))
-
-
-
-class FMTSTR(STR):
-    """
-    Formatable string
-    TODO: accepted keys in variable from somewhere
-    """
-    accept = "Formatted string, accepted keys are:\n"
-    accept += "\t $username$, $mention$, $id$, $tag$, $displayname$, $server$"
-
-
-class ROLE(paraSetting):
-    """
-    ROLE type.
-    """
-    accept = "Role mention/id/name, or 'none' to unset"
-
-    @classmethod
-    async def humanise(self, ctx, raw):
-        """
-        Expect raw to be role id or 0, an empty.
-        """
-        if (not raw) or raw == "0":
-            return "None"
-        role = discord.utils.get(ctx.server.roles, id=raw)
-        if role:
-            return "{}".format(role.name)
-        return "{} (Role not found!)".format(raw)
-
-    @classmethod
-    async def understand(self, ctx, userstr):
-        """
-        User can enter a role mention or an id, or even a partial name.
-        """
-        if userstr.lower() in ["0", "none"]:
-            return "0"
-        role = await ctx.find_role(userstr, create=True, interactive=True)
-        return role.id if role else None
-
-
-class EMOJI(paraSetting):
-    """
-    EMOJI type.
-    """
-    accept = "Emoji, either built in or custom. Use None to reset"
-
-    @classmethod
-    async def humanise(self, ctx, raw):
-        """
-        Expect raw to be emoji id or unicode.
-        Empty values are None and 0.
-        """
-        if (not raw) or raw == "0":
-            return "None"
-        if raw.isdigit():
-            emoji = discord.utils.get(ctx.bot.get_all_emojis(), id=raw)
-            return str(emoji) if emoji else raw
+        elif cls._maxlen is not None and len(userstr) > cls._maxlen:
+            raise BadUserInput("Provided string was too long! Maximum length is `{}`".format(cls._maxlen))
+        elif cls._options is not None and not userstr.lower() in cls._options:
+            raise BadUserInput("Invalid option! Valid options are `{}`".format("`, `".join(cls._options)))
         else:
-            return raw
-
-    @classmethod
-    async def understand(self, ctx, userstr):
-        """
-        User can enter an emoji id, custom emoji, or unicode built in emoji.
-        """
-        if userstr.lower() in ["0", "none"]:
-            return None
-        if userstr.endswith(">") and userstr.startswith("<"):
-            # Probably a custom emoji
-            id_str = userstr[userstr.rfind(":") + 1:-1]
-            if id_str.isdigit():
-                return id_str
-        else:
-            # It's probably a built in emoji or nonsense. Either way, store it.
             return userstr
 
-class MEMBER(paraSetting):
-    """
-    Member type
-    """
-    accept = "Member mention id/name. Use 0 to clear the setting."
-
     @classmethod
-    async def humanise(self, ctx, raw):
+    def _format_data(cls, client: cmdClient, guildid: int, data: str, **kwargs):
         """
-        Expect raw to be user id.
+        Wrap the string in backtics for formatting.
+        Handle the special case where the string is empty.
         """
-        if not raw or raw == "0":
-            return "None"
-        member = ctx.server.get_member(raw)
-        if member:
-            return "{}".format(member)
-        return "{}".format(raw)
-
-    @classmethod
-    async def understand(self, ctx, userstr):
-        """
-        User may enter a mention, partial name or full name.
-        """
-        if userstr.lower() in ["0", "none"]:
-            return None
-        member = await ctx.find_user(userstr, interactive=True, in_server=True)
-        if not member:
-            return None
-        return member.id
-
-
-class CHANNEL(paraSetting):
-    """
-    Channel type.
-    """
-    accept = "Channel mention/id/name. Use 0 to clear the setting."
-
-    @classmethod
-    async def humanise(self, ctx, raw):
-        """
-        Expect raw to be channel id or 0, an empty.
-        """
-        if not raw or raw == "0":
-            return "None"
-        channel = ctx.server.get_channel(raw)
-        if channel:
-            return "{}".format(channel.name)
-        return "<#{}>".format(raw)
-
-    @classmethod
-    async def understand(self, ctx, userstr):
-        """
-        User can enter a channel mention or an id, or even a partial name.
-        """
-        if not ctx.server:
-            ctx.cmd_err = (1, "This is not valid outside of a server!")
-            return None
-        userstr = str(userstr)
-        if userstr.lower() in ["none", "0"]:
-            return None
-        if userstr == ".":
-            return ctx.ch.id
-        chid = userstr.strip('<#@!>')
-        if chid.isdigit():
-            def is_ch(ch):
-                return ch.id == chid
+        if data:
+            return "`{}`".format(data)
         else:
-            def is_ch(ch):
-                return userstr.lower() in ch.name.lower()
-        ch = discord.utils.find(is_ch, [c for c in ctx.server.channels if c.type == discord.ChannelType.text])
-        if ch:
-            return ch.id
-        else:
-            ctx.cmd_err = (1, "I can't find the channel `{}` in this server!".format(userstr))
             return None
 
 
-class SETTING_LIST(paraSetting):
+class Member(SettingType):
     """
-    List of a particular type of setting
+    Member type, storing a single `discord.Member`.
+
+    Types:
+        data: Optional[int]
+            The user id of the stored Member.
+        value: Optional[discord.Member]
+            The stored Member, or None if the member was not found.
     """
-    setting_type = paraSetting
+    accept = "Member mention/id/name. Use 'None' to clear the setting."
 
     @classmethod
-    async def humanise(self, ctx, raw):
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.Member], **kwargs):
         """
-        Expect a list of the raw type of the setting.
+        Returns the member id.
         """
-        if not raw:
-            return "None"
-        humanised = []
-        for raw_item in raw:
-            humanised.append(await self.setting_type.humanise(ctx, raw_item))
-        return ", ".join(humanised)
+        return value.id if value is not None else None
 
     @classmethod
-    async def understand(self, ctx, userstr):
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
         """
-        User can enter a list of the userstrs accepted by the setting.
+        Uses the client to look up the guild and member.
+        Returns the Member if found, otherwise None.
         """
-        userstr = str(userstr)
-        userstrs = [us.strip() for us in userstr.split(",")]
-        items = []
-        for us in userstrs:
-            item = await self.setting_type.understand(ctx, us)
-            if item is None:
-                return None
-            items.append(item)
-        return items
-
-class INT(paraSetting):
-    """
-    Check for a valid number.
-    """
-    accept = "Any number between 1-100"
-    @classmethod
-    async def humanise(self, ctx, raw):
-        if raw:
-            return "{}".format(raw)
-    @classmethod
-    async def understand(self, ctx, userstr):
-        """
-        Check if the number is valid
-        """
-        if not userstr.isdigit():
-            ctx.cmd_err = (1, "Please provide a valid number!")
+        # Always passthrough None
+        if data is None:
             return None
-        elif not int(userstr) in range(1, 100):
-            ctx.cmd_err = (1, "Please provide a number between 1-100!")
+
+        # Search for the member
+        member = None
+        guild = client.get_guild(guildid)
+        if guild is not None:
+            member = guild.get_member(data)
+
+        return member
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Pass to the member seeker utility to find the requested member.
+        Handle `0` and variants of `None` to unset.
+        """
+        if userstr.lower() in ('0', 'none'):
             return None
         else:
-            return int(userstr)
+            return await ctx.find_member(userstr, interactive=True)
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
+        """
+        Retrieve an artifically created user mention.
+        """
+        if data is None:
+            return None
+        else:
+            return "<@!{}>".format(data)
 
 
-class CHANNELLIST(SETTING_LIST):
+class Role(SettingType):
+    """
+    Role type, storing a single `discord.Role`.
+    Configurably allows returning roles which don't exist or are not seen by the client
+    as `discord.Object`.
+
+    Types:
+        data: Optional[int]
+            The id of the stored Role.
+        value: Optional[Union[discord.Role, discord.Object]]
+            The stored Role, or, if the role wasn't found and `_strict` is not set,
+            a discord Object with the role id set.
+    """
+    accept = "Role mention/id/name, or 'None' to unset"
+
+    # Whether to disallow returning roles which don't exist as `discord.Object`s
+    _strict = True
+
+    @classmethod
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.Role], **kwargs):
+        """
+        Returns the role id.
+        """
+        return value.id if value is not None else None
+
+    @classmethod
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
+        """
+        Uses the client to look up the guild and role id.
+        Returns the role if found, otherwise returns a `discord.Object` with the id set,
+        depending on the `_strict` setting.
+        """
+        # Always passthrough None
+        if data is None:
+            return None
+
+        # Search for the role
+        role = None
+        guild = client.get_guild(guildid)
+        if guild is not None:
+            role = guild.get_role(data)
+
+        if role is not None:
+            return role
+        elif not cls._strict:
+            return discord.Object(id=data)
+        else:
+            return None
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Pass to the role seeker utility to find the requested role.
+        Handle `0` and variants of `None` to unset.
+        """
+        if userstr.lower() in ('0', 'none'):
+            return None
+        else:
+            return await ctx.find_role(userstr, create=True, interactive=True)
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
+        """
+        Retrieve the role name if found, otherwise the role id or None depending on `_strict`.
+        """
+        role = cls._data_to_value(client, guildid, data, **kwargs)
+        if role is None:
+            return None
+        elif isinstance(role, discord.Role):
+            return role.name
+        else:
+            return "`{}`".format(role.id)
+
+
+class Channel(SettingType):
+    """
+    Channel type, storing a single `discord.Channel`.
+
+    Types:
+        data: Optional[int]
+            The id of the stored Channel.
+        value: Optional[discord.Channel]
+            The stored Channel.
+    """
+    accept = "Channel mention/id/name, or 'None' to unset"
+
+    @classmethod
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.Channel], **kwargs):
+        """
+        Returns the channel id.
+        """
+        return value.id if value is not None else None
+
+    @classmethod
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
+        """
+        Uses the client to look up the channel id.
+        Returns the Channel if found, otherwise None.
+        """
+        # Always passthrough None
+        if data is None:
+            return None
+
+        return client.get_channel(data)
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Pass to the channel seeker utility to find the requested channel.
+        Handle `0` and variants of `None` to unset.
+        """
+        if userstr.lower() in ('0', 'none'):
+            return None
+        else:
+            return await ctx.find_channel(userstr, interactive=True)
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
+        """
+        Retrieve an artifically created channel mention.
+        If the channel does not exist, this will show up as invalid-channel.
+        """
+        if data is None:
+            return None
+        else:
+            return "<#{}>".format(data)
+
+
+class Emoji(SettingType):
+    """
+    Emoji type. Stores both custom and unicode emojis.
+    """
+    accept = "Emoji, either built in or custom. Use 'None' to unset."
+
+    @staticmethod
+    def _parse_emoji(emojistr):
+        """
+        Converts a provided string into a PartialEmoji.
+        If the string is badly formatted, returns None.
+        """
+        if ":" in emojistr:
+            emojistr = emojistr.strip('<>')
+            splits = emojistr.split(":")
+            if len(splits) == 3:
+                animated, name, id = splits
+                animated = bool(animated)
+                return discord.PartialEmoji(name, animated=animated, id=int(id))
+        else:
+            # TODO: Check whether this is a valid emoji
+            return discord.PartialEmoji(emojistr)
+
+    @classmethod
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.PartialEmoji], **kwargs):
+        """
+        Both data and value are of type Optional[discord.PartialEmoji].
+        Directly return the provided value as data.
+        """
+        return value
+
+    @classmethod
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[discord.PartialEmoji], **kwargs):
+        """
+        Both data and value are of type Optional[discord.PartialEmoji].
+        Directly return the internal data as the value.
+        """
+        return data
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Pass to the emoji string parser to get the emoji.
+        Handle `0` and variants of `None` to unset.
+        """
+        if userstr.lower() in ('0', 'none'):
+            return None
+        else:
+            return cls._parse_emoji(userstr)
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: Optional[discord.PartialEmoji], **kwargs):
+        """
+        Return a string form of the partial emoji, which generally displays the emoji.
+        """
+        if data is None:
+            return None
+        else:
+            return str(data)
+
+
+# TODO: append and remove methods?
+class SettingList(SettingType):
+    """
+    List of a particular type of setting.
+    Note that this is an unusual setting type since it stores
+    an empty list rather than None to clear a setting.
+
+    The storage reader should never return None.
+
+    Types:
+        data: List[SettingType.data]
+            List of data types of the specified SettingType.
+            Some of the data may be None.
+        value: List[SettingType.value]
+            List of the value types of the specified SettingType.
+            Some of the values may be None.
+    """
+    # Base setting type to make the list from
+    _setting = None  # type: Union[SettingType, GuildSetting]
+
+    @classmethod
+    def _data_from_value(cls, client: cmdClient, guildid: int, values: Optional[List[Any]], **kwargs):
+        """
+        Returns the setting type data for each value in the value list
+        """
+        if values is None:
+            # Special behaviour here, store an empty list instead of None
+            return []
+        else:
+            return [cls._setting._data_from_value(client, guildid, value) for value in values]
+
+    @classmethod
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[List[Any]], **kwargs):
+        """
+        Returns the setting type value for each entry in the data list
+        """
+        if data is None:
+            return []
+        else:
+            return [cls._setting._data_to_value(client, guildid, entry) for entry in data]
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Splits the user string across `,` to break up the list.
+        Handle `0` and variants of `None` to unset.
+        """
+        if userstr.lower() in ('0', 'none'):
+            return []
+        else:
+            data = []
+            for item in userstr.split(','):
+                data.append(await cls._setting_type._parse_userstr(ctx, guildid, item))
+            return data
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: List[Any], **kwargs):
+        """
+        Format the list by adding `,` between each formatted item
+        """
+        if not data:
+            return None
+        else:
+            formatted_items = []
+            for item in data:
+                formatted_item = cls._setting._format_data(client, guildid, item)
+                if formatted_item is not None:
+                    formatted_items.append(formatted_item)
+            return ", ".join(formatted_items)
+
+
+class ChannelList(SettingList):
     """
     List of channels
     """
-    accept = "Comma separated list of channel mentions/ids/names. Use 0 or None to clear the setting"
-    setting_type = CHANNEL
-
-class USEREVENTLIST(SETTING_LIST):
-    """
-    List of user events
-    """
-    accept = "Comma separated list of user events (possible events are {})".format(", ".join(USEREVENT.acceptable))
-    setting_type = USEREVENT
+    accept = "Comma separated list of channel mentions/ids/names. Use 'None' to unset."
+    _setting = Channel
 
 
-class ROLELIST(SETTING_LIST):
+class RoleList(SettingList):
     """
     List of roles
     """
-    accept = "Comma separated list of role mentions/ids/names. Use 0 or None to clear the setting"
-    setting_type = ROLE
+    accept = "Comma separated list of role mentions/ids/names. Use 'None' to unset."
+    _setting = Role
 
-class MEMBERLIST(SETTING_LIST):
+
+class MemberList(SettingList):
     """
     List of members
     """
-    accept = "Comma separated list of user mentions/ids/names. Use None to clear the setting"
-    setting_type = MEMBER
-
-"""
-class YES_BOOL(BOOL):
-    name = "Yes/No"
-    outputs = {True: "Yes",
-               False: "No"}
-
-
-class ENABLED_BOOL(BOOL):
-    name = "Enabled/Disabled"
-    outputs = {True: "Enabled",
-               False: "Disabled"}
-"""
-'''
-class userList(paraSetting):
-    name = "List of users"
-    accept = "[+/add | -/remove] <userid/mention>"
-    str_already_in_list = ""
-    str_not_in_list = ""
-    str_removed_from_list = ""
-    str_added_to_list = ""
-
-    def humanise(self, raw):
-        """
-        Expect raw to be a list, possibly of strings, possible of integers, containing userids.
-        """
-        if self.client is None:
-            return ', '.join([str(user) for user in raw if str(user).isdigit()])
-        users = [str(user) for user in raw]
-        user_tags = [discord.utils.get(self.client.get_all_members(), id=user) for user in users]
-        userlist = [str(user) for user in user_tags if user]
-        return '`{}`'.format('`, `'.join(userlist))
-
-    def understand(self, userstr):
-        params = userstr.split(' ')
-        action = params[0]
-        if (action in ['+', 'add']) and (len(params) == 2) and params[1].strip('<!@>').isdigit():
-            userid = int(params[1].strip('<!@>'))
-            if userid in self.raw:
-                (self.error, self.errmsg) = (3, self.str_already_in_list)
-                return self.raw
-            else:
-                self.raw.append(userid)
-                (self.error, self.errmsg) = (0, self.str_added_to_list)
-                return self.raw
-        elif (action in ['-', 'remove']) and (len(params) == 2) and params[1].strip('<!@>').isdigit():
-            userid = int(params[1].strip('<!@>'))
-            if userid not in self.raw:
-                (self.error, self.errmsg) = (3, self.str_not_in_list)
-                return self.raw
-            else:
-                self.raw.remove(userid)
-                (self.error, self.errmsg) = (0, self.str_removed_from_list)
-                return self.raw
-        else:
-            (self.error, self.errmsg) = (1, "I don't understand your input. Valid input is: `{}`".format(self.accept))
-            return self.raw
-'''
-
-
-"""
-class userBlackList(userList):
-    name = "List of users"
-    accept = "[+/add | -/remove] <userid/mention>"
-    str_already_in_list = "I have already blacklisted this user!"
-    str_not_in_list = "This user hasn't been blacklisted."
-    str_removed_from_list = "Let's hope they stay out of trouble. That user is no longer blacklisted."
-    str_added_to_list = "I never liked them anyway, that user is now blacklisted."
-
-
-class userMasterList(userList):
-    name = "List of users"
-    accept = "[+/add | -/remove] <userid/mention>"
-    str_already_in_list = "This user is already one of my masters!"
-    str_not_in_list = "This user is not one of my masters!"
-    str_removed_from_list = "I have rejected this master."
-    str_added_to_list = "I accept this user as a new master."
-"""
-
-
-'''
-class SERVER(_settingType):
-    """
-    Server type.
-    Incomplete.
-    """
-    name = "server"
-    accept = "Server name/ server id"
-'''
+    accept = "Comma separated list of user mentions/ids/names. Use 'None' to unset."
+    _setting = Member
