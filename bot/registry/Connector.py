@@ -182,3 +182,9 @@ class Connector:
             values
         )
         self.conn.commit()
+
+    def create_database(self):
+        """
+        Creates the database using the given schema.
+        """
+        raise NotImplemented

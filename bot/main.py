@@ -34,11 +34,16 @@ parser.add_argument('--writeschema',
                     default=None,
                     type=str,
                     help="If provided, writes the db schema to the provided file and exits.")
+parser.add_argument('--createdb',
+                    action='store_true',
+                    dest='createdb',
+                    help="Attmpt to create the database. This only works for `sqlite`, and should only be run once.")
 
 args = parser.parse_args()
 config_file = args.config
 shard_num = args.shard or 0
 schema_file = args.schemafile
+createdb = args.createdb
 
 # ------------------------------
 # Load the configuration file
@@ -91,6 +96,8 @@ client = cmdClient(
     shard_count=SHARD_COUNT
 )
 client.conf = conf
+client.app = CURRENT_APP
+client.sharded = (SHARD_COUNT > 1)
 
 # Attach the relevant app information, app modules, and hooks
 load_app(CURRENT_APP or "default", client)
@@ -127,8 +134,15 @@ if schema_file is not None:
     log("Writing schema.")
     with open(schema_file, "w") as f:
         f.write(client.data.get_schema())
+    log("Written schema, closing.")
     exit()
 
+# If database creation was requested, attempt it now and exit
+if createdb:
+    log("Creating database.")
+    client.data.create_database()
+    log("Created database, closing.")
+    exit()
 
 
 # ------------------------------

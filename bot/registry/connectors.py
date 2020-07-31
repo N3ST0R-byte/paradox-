@@ -34,3 +34,11 @@ class sqliteConnector(Connector):
         data_file = dbopts.get("db_file")
         self.conn = sq.connect(data_file, timeout=dbopts.get("timeout", self.timeout))
         self.conn.row_factory = sq.Row
+
+    def create_database(self):
+        """
+        Create the database from the schema.
+        This will of course only work once.
+        """
+        self.conn.executescript(self.get_schema())
+        self.conn.commit()
