@@ -360,13 +360,13 @@ class Channel(SettingType):
     Types:
         data: Optional[int]
             The id of the stored Channel.
-        value: Optional[discord.Channel]
+        value: Optional[discord.abc.GuildChannel]
             The stored Channel.
     """
     accept = "Channel mention/id/name, or 'None' to unset"
 
     @classmethod
-    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.Channel], **kwargs):
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.abc.GuildChannel], **kwargs):
         """
         Returns the channel id.
         """

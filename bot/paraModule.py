@@ -1,6 +1,8 @@
 from cmdClient import cmdClient, Module
 from cmdClient.lib import SafeCancellation
 
+from settings import guild_config
+
 from logger import log
 
 
@@ -14,6 +16,26 @@ class paraModule(Module):
 
         self.data_init_tasks = []
         self.data_initialised = False
+
+        self.guild_settings = []
+
+    def guild_setting(self, cls):
+        """
+        Class decorator to attach a guild setting
+        which will be later loaded on initialisation.
+        """
+        self.guild_settings.append(cls)
+        log("Registering guild setting '{}'.".format(cls.attr_name), context=self.name)
+
+    def initialise(self, client):
+        if self.guild_settings and not self.initialised:
+            log("Attaching guild settings.", context=self.name)
+            for setting in self.guild_settings:
+                log("Attaching guild setting '{}'.".format(setting.attr_name))
+                guild_config.attach_setting(setting)
+                setting.initialise(client)
+
+        super().initialise(client)
 
     async def pre_cmd(self, ctx):
         if ctx.guild:

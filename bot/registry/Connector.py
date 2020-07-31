@@ -166,7 +166,7 @@ class Connector:
         )
         self.conn.commit()
 
-    def insert_many(self, table, insert_keys=None, cursor=None, *value_tuples):
+    def insert_many(self, table, *value_tuples, insert_keys=None, cursor=None):
         """
         Insert all the given values into the table
         """
@@ -174,7 +174,7 @@ class Connector:
         value_strs, value_tuples = zip(*(self.format_insertvalues(value_tuple) for value_tuple in value_tuples))
 
         value_str = ", ".join(value_strs)
-        values = chain(value_tuples)
+        values = tuple(chain(*value_tuples))
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
         cursor.execute(

@@ -8,7 +8,7 @@ class _guild_config:
     def __init__(self):
         pass
 
-    def setting(self, cls):
+    def attach_setting(self, cls):
         self.settings[cls.attr_name] = cls
 
     def __getattr__(self, attr):

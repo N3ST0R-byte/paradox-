@@ -58,14 +58,15 @@ class GuildSetting:
         """
         Retrieves the current internal setting data if it is set, otherwise the default data
         """
-        return self._data if self.data is not None else self.default
+        return self._data if self._data is not None else self.default
 
     @data.setter
-    def set_data(self, new_data):
+    def data(self, new_data):
         """
-        Sets the internal setting data.
+        Sets the internal setting data and writes the changes.
         """
         self._data = new_data
+        self.write()
 
     @property
     def default(self):
@@ -83,7 +84,7 @@ class GuildSetting:
         return self._data_to_value(self.client, self.guildid, self.data)
 
     @value.setter
-    def set_value(self, new_value):
+    def value(self, new_value):
         """
         Setter which reads the discord-aware object, converts it to data, and writes it.
         """
