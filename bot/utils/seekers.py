@@ -1,3 +1,4 @@
+import discord
 from cmdClient import Context
 from cmdClient.lib import InvalidContext, UserCancelled, ResponseTimedOut
 from . import interactive  # noqa
@@ -305,43 +306,43 @@ async def find_member(ctx, userstr, interactive=False, collection=None):
 
     return member
 
+
 @Context.util
-"""
-Finds a message given a message id
--------
-msgid: int
-    Message ID is obtained from the user
-chlist: List(discord.Channel)
-    Channel list is given by the user
-ignore: list
-    Another list of channels is given by the user and these channels are not
-    considered.
-
-Returns
--------
-discord.message if a message is found
-None if a message is not found
-
-Raises
--------
-NotFound:
-    If the specified message was not found.
-
-Forbidden:
- If the permissions are insufficient to get a message.
-
-HTTPException:
-    If retrieving the message failed.
-"""
-
 async def find_message(ctx, msgid, chlist=None, ignore=[]):
-    message = None
-    chlist = ctx.guild.text_channels if chlist is None else chlist
-    #builds a channel list of all the channels if a list was not prescribed
+    """
+    Searches every channel in a server to find a message by the provided ID.
 
-    #iterates through the channel list looking for the message
+    Parameters
+    -------
+    msgid: int
+        Message ID is obtained from the user
+    chlist: List(discord.Channel)
+        Channel list is given by the user
+    ignore: list
+        A list of channels to ignore when finding the message.
+
+    Returns
+    -------
+    discord.Message if a message is found
+    None if a message is not found
+
+    Raises
+    -------
+    discord.NotFound:
+        If the specified message was not found.
+    discord.Forbidden:
+        If the permissions are insufficient to get a message.
+    discord.HTTPException:
+        If retrieving the message failed.
+    """
+
+    message = None
+    # Builds a channel list of all the channels if a list was not prescribed
+    chlist = ctx.guild.text_channels if chlist is None else chlist
+
+    # Iterates through the channel list looking for the message
     for channel in chlist:
-        #Avoids non-text channels
+        # Avoids non-text channels
         if channel.type != discord.ChannelType.text:
             continue
         if channel in ignore:
