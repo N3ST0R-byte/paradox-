@@ -10,7 +10,8 @@ from logger import log, log_fmt
 from apps import load_app
 
 from registry.connectors import mysqlConnector, sqliteConnector
-from paraProps import propertyModule
+from paraProps import propertyModule  # noqa
+from settings import guild_config
 
 # Always load command modules last
 import modules  # noqa
@@ -95,9 +96,11 @@ client = cmdClient(
     shard_id=shard_num,
     shard_count=SHARD_COUNT
 )
+client.log = log
 client.conf = conf
 client.app = CURRENT_APP
 client.sharded = (SHARD_COUNT > 1)
+client.guild_config = guild_config
 
 # Attach the relevant app information, app modules, and hooks
 load_app(CURRENT_APP or "default", client)
@@ -225,7 +228,6 @@ async def on_message(message: discord.Message):
     # Handle messages from blacklisted users
     if message.author.id in conf.getintlist("blacklisted_users", []):
         return
-    await client.parse_message(message)
 
     if message.guild:
         # Handle messages from blacklisted guilds
@@ -233,12 +235,12 @@ async def on_message(message: discord.Message):
             return
 
         # Handle blacklisted guild channels
-        # if (
-        #     message.id in client.objects["guild_channel_blacklists"] and
-        #     message.channel.id in client.objects["guild_channel_blacklists"][message.guild.id] and
-        #     not message.author.server_permissions.administrator
-        # ):
-        #     return
+        disabled = client.objects["disabled_guild_channels"]
+        if message.guild.id in disabled and message.channel.id in disabled[message.guild.id]:
+            if not message.author.guild_permissions.administrator:
+                return
+
+    await client.parse_message(message)
 
 
 # Initialise modules

@@ -7,7 +7,7 @@ import discord
 # from logger import log
 
 
-def prop_tabulate(prop_list, value_list):
+def prop_tabulate(prop_list, value_list, indent=True):
     """
     Turns a list of properties and corresponding list of values into
     a pretty string with one `prop: value` pair each line,
@@ -21,14 +21,18 @@ def prop_tabulate(prop_list, value_list):
         Empty props are considered to be "newlines" for the corresponding value.
     value_list: List[str]
         List of values corresponding to the properties above.
+    indent: bool
+        Whether to add padding so the properties are right-adjusted.
 
     Returns: str
     """
     max_len = max(len(prop) for prop in prop_list)
-    return "\n".join(["`{}{}{}`\t{}".format("​ " * (max_len - len(prop)),
+    return "".join(["`{}{}{}`\t{}{}".format("​ " * (max_len - len(prop)) if indent else "",
                                             prop,
                                             ":" if len(prop) > 1 else "​ " * 2,
-                                            value_list[i]) for i, prop in enumerate(prop_list)])
+                                            value_list[i],
+                                            '' if str(value_list[i]).endswith("```") else '\n')
+                    for i, prop in enumerate(prop_list)])
 
 
 def paginate_list(item_list, block_length=20, style="markdown", title=None):

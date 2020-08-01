@@ -50,15 +50,22 @@ class Connector:
     def format_conditions(self, conditions):
         """
         Formats a dictionary of conditions into a string suitable for 'WHERE' clauses.
+        Supports `IN` type conditionals.
         """
         if not conditions:
             return ("", tuple())
 
-        keys, values = zip(*conditions.items())
+        values = []
+        conditional_strings = []
+        for key, item in conditions.items():
+            if isinstance(item, list):
+                conditional_strings.append("{} IN ({})".format(key, ", ".join([self.replace_char] * len(item))))
+                values.extend(item)
+            else:
+                conditional_strings.append("{}={}".format(key, self.replace_char))
+                values.append(item)
 
-        where_str = " AND ".join("{}={}".format(key, self.replace_char) for key in keys)
-
-        return (where_str, values)
+        return (' AND '.join(conditional_strings), values)
 
     def format_updatestr(self, valuedict):
         """
@@ -183,8 +190,18 @@ class Connector:
         )
         self.conn.commit()
 
+    def upsert(self, table, constraint, cursor=None, **values):
+        """
+        Insert or on conflict update.
+        Conflict behaviour is to update the columns that were to be inserted.
+        `constraint` is the constraint which fails.
+        This may be ignored by some connectors (e.g. mysql), but is required by some connectors
+        (e.g. Postgres, Sqlite.)
+        """
+        raise NotImplementedError
+
     def create_database(self):
         """
         Creates the database using the given schema.
         """
-        raise NotImplemented
+        raise NotImplementedError

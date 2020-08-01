@@ -13,10 +13,12 @@ class tableInterface(Interface):
     _mysql_schema = None
     _sqlite_schema = None
 
-    def __init__(self, conn: Connector, table_name, app, column_data, mysql_schema=None, sqlite_schema=None):
+    def __init__(self, conn: Connector, table_name, app, column_data,
+                 shared=True, mysql_schema=None, sqlite_schema=None):
         self.conn = conn
         self.table = table_name
         self.app = app
+        self.shared = shared
 
         self.mysql_schema = mysql_schema or self._mysql_schema
         self.sqlite_schema = sqlite_schema or self._sqlite_schema
@@ -34,10 +36,15 @@ class tableInterface(Interface):
         for param, value in params.items():
             if param not in self.columns:
                 raise ValueError("Invalid column '{}' passed to table interface '{}'".format(param, self.table))
-            elif self.columns[param] is not None and not isinstance(value, self.columns[param]):
-                raise TypeError("Incorrect type '{}' passed for key '{}' in table interface '{}'".format(
-                    type(value), param, self.table
-                ))
+            elif self.columns[param] is not None:
+                if not isinstance(value, self.columns[param]) and not isinstance(value, list):
+                    raise TypeError("Incorrect type '{}' passed for key '{}' in table interface '{}'".format(
+                        type(value), param, self.table
+                    ))
+                elif isinstance(value, list) and not all(isinstance(item, self.columns[param]) for item in value):
+                    raise TypeError("Incorrect type in list passed for key '{}' in table interface '{}'".format(
+                        param, self.table
+                    ))
 
     def select_where(self, select_columns=None, **conditions):
         self.check_keys(conditions)
@@ -62,3 +69,7 @@ class tableInterface(Interface):
                 self.check_keys(values)
 
         return self.conn.insert_many(self.table, *value_tuples, insert_keys=insert_keys)
+
+    def upsert(self, constraint, **values):
+        self.check_keys(values)
+        return self.conn.upsert(self.table, constraint, **values)

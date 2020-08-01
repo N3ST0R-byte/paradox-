@@ -26,12 +26,13 @@ class paraModule(Module):
         """
         self.guild_settings.append(cls)
         log("Registering guild setting '{}'.".format(cls.attr_name), context=self.name)
+        return cls
 
     def initialise(self, client):
         if self.guild_settings and not self.initialised:
             log("Attaching guild settings.", context=self.name)
             for setting in self.guild_settings:
-                log("Attaching guild setting '{}'.".format(setting.attr_name))
+                log("Attaching guild setting '{}'.".format(setting.attr_name), context=self.name)
                 guild_config.attach_setting(setting)
                 setting.initialise(client)
 

@@ -1,90 +1,132 @@
-from paraCH import paraCH
 import discord
 
-cmds = paraCH()
-# Provides config
+from utils.lib import prop_tabulate
+from utils.ctx_addons import best_prefix  # noqa
+
+from settings import BadUserInput
+
+from wards import guild_moderator
+
+from .module import guild_admin_module as module
 
 
-async def _config_pages(ctx, serv_conf, value=True):
+conf_pages = {
+    "General options": ["Guild admin", "Starboard", "Mathematical"],
+    "Manual Moderation settings": ["Moderation", "Logging"],
+    "Greeting and Farewell messages": ["Greeting message", "Farewell message"]
+}
+
+# TODO: Cat descriptions
+# TODO: Read wards
+# TODO: Write wards
+
+
+def _build_config_pages(ctx, show_help=True):
     """
-    Builds the server configuration pages.
+    Build guild configuration pages.
     """
     cats = {}
     pages = []
-    sorted_pages = ctx.bot.objects["sorted_conf_pages"]
 
-    for option in sorted(serv_conf):
-        cat = serv_conf[option].category
+    # Generated sorted lists of options in each cat
+    for option in sorted(ctx.client.guild_config.settings.values(), key=lambda s: s.name):
+        cat = option.category
         if cat not in cats:
             cats[cat] = []
         cats[cat].append(option)
-    for page in sorted_pages:
-        page_name = page[0]
-        page_cats = page[1]
-        page_embed = discord.Embed(title="{} options:".format(page_name), color=discord.Colour.teal())
-        for cat in page_cats:
-            if cat not in cats:
-                continue
-            value_list = []
-            for option in cats[cat]:
-                value_list.append(await serv_conf[option].hr_get(ctx) if value else serv_conf[option].desc)
-            cat_msg = ctx.prop_tabulate(cats[cat], value_list)
 
-            page_embed.add_field(name=cat, value=cat_msg, inline=False)
-        page_embed.set_footer(text="Use {}config <option> [value] to see or set an option.".format(ctx.used_prefix))
+    # Generate embed pages
+    for page_title, page_cats in conf_pages.items():
+        # Initialise the embed
+        page_embed = discord.Embed(title=page_title, color=discord.Colour.teal())
+
+        # Build one cat at a time
+        for cat in page_cats:
+            if cat in cats:
+                # Tabulate option name and values
+                names = [option.name for option in cats[cat]]
+                values = [option.desc if show_help else option.get(ctx.client, ctx.guild.id).formatted or "Not Set"
+                          for option in cats[cat]]
+                cat_str = prop_tabulate(names, values)
+
+                # Add table as the cat field
+                page_embed.add_field(name=cat, value=cat_str, inline=False)
+
+        # Finalise the embed
+        page_embed.set_footer(
+            text="Use {0}config <option> and {0}config <option> <value> to see or set an option.".format(
+                ctx.best_prefix()
+            )
+        )
+        # Add the page embed
         pages.append(page_embed)
+
+    # Return the list of pages
     return pages
 
 
-@cmds.cmd("config",
-          category="Server Admin",
-          short_help="Server configuration")
-@cmds.require("in_server")
+@module.cmd("config",
+            desc="View and set the guild configuration.")
 async def cmd_config(ctx):
     """
-    Usage:
-        {prefix}config | config help | config <option> [value]
+    Usage``:
+        {prefix}config
+        {prefix}config help
+        {prefix}config <option>
+        {prefix}config <option> <value>
     Description:
-        Lists your current server configuration, shows option help, or sets an option.
-        For example, "config join_ch #general" could be used to set your join message channel.
+        Display the current guild configuration, show option information, or set an option.
+
+        Use `{prefix}config help` to display short summaries of each option,
+        and use `{prefix}config <option>` to display detailed information about a particular option.
+
+        Use `{prefix}config <option> <value>` to set an option.
+        Note that most options require moderator or administrator permissions to set.
+    Examples``:
+        {prefix}config prefix
+        {prefix}config prefix {prefix}
     """
-    server_conf = ctx.server_conf.settings
-    serv_conf = {}
-    for setting in server_conf:
-        serv_conf[server_conf[setting].vis_name] = server_conf[setting]
-    if (ctx.params[0] in ["", "help"]) and len(ctx.params) == 1:
-        pages = await _config_pages(ctx, serv_conf, value=True if ctx.params[0] == "" else False)
-        await ctx.pager(pages, embed=True)
-        return
-    elif (ctx.params[0] == "help") and len(ctx.params) > 1:
-        """
-        Prints the description and possible values for the given option.
-        """
-        if ctx.params[1] not in serv_conf:
-            await ctx.reply("Unrecognised option! See `serverconfig help` for all options.")
-            return
-        op = ctx.params[1]
-        op_conf = serv_conf[op]
-        prop_list = ["Description", "Acceptable Input", "Default Value"]
-        value_list = [op_conf.desc, op_conf.accept, await op_conf.dyn_default(ctx)]
-        desc = ctx.prop_tabulate(prop_list, value_list)
-        embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(op), description=desc)
-        await ctx.reply(embed=embed)
+    # Prebuild dictionary of setting names
+    settings = {setting.name: setting for setting in ctx.client.guild_config.settings.values()}
+
+    params = ctx.args.split(maxsplit=1)
+    if not ctx.args:
+        # Handle empty argument case, show options with values
+        pages = _build_config_pages(ctx, show_help=False)
+        await ctx.pager(pages)
+    elif ctx.args.lower() == "help":
+        # Handle sole help argument, show options with descriptions
+        pages = _build_config_pages(ctx, show_help=True)
+        await ctx.pager(pages)
+    elif params[0] not in settings:
+        # Handle unrecognised option
+        await ctx.error_reply("Unrecognised guild option `{}`. Use `{}config help` to see all the options.".format(
+            params[0],
+            ctx.best_prefix()
+        ))
+    elif len(params) == 1:
+        # Assume argument is an option, display option information
+        await ctx.reply(embed=settings[params[0]].get(ctx.client, ctx.guild.id).embed)
     else:
-        if ctx.params[0] not in serv_conf:
-            await ctx.reply("Unrecognised option! See `{0.used_prefix}config help` for all options.".format(ctx))
-            return
-        if len(ctx.params) == 1:
-            op = ctx.params[0]
-            op_conf = serv_conf[op]
-            # Why must you do this to me
-            whydoyoudothis = "" if op_conf.desc.endswith(".") else "."
-            prop_list = ["Description", "Acceptable Input", "Default Value", "Current Value"]
-            value_list = [op_conf.desc + whydoyoudothis, op_conf.accept, await op_conf.dyn_default(ctx), await op_conf.hr_get(ctx)]
-            desc = ctx.prop_tabulate(prop_list, value_list)
-            embed = discord.Embed(colour=discord.Colour.teal(), title="Configuration options for `{}`".format(ctx.params[0]), description=desc)
-            await ctx.reply(embed=embed)
+        # Handle setting an option
+        option, value = params
+        setting = settings[option]
+
+        # Check write permissions
+        write_ward = setting.write_check or guild_moderator
+        if not await write_ward.run(ctx):
+            await ctx.error_reply(write_ward.msg)
         else:
-            await serv_conf[ctx.params[0]].hr_set(ctx, ' '.join(ctx.params[1:]))
-            if not ctx.cmd_err[0]:
-                await ctx.reply("The setting was set successfully.")
+            # Set the option
+            try:
+                (await setting.parse(ctx, value)).write()
+            except BadUserInput as e:
+                if e.msg:
+                    await ctx.error_reply(e.msg)
+                else:
+                    await ctx.error_reply(
+                        "Couldn't understand provided input, "
+                        "please check the accepted values and try again."
+                    )
+            else:
+                await ctx.reply("The setting has been set successfully!")

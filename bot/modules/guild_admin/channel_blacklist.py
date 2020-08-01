@@ -1,18 +1,72 @@
-"""
-Channel blacklist registration.
-"""
+from settings import ListData, ChannelList, GuildSetting
+from registry import tableInterface, Column, ColumnType, schema_generator
+
+from .module import guild_admin_module as module
 
 
-async def register_channel_blacklists(bot):
-    channel_blacklists = {}
-    for server in bot.servers:
-        channels = await bot.data.servers.get(server.id, "channel_blacklist")
-        if channels:
-            channel_blacklists[server.id] = channels
-    bot.objects["channel_blacklists"] = channel_blacklists
-    await bot.log("Loaded {} servers with channel blacklists.".format(len(channel_blacklists)))
+# Define guild settings
+@module.guild_setting
+class disabled_channels(ListData, ChannelList, GuildSetting):
+    attr_name = "disabled_channels"
+    category = "Guild admin"
+
+    name = "disabled_channels"
+    desc = "List of channels where I don't listen to commands."
+
+    long_desc = "List of channels where I only respond to commands sent by a guild administrator."
+
+    _table_interface_name = "guild_disabled_channels"
+    _data_column = "channelid"
+
+    def write(self, **kwargs):
+        """
+        Adds a write hook to update the cached guild disabled channels
+        """
+        # Update cache for this guild
+        self.client.objects['disabled_guild_channels'][self.guildid] = set(self.data)
+        super().write(**kwargs)
+
+    @classmethod
+    def initialise(cls, client):
+        """
+        Load the disabled channels into cache.
+        """
+        disabled_channels = {}
+        channel_counter = 0
+
+        rows = client.data.guild_disabled_channels.select_where()
+        for row in rows:
+            if row['guildid'] not in disabled_channels:
+                disabled_channels[row['guildid']] = set()
+            disabled_channels[row['guildid']].add(row['channelid'])
+            channel_counter += 1
+
+        client.objects['disabled_guild_channels'] = disabled_channels
+        client.log("Read {} guilds with a total of {} disabled channels.".format(
+            len(disabled_channels),
+            channel_counter),
+            context="LOAD_DISABLED_CHANNELS"
+        )
 
 
-def load_into(bot):
-    bot.data.servers.ensure_exists("channel_blacklist", shared=False)
-    bot.add_after_event("ready", register_channel_blacklists)
+# Define data schema
+mysql_schema, sqlite_schema, columns = schema_generator(
+    "guild_disabled_channels",
+    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column('channelid', ColumnType.SNOWFLAKE, primary=True, required=True)
+)
+
+
+# Attach data interface
+@module.data_init_task
+def attach_autorole_data(client):
+    disabled_channel_interface = tableInterface(
+        client.data,
+        "guild_disabled_channels",
+        app=client.app,
+        column_data=columns,
+        shared=False,
+        sqlite_schema=sqlite_schema,
+        mysql_schema=mysql_schema,
+    )
+    client.data.attach_interface(disabled_channel_interface, "guild_disabled_channels")

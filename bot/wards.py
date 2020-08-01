@@ -25,7 +25,17 @@ async def is_manager(ctx, *args, **kwargs):
 @check(name="IN_GUILD",
        msg="This command may only be used in a guild.")
 async def in_guild(ctx, *args, **kwargs):
-    return bool(ctx.message.guild)
+    return bool(ctx.msg.guild)
+
+
+@check(name="GUILD_MODERATOR",
+       msg="This may only be done by a moderator!",
+       requires=[in_guild])
+async def guild_moderator(ctx, *args, **kwargs):
+    has_mod = ctx.author.guild_permissions.administrator
+    has_mod = has_mod or ctx.author.guild_permissions.manage_guild
+    # TODO: Moderation role
+    return has_mod
 
 
 # Old wards, not migrated

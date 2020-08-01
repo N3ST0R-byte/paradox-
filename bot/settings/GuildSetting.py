@@ -1,7 +1,10 @@
 from typing import Any
+import discord
 
 from cmdClient import cmdClient, Context
 from cmdClient.Check import Check
+
+from utils.lib import prop_tabulate
 
 
 class GuildSetting:
@@ -35,6 +38,23 @@ class GuildSetting:
         self.guildid = guildid
         self._data = data
 
+    # Configuration embed
+    @property
+    def embed(self):
+        """
+        Discord Embed showing an information summary about the setting.
+        """
+        embed = discord.Embed(
+            title="Configuration options for `{}`".format(self.name),
+        )
+        fields = ("Current value", "Default value", "Accepted input")
+        values = (self.formatted or "Not Set",
+                  self._format_data(self.client, self.guildid, self.default) or "None",
+                  self.accepts)
+        table = prop_tabulate(fields, values)
+        embed.description = "{}\n{}".format(self.long_desc, table)
+        return embed
+
     # Instance generation
     @classmethod
     def get(cls, client: cmdClient, guildid: int, **kwargs):
@@ -49,7 +69,7 @@ class GuildSetting:
         """
         Return a setting instance initialised from a parsed user string.
         """
-        data = await cls._parse_userstr(ctx, userstr, **kwargs)
+        data = await cls._parse_userstr(ctx, ctx.guild.id, userstr, **kwargs)
         return cls(ctx.client, ctx.guild.id, data, **kwargs)
 
     # Main interface

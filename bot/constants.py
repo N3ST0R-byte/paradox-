@@ -28,7 +28,7 @@ sorted_cats = [
     "Social",
     "Utility",
     "Moderation",
-    "Server Admin",
+    "Guild Admin",
     "Maths",
     "Meta",
     "Misc"

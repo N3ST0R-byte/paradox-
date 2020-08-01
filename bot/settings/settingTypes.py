@@ -2,6 +2,7 @@ from typing import Any, Optional, List
 
 import discord
 from cmdClient import cmdClient, Context
+from cmdClient.lib import SafeCancellation
 
 from utils import seekers  # noqa
 
@@ -64,7 +65,7 @@ class Boolean(SettingType):
         value: Optional[bool]
             The stored boolean value.
     """
-    accept = "Yes/No, On/Off, True/False, Enabled/Disabled"
+    accepts = "Yes/No, On/Off, True/False, Enabled/Disabled"
 
     # Values that are accepted as truthy and falsey by the parser
     _truthy = {"yes", "true", "on", "enable", "enabled"}
@@ -120,7 +121,7 @@ class Integer(SettingType):
         value: Optional[int]
             The stored integer value.
     """
-    accept = "Any number"
+    accepts = "Any number"
 
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[bool], **kwargs):
@@ -170,7 +171,7 @@ class String(SettingType):
         value: Optional[str]
             The stored string.
     """
-    accept = "Any text"
+    accepts = "Any text"
 
     # Maximum length of string to accept
     _maxlen: int = None
@@ -230,7 +231,7 @@ class Member(SettingType):
         value: Optional[discord.Member]
             The stored Member, or None if the member was not found.
     """
-    accept = "Member mention/id/name. Use 'None' to clear the setting."
+    accepts = "Member mention/id/name. Use 'None' to clear the setting."
 
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.Member], **kwargs):
@@ -266,7 +267,11 @@ class Member(SettingType):
         if userstr.lower() in ('0', 'none'):
             return None
         else:
-            return await ctx.find_member(userstr, interactive=True)
+            member = await ctx.find_member(userstr, interactive=True)
+            if member is None:
+                raise SafeCancellation
+            else:
+                return member.id
 
     @classmethod
     def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
@@ -292,7 +297,7 @@ class Role(SettingType):
             The stored Role, or, if the role wasn't found and `_strict` is not set,
             a discord Object with the role id set.
     """
-    accept = "Role mention/id/name, or 'None' to unset"
+    accepts = "Role mention/id/name, or 'None' to unset"
 
     # Whether to disallow returning roles which don't exist as `discord.Object`s
     _strict = True
@@ -337,7 +342,11 @@ class Role(SettingType):
         if userstr.lower() in ('0', 'none'):
             return None
         else:
-            return await ctx.find_role(userstr, create=True, interactive=True)
+            role = await ctx.find_role(userstr, create=True, interactive=True)
+            if role is None:
+                raise SafeCancellation
+            else:
+                return role.id
 
     @classmethod
     def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
@@ -348,7 +357,7 @@ class Role(SettingType):
         if role is None:
             return None
         elif isinstance(role, discord.Role):
-            return role.name
+            return role.mention
         else:
             return "`{}`".format(role.id)
 
@@ -363,7 +372,7 @@ class Channel(SettingType):
         value: Optional[discord.abc.GuildChannel]
             The stored Channel.
     """
-    accept = "Channel mention/id/name, or 'None' to unset"
+    accepts = "Channel mention/id/name, or 'None' to unset"
 
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[discord.abc.GuildChannel], **kwargs):
@@ -393,7 +402,11 @@ class Channel(SettingType):
         if userstr.lower() in ('0', 'none'):
             return None
         else:
-            return await ctx.find_channel(userstr, interactive=True)
+            channel = await ctx.find_channel(userstr, interactive=True)
+            if channel is None:
+                raise SafeCancellation
+            else:
+                return channel.id
 
     @classmethod
     def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
@@ -411,7 +424,7 @@ class Emoji(SettingType):
     """
     Emoji type. Stores both custom and unicode emojis.
     """
-    accept = "Emoji, either built in or custom. Use 'None' to unset."
+    accepts = "Emoji, either built in or custom. Use 'None' to unset."
 
     @staticmethod
     def _parse_emoji(emojistr):
@@ -520,7 +533,7 @@ class SettingList(SettingType):
         else:
             data = []
             for item in userstr.split(','):
-                data.append(await cls._setting_type._parse_userstr(ctx, guildid, item))
+                data.append(await cls._setting._parse_userstr(ctx, guildid, item.strip()))
             return data
 
     @classmethod
@@ -543,7 +556,7 @@ class ChannelList(SettingList):
     """
     List of channels
     """
-    accept = "Comma separated list of channel mentions/ids/names. Use 'None' to unset."
+    accepts = "Comma separated list of channel mentions/ids/names. Use 'None' to unset."
     _setting = Channel
 
 
@@ -551,7 +564,7 @@ class RoleList(SettingList):
     """
     List of roles
     """
-    accept = "Comma separated list of role mentions/ids/names. Use 'None' to unset."
+    accepts = "Comma separated list of role mentions/ids/names. Use 'None' to unset."
     _setting = Role
 
 
@@ -559,5 +572,5 @@ class MemberList(SettingList):
     """
     List of members
     """
-    accept = "Comma separated list of user mentions/ids/names. Use 'None' to unset."
+    accepts = "Comma separated list of user mentions/ids/names. Use 'None' to unset."
     _setting = Member

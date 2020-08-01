@@ -1,64 +1,178 @@
-from paraCH import paraCH
-import discord
 import asyncio
+import discord
 
-cmds = paraCH()
+from cmdClient import Context
+
+from settings import ListData, ChannelList, GuildSetting
+from registry import tableInterface, Column, ColumnType, schema_generator
+
+from .module import guild_admin_module as module
 
 
-@cmds.cmd("cleanch",
-          category="Server Admin",
-          short_help="Enable or disable automatic deletion on a channel.",
-          aliases=["chclean"])
-@cmds.require("has_manage_server")
-async def cmd_cleanch(ctx):
+# Define setting command
+@module.cmd("autoclean",
+            desc="Automatic deletion of messages in the current channel.",
+            aliases=["cleanch", "autodelete"])
+async def cmd_autoclean(ctx: Context):
     """
-    Usage:
-        {prefix}cleanch
+    Usage``:
+        {prefix}autoclean
+        {prefix}autoclean <delay>
     Description:
-        Enables or disables automatic deletion of messages in a channel.
+        Enables or disables automatic cleaning of the current channel
+        with an optional delay.
+
+        When automatic cleaning is enabled, messages sent in the channel
+        will be automatically deleted after a certain amount of time
+        unless they are pinned.
+
+        This may be used, for example, for self-role or bot command
+        channels where messages don't need to be permanent,
+        or where an information message should be kept in view.
+
+        This command requires the `manage_guild` permission.
+    Arguments::
+        delay: Number of seconds before deleting messages (must be less than an hour).
+    Examples``:
+        {prefix}autoclean
+        {prefix}autoclean 60
     """
-    if ctx.server.id not in ctx.bot.objects["cleaned_channels"]:
-        ctx.bot.objects["cleaned_channels"][ctx.server.id] = []
-    cleaned = ctx.bot.objects["cleaned_channels"][ctx.server.id]
-    if ctx.ch.id in cleaned:
-        cleaned.remove(ctx.ch.id)
-        await ctx.reply("I have stopped auto-deleting messages in this channel")
+    # Retrieve cleaned channel setting for this guild
+    cleaned_channels = ctx.get_guild_setting.cleaned_channels
+
+    if ctx.ch.id in cleaned_channels.data:
+        # Remove the channel
+        cleaned_channels.remove_channel(ctx.ch.id)
+        await ctx.reply("This channel will no longer be automatically cleaned.")
     else:
-        cleaned.append(ctx.ch.id)
-        await ctx.reply("I will now auto-delete messages in this channel.")
-    await ctx.bot.data.servers.set(ctx.server.id, "clean_channels", cleaned)
+        # Add the channel
+        delay = cleaned_channels.default_delay
+        if ctx.args:
+            if not ctx.args.isdigit():
+                return await ctx.error_reply(ctx.format_usage())
+
+            delay = int(ctx.args)
+            if not 0 <= delay <= 3600:
+                return await ctx.error_reply("Provided `delay` must be less than an hour.")
+        cleaned_channels.add_channel(ctx.ch.id, delay=delay)
+        await ctx.reply("Messages in this channel will now be "
+                        "automatically deleted after `{}` seconds if they are not pinned.".format(delay))
 
 
-async def channel_cleaner(ctx):
-    if not ctx.bot.objects.get("ready", False):
-        return
-    if not ctx.server:
-        return
-    if not (ctx.server.id in ctx.bot.objects["cleaned_channels"] and ctx.ch.id in ctx.bot.objects["cleaned_channels"][ctx.server.id]):
-        return
-    await asyncio.sleep(30)
-    if ctx.msg.pinned:
-        return
-    try:
-        await ctx.bot.delete_message(ctx.msg)
-    except discord.Forbidden:
-        pass
-    except discord.NotFound:
-        pass
+# Define guild setting
+@module.guild_setting
+class cleaned_channels(ListData, ChannelList, GuildSetting):
+    attr_name = "cleaned_channels"
+    category = "Guild admin"
+
+    name = "cleaned_channels"
+    desc = "List of channels which I auto-clean."
+
+    long_desc = ("Channels where I automatically delete sent messages "
+                 "after a configurable period of time. See the `cleanch` command for more details.")
+
+    default_delay = 60
+
+    _table_interface_name = "guild_cleaned_channels"
+    _data_column = "channelid"
+
+    def add_channel(self, channelid, delay=None):
+        table = self._get_table_interface(self.client)  # type: tableInterface
+        table.insert(allow_replace=True, guildid=self.guildid, channelid=channelid, delay=delay)
+
+        # Update cache
+        current = self.client.objects['cleaned_guild_channels'].get(self.guildid, {})
+        current[channelid] = delay if delay is not None else self.default_delay
+        self.client.objects['cleaned_guild_channels'][self.guildid] = current
+
+    def remove_channel(self, channelid):
+        table = self._get_table_interface(self.client)  # type: tableInterface
+        table.delete_where(channelid=channelid)
+
+        # Update cache
+        self.client.objects['cleaned_guild_channels'].get(self.guildid, {}).pop(channelid, None)
+
+    def write(self, **kwargs):
+        """
+        Adds a write hook to update the cached guild cleaned channels
+        This assumes any new channels have the default delay.
+        """
+        # TODO: We could also read it in again?
+        super().write(**kwargs)
+
+        # Update cleaned channel cache for the current guild
+        current = self.client.objects['cleaned_guild_channels'].get(self.guildid, {})
+        current.update({chid: self.default_delay for chid in self.data if chid not in current})
+        to_remove = [chid for chid in current if chid not in self.data]
+        for chid in to_remove:
+            current.pop(chid)
+
+        self.client.objects['cleaned_guild_channels'][self.guildid] = current
+
+    @classmethod
+    def initialise(cls, client):
+        """
+        Load the autocleaned channels into cache.
+        """
+        cleaned_channels = {}
+        channel_counter = 0
+
+        rows = client.data.guild_cleaned_channels.select_where()
+        for row in rows:
+            if row['guildid'] not in cleaned_channels:
+                cleaned_channels[row['guildid']] = {}
+            cleaned_channels[row['guildid']][row['channelid']] = row['delay']
+            channel_counter += 1
+
+        client.objects['cleaned_guild_channels'] = cleaned_channels
+        client.log("Read {} guilds with a total of {} autocleaned channels.".format(
+            len(cleaned_channels),
+            channel_counter),
+            context="LOAD_CLEANED_CHANNELS"
+        )
 
 
-async def register_channel_cleaners(bot):
-    cleaned_channels = {}
-    for server in bot.servers:
-        channels = await bot.data.servers.get(server.id, "clean_channels")
-        if channels:
-            cleaned_channels[server.id] = channels
-    bot.objects["cleaned_channels"] = cleaned_channels
-    await bot.log("Loaded {} servers with channels to clean.".format(len(cleaned_channels)))
+# Define event handler
+async def autoclean_channel(client, message):
+    if message.guild:
+        channels = client.objects['cleaned_guild_channels'].get(message.guild.id, None)
+        if channels is not None:
+            delay = channels.get(message.channel.id, None)
+            if delay is not None:
+                await asyncio.sleep(delay)
+                if not message.pinned:
+                    try:
+                        await message.delete()
+                    except discord.Forbidden:
+                        pass
+                    except discord.NotFound:
+                        pass
 
 
-def load_into(bot):
-    bot.data.servers.ensure_exists("clean_channels", shared=False)
+@module.init_task
+def attach_channel_cleaner(client):
+    client.add_after_event('message', autoclean_channel)
 
-    bot.add_after_event("ready", register_channel_cleaners)
-    bot.after_ctx_message(channel_cleaner)
+
+# Define data schema
+mysql_schema, sqlite_schema, columns = schema_generator(
+    "guild_cleaned_channels",
+    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column('channelid', ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column('delay', ColumnType.INT, required=True, default=cleaned_channels.default_delay)
+)
+
+
+# Attach data interface
+@module.data_init_task
+def attach_cleanedchannel_data(client):
+    cleaned_channel_interface = tableInterface(
+        client.data,
+        "guild_cleaned_channels",
+        app=client.app,
+        column_data=columns,
+        shared=False,
+        sqlite_schema=sqlite_schema,
+        mysql_schema=mysql_schema,
+    )
+    client.data.attach_interface(cleaned_channel_interface, "guild_cleaned_channels")

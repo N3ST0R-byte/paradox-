@@ -23,7 +23,7 @@ class ctxDescriptor:
 
 @Context.util
 @ctxDescriptor
-class guildConfig:
+class get_guild_setting:
     __slots__ = ("ctx",)
 
     def __init__(self, ctx):
