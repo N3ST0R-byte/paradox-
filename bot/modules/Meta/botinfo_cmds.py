@@ -53,13 +53,13 @@ async def cmd_about(ctx: Context):
         table_fields.append(("Shard", shard_str))
 
         guild_str = "{} (~{} total)".format(
-            len(ctx.client.servers),
+            len(ctx.client.guilds),
             ctx.client.shard_count * len(ctx.client.guilds)
         )
         table_fields.append(("Shard guilds", guild_str))
 
         member_str = "{} (~{} total)".format(
-            len(ctx.client.get_all_members()),
+            len(list(ctx.client.get_all_members())),
             ctx.client.shard_count * len(list(ctx.client.get_all_members()))
         )
         table_fields.append(("Shard members", member_str))

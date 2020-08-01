@@ -9,7 +9,7 @@ with open(HELP_FILE, "r") as help_file:
 
 
 def load_into(client):
-    info = {"dev_list": ["299175087389802496", "408905098312548362"],
+    info = {"dev_list": [299175087389802496, 408905098312548362],
             "info_str": ("I am a multi-purpose server automation bot written in discord.py.\n"
                          "Use `{prefix}help` for information on how to use me, "
                          "and `{prefix}list` to see all my commands!"),
