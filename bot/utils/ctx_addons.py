@@ -251,3 +251,39 @@ async def mail(ctx, channelid, content=None, **kwargs):
     and then onto a minimal `Messageable` instance created from `channelid`.
     """
     return await lib.mail(ctx.client, channelid, content=content, **kwargs)
+
+
+@Context.util
+async def safe_delete_msgs(ctx: Context, *msgs):
+    """
+    Safely deletes a list of messages, ignoring any exceptions that could be raised.
+
+    Parameters
+    ----------
+    msgs: Message
+        The message(s) to delete.
+    """
+    try:
+        await asyncio.gather(*[msg.delete() for msg in msgs])
+    except discord.Forbidden:
+        pass
+    except discord.NotFound:
+        pass
+    except Exception:
+        pass
+
+
+@Context.util
+async def dm_reply(ctx: Context, *args, **kwargs):
+    """
+    Respond to a user by DMing them.
+
+    Raises
+    ----------
+    discord.Forbidden:
+        We're not allowed to DM the user.
+    """
+    try:
+        await ctx.author.send(*args, **kwargs)
+    except discord.Forbidden:
+        return await ctx.error_reply("I can't DM you! Do you have DMs disabled?")
