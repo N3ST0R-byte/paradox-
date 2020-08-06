@@ -1,10 +1,7 @@
 import discord
 import requests
-import aiohttp
-import asyncio
 import urllib
 import random
-import requests
 
 from cmdClient import Context
 from utils.ctx_addons import offer_delete
