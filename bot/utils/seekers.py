@@ -219,7 +219,7 @@ async def find_member(ctx, userstr, interactive=False, collection=None):
         The string will be tested against both the userid, full user name and user nickname.
     interactive: bool
         Whether to offer the user a list of members to choose from,
-        or pick the first matching channel.
+        or pick the first matching member.
     collection: List(discord.Member)
         Collection of members to search amongst.
         If none, uses the full guild member list.

@@ -296,5 +296,25 @@ async def mail(client: discord.Client, channelid: int, **msg_args):
             Message keyword arguments which are passed transparently to `_rawChannel.send(...)`.
     """
     # Create the raw channel
-    channel = _rawChannel(client._connection,  channelid)
+    channel = _rawChannel(client._connection, channelid)
     return await channel.send(**msg_args)
+
+
+async def emb_add_fields(embed, emb_fields):
+    """
+    Append embed fields to an embed.
+    Parameters
+    ----------
+    embed: discord.Embed
+        The embed to add the field to.
+    emb_fields: tuple
+        The values to add to a field.
+    name: str
+        The name of the field.
+    value: str
+        The value of the field.
+    inline: bool
+        Whether the embed field should be inline or not.
+    """
+    for field in emb_fields:
+        embed.add_field(name=str(field[0]), value=str(field[1]), inline=bool(field[2]))
