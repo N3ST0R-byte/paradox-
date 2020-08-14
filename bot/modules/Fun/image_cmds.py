@@ -119,20 +119,76 @@ async def cmd_duck(ctx: Context, flags):
 
 @module.cmd("cat",
             short_help="Sends a random cat image",
-            aliases=["meow", "purr", "pussy"])
-async def cmd_cat(ctx: Context):
+            aliases=["meow", "purr", "pussy"],
+            flags=["t==", "c==", "cc=", "cs="])
+async def cmd_cat(ctx: Context, flags):
     """
     Usage``:
         {prefix}cat
     Description:
         Replies with a random cat image!
+    Flags::
+        t: Search for an image with one of the specified tags.
+        c: Give the result image a caption.
+        cc: Change the colour of the caption.
+        cs: Change the size of the caption.
     """
+    BASE_URL = "https://cataas.com/"
     async with aiohttp.ClientSession() as sess:
-        async with sess.get('https://api.thecatapi.com/v1/images/search') as r:
+        if flags["t"]:
+            # Remove any commas beforehand
+            flags["t"] = flags["t"].replace(",", "")
+            # Format the tag arguments as the URL doesn't accept whitespaces between tags.
+            tag = "?tags={}".format(",".join(arg for arg in flags["t"].split()))
+            FINAL_URL = BASE_URL + "api/cats" + tag
+        else:
+            FINAL_URL = BASE_URL + "api/cats"
+
+        if flags["c"]:
+            flags["c"] = flags["c"].replace(" ", "%20") 
+            caption = "/says/" + flags["c"]
+        else:
+            caption = False
+
+        if flags["cc"]:
+            if flags["cs"]:
+                colour = "&color={}".format(flags["cc"])
+            else:
+                colour = "?color={}".format(flags["cc"])
+        else:
+            colour = False
+
+        if flags["cs"]:
+            size = "?size={}".format(flags["cs"])
+        else:
+            size = False
+
+        async with sess.get(FINAL_URL) as r:
             if r.status == 200:
                 js = await r.json()
-                embed = discord.Embed(description="[Meow!]({})".format(js[0]["url"]), color=discord.Colour.light_grey())
-                embed.set_image(url=js[0]["url"])
+                # Get a random cat from the response
+                try:
+                    cat = random.choice(js)
+                except IndexError:
+                    # The tag provided wasn't found in any of the available images.
+                    return await ctx.error_reply("No images with that tag were found.")
+                cid = cat["id"]
+                # If a caption is provided, append it to the URL.
+                url = BASE_URL + "cat/{}".format(cid)
+                if caption:
+                    url += caption
+
+                if size:
+                    url += size
+
+                if colour:
+                    url += colour
+
+                embed = discord.Embed(description="[Meow!]({})".format(url), color=discord.Colour.light_grey())
+                embed.set_image(url=url)
+                # If the image has tags, list them in the footer.
+                if cat["tags"]:
+                    embed.set_footer(text="Tags: {}".format(", ".join(ct for ct in cat["tags"])))
                 await ctx.reply(embed=embed)
             else:
                 return await ctx.error_reply("An error occurred while fetching cats. Please try again later.")
