@@ -1,3 +1,6 @@
+import discord
+
+
 region_map = {
     "brazil": "Brazil",
     "eu-central": "Central Europe",
@@ -39,3 +42,8 @@ sorted_conf_pages = [
     ("Manual Moderation", ["Moderation", "Logging"]),
     ("Join/Leave Messages", ["Join message", "Leave message"])
 ]
+
+ParaCC = {
+    "purple": discord.Colour(int("7927eb", 16)),
+    "blue": discord.Colour(int("00a7fe", 16)) 
+}
