@@ -328,11 +328,11 @@ def join_list(string):
     string: list
         The list to join together.
     """
-    if len(strings) > 1:
-        return "{}{} and {}.".format((", ").join(strings[:-1]), 
-                                     "," if len(strings) > 2 else "", strings[-1])
+    if len(string) > 1:
+        return "{}{} and {}.".format((", ").join(string[:-1]), 
+                                     "," if len(string) > 2 else "", string[-1])
     else:
-        return "{}.".format("".join(strings))
+        return "{}.".format("".join(string))
 
 
 def format_activity(user):
