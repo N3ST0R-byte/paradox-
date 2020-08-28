@@ -1,13 +1,12 @@
 import sys
 import platform
 import psutil
-import inspect
 # from datetime import datetime
 
 import discord
 from cmdClient import Context
 
-from utils.lib import prop_tabulate
+from utils.lib import prop_tabulate, split_text
 from utils.ctx_addons import best_prefix  # noqa
 
 from .module import meta_module as module
@@ -26,8 +25,6 @@ Commands provided:
         Reply with an invite link for the current app.
     support:
         Reply with an invite link to the support guild for the current app.
-    showcmd:
-        Shows the source of a specified command (hidden).
 """
 
 
@@ -139,55 +136,26 @@ async def cmd_ping(ctx: Context):
     await msg.edit(content="Ping: `{}`ms.\nHeartbeat: `{:.0f}`ms.".format(latency, ctx.client.latency * 1000))
 
 
-# @cmds.cmd("invite",
-#           category="Meta",
-#           short_help="Sends the bot's invite link",
-#           aliases=["inv"])
-# async def cmd_invite(ctx):
-#     """
-#     Usage:
-#         {prefix}invite
-#     Description:
-#         Replies with a link to invite me to your server.
-#     """
-#     await ctx.reply("Visit <{}> to invite me!".format(ctx.bot.objects["invite_link"]))
+@module.cmd("invite",
+            desc="Sends the bot's invite link",
+            aliases=["inv"])
+async def cmd_invite(ctx: Context):
+    """
+    Usage``:
+        {prefix}invite
+    Description:
+         Replies with a link to invite me to your server.
+    """
+    await ctx.reply("Visit <{}> to invite me!".format(ctx.client.app_info["invite_link"]))
 
 
-# @cmds.cmd("support",
-#           category="Meta",
-#           short_help="Sends the link to the bot guild")
-# async def cmd_support(ctx):
-#     """
-#     Usage:
-#         {prefix}support
-#     Description:
-#         Sends the invite link to my support guild.
-#     """
-#     await ctx.reply("Join my server at <{}>".format(ctx.bot.objects["support_guild"]))
-
-
-# @module.cmd("showcmd",
-#           category="Bot admin",
-#           short_help="Shows the source of a command.",
-#           edit_handler=cmds.edit_handler_rerun)
-# async def cmd_showcmd(ctx):
-#     """
-#         Usage:
-#             {prefix}showcmd cmdname
-#         Description:
-#             Replies with the source for the command <cmdname>
-#     """
-#     # Get the list of current active commands, including aliases
-#     cmds = await ctx.get_cmds()
-
-#     if not ctx.arg_str:
-#         await ctx.reply("You must give me with a command name!")
-#     elif ctx.arg_str not in cmds:
-#         await ctx.reply("I don't recognise this command.")
-#     else:
-#         cmd_func = cmds[ctx.arg_str].func
-#         source = inspect.getsource(cmd_func)
-#         source = source.replace('```', '[codeblock]')
-#         blocks = ctx.split_text(source, 1800, syntax='python')
-
-#         await ctx.offer_delete(await ctx.pager(blocks, locked=False))
+@module.cmd("support",
+            desc="Sends the link to the bot guild")
+async def cmd_support(ctx):
+    """
+    Usage``:
+        {prefix}support
+    Description:
+        Sends the invite link to my support guild.
+    """
+    await ctx.reply("Join my support server: {}".format(ctx.client.app_info["support_guild"]))

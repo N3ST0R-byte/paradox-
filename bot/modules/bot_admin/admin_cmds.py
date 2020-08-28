@@ -1,5 +1,6 @@
 import discord
 import aiohttp
+import inspect
 
 from cmdClient import Context
 from .module import bot_admin_module as module
@@ -23,6 +24,8 @@ Commands provided:
         Sends a dm to the user with user id given
     logs:
         Attempts to send the logfile or last n lines of the log.
+    showcmd:
+        View the source of the specified command.
 """
 
 status_dict = {"online": discord.Status.online,
@@ -173,3 +176,29 @@ async def cmd_logs(ctx: Context):
 
         # Split the log blocks and page the result
         await ctx.pager(split_text(logs))
+
+
+@module.cmd("showcmd",
+            desc="Shows the source of a command.")
+@is_master()
+async def cmd_showcmd(ctx: Context):
+    """
+        Usage:
+            {prefix}showcmd <name>
+        Description:
+            Replies with the source for the specified command.
+    """
+    if not ctx.arg_str:
+        return await ctx.error_reply("Please provide a command name.")
+
+    # Get the command from the user arguments
+    command = ctx.client.cmd_names.get(ctx.arg_str, None)
+    if not command:
+        return await ctx.error_reply("No command found.")
+
+    cmd_func = command.func
+    source = inspect.getsource(cmd_func)
+    source = source.replace('```', '[codeblock]')
+    blocks = split_text(source, 1800, syntax='python')
+
+    await ctx.offer_delete(await ctx.pager(blocks, locked=False))
