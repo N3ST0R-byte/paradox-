@@ -6,7 +6,7 @@ import psutil
 import discord
 from cmdClient import Context
 
-from utils.lib import prop_tabulate, split_text
+from utils.lib import prop_tabulate
 from utils.ctx_addons import best_prefix  # noqa
 
 from .module import meta_module as module
