@@ -59,7 +59,6 @@ PREFIX = conf.get("PREFIX", "~")
 CURRENT_APP = conf.get("APP", "")
 
 # Discord channel ids for logging endpoints and internal communication
-CHEAT_CH = conf.getint("CHEAT_CH")
 FEEDBACK_CH = conf.getint("FEEDBACK_CH")
 PREAMBLE_CH = conf.getint("PREAMBLE_CH")
 GUILD_LOG_CH = conf.getint("GUILD_LOG_CH")
@@ -213,7 +212,6 @@ async def on_ready():
                ))
     log(log_msg)
 
-    client.objects["cheat_report_channel"] = discord.utils.get(client.get_all_channels(), id=CHEAT_CH)
     client.objects["feedback_channel"] = discord.utils.get(client.get_all_channels(), id=FEEDBACK_CH)
     client.objects["preamble_channel"] = discord.utils.get(client.get_all_channels(), id=PREAMBLE_CH)
     client.objects["guild_log_channel"] = discord.utils.get(client.get_all_channels(), id=GUILD_LOG_CH)

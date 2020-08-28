@@ -1,100 +1,45 @@
-from paraCH import paraCH
-from datetime import datetime
 import discord
+from datetime import datetime
 
+from cmdClient import Context
+from constants import ParaCC
 
-cmds = paraCH()
+from .module import meta_module as module
 
-# Provides feedback, cheatreport
+"""
+Commands for users to give feedback on the bot.
 
+Commands provided:
+    feedback:
+        Sends an embed containing user-submitted feedback to the feedback channel defined in the config.
+"""
 # TODO: Interactive bug reporting
 
 # TODO: cooldown on feedback
 
 
-@cmds.cmd("feedback",
-          category="Meta",
-          short_help="Send feedback to my creators")
-async def cmd_feedback(ctx):
+@module.cmd("feedback",
+            desc="Send feedback to my creators")
+async def cmd_feedback(ctx: Context):
     """
-    Usage:
-        {prefix}feedback [msg]
+    Usage``:
+        {prefix}feedback <message>
     Description:
-        Sends a message back to the developers of the bot.
+        Give feedback on anything regarding the bot, straight to the developers.
         This can be used for suggestions, bug reporting, or general feedback.
-        Note that abuse or overuse of this command will lead to blacklisting.
+        Note that misuse of this command will lead to blacklisting.
     """
     response = ctx.arg_str
-    if response == "":
+    if not response:
         response = await ctx.input("What message would you like to send? (`c` to cancel)", timeout=240)
-        if not response:
-            await ctx.reply("Question timed out, aborting!")
-            return
-        elif response.lower() == "c":
-            await ctx.reply("User cancelled, aborting!")
-            return
-    embed = discord.Embed(title="Feedback", color=discord.Colour.green(), timestamp=datetime.now(), description=response) \
-        .set_author(name="{} ({})".format(ctx.author, ctx.authid),
-                    icon_url=ctx.author.avatar_url) \
-        .set_footer(text=datetime.utcnow().strftime("Sent from {}".format(ctx.server.name if ctx.server else "private message")))
-    out_msg = await ctx.reply(embed=embed)
+        if response.lower() == "c":
+            return await ctx.error_reply("Cancelled question.")
+    embed = discord.Embed(title="Feedback", color=ParaCC["blue"], timestamp=datetime.now(), description=response)
+    embed.set_author(name="{} ({})".format(ctx.author, ctx.author.id),
+                     icon_url=ctx.author.avatar_url)
+    embed.set_footer(text=datetime.utcnow().strftime("Sent from {}".format(ctx.guild.name if ctx.guild else "DM")))
     response = await ctx.ask("Are you sure you wish to send the above message to the developers?")
     if not response:
-        await ctx.reply("User cancelled, aborting.")
-        return
-    await ctx.bot.send_message(ctx.bot.objects["feedback_channel"], embed=embed)
-    if ctx.bot.objects["brief"]:
-        await ctx.bot.delete_message(out_msg)
-    await ctx.reply("Thank you! Your feedback has been sent.\nConsider joining our support guild below to discuss your feedback with the developers and stay updated on the latest changes!\n{}".format(ctx.bot.objects["support_guild"]))
-
-
-@cmds.cmd("abusereport",
-          category="Meta",
-          short_help="Reports a user for abusing a bot command.",
-          flags=["e=="])
-async def cmd_cr(ctx):
-    """
-    Usage:
-        {prefix}abusereport <user> <cheat> [-e <evidence>]
-    Description:
-        Reports a user for abusing a command, e.g. cheating on a social system.
-        Please provide the user you wish to report, what they abused, and your evidence.
-        If reporting the user in DM or another server, please use their user id.
-        Note that abuse or overuse of this command will lead to your account being blacklisted.
-    """
-    if len(ctx.params) < 2:
-        await ctx.reply("Insufficient arguments, see help for usage")
-        return
-    user = ctx.params[0]
-    cheat = ' '.join(ctx.params[1:])
-    evidence = ctx.flags['e'] if ctx.flags['e'] else "None. (Note that cheat reports without evidence are not recommended)"
-    if len(evidence) > 1000:
-        await ctx.reply("Your evidence must be less than 1k characters!")
-        return
-    if not user.isdigit():
-        if not ctx.server:
-            await ctx.reply("Please provide a valid user ID when reporting from private message")
-            return
-        user = await ctx.find_user(ctx.params[0], in_server=True, interactive=True)
-        if ctx.cmd_err[0]:
-            return
-    else:
-        user = discord.utils.get(ctx.bot.get_all_members(), id=user)
-    if not user:
-        await ctx.reply("Couldn't find this user!")
-        return
-    embed = discord.Embed(title="Cheat Report", color=discord.Colour.red(), description=cheat) \
-        .set_author(name="{} ({})".format(ctx.author, ctx.authid),
-                    icon_url=ctx.author.avatar_url)\
-        .add_field(name="Reported User", value="`{0}` (`{0.id}`)".format(user), inline=True) \
-        .add_field(name="Evidence", value=evidence, inline=False) \
-        .set_footer(text=datetime.utcnow().strftime("Reported in {} at %I:%M %p, %d/%m/%Y".format(ctx.server.name if ctx.server else "private message")))
-    out_msg = await ctx.reply(embed=embed)
-    response = await ctx.ask("Are you sure you wish to send the above cheat report?")
-    if not response:
-        await ctx.reply("User cancelled, aborting.")
-        return
-    await ctx.bot.send_message(ctx.bot.objects["cheat_report_channel"], embed=embed)
-    if ctx.bot.objects["brief"]:
-        await ctx.bot.delete_message(out_msg)
-    await ctx.reply("Thank you. Your cheat report has been sent.")
+        return await ctx.error_reply("Cancelled feedback submission.")
+    await ctx.client.objects["feedback_channel"].send(embed=embed)
+    await ctx.reply("Thank you! Your feedback has been sent.\nConsider joining our support guild below to discuss your feedback with the developers and stay updated on the latest changes!\n{}".format(ctx.client.app_info["support_guild"]))
