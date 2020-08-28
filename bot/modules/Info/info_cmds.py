@@ -45,7 +45,7 @@ async def cmd_role(ctx: Context):
         await ctx.pager(paginate_list([role.name for role in reversed(guild_roles)], title="Guild roles"))
         return
     role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
-    if role is None:
+    if not role:
         return
 
     title = f"{role.name} ({role.id})"
@@ -102,7 +102,7 @@ async def cmd_rolemembers(ctx: Context):
         return await ctx.error_reply("Please provide a role to list the members of.")
 
     role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
-    if role is None:
+    if not role:
         return
 
     members = role.members
@@ -128,11 +128,7 @@ async def cmd_userinfo(ctx: Context):
     if ctx.arg_str:
         user = await ctx.find_member(ctx.arg_str, interactive=True)
         if not user:
-            await ctx.reply("No matching users found!")
             return
-    # Manually get a new user in case the old one was out of date
-    user = await ctx.client.fetch_user(user.id)
-
     colour = (user.colour if user.colour.value else discord.Colour.light_grey())
 
     name = "{} {}".format(user, ctx.client.conf.emojis.getemoji("bot") if user.bot else "")
@@ -314,9 +310,8 @@ async def cmd_channelinfo(ctx: Context):
 
     # Disallow selecting channels that the user cannot see. Channels the bot can see still work.
     valid_channels = [ch for ch in ctx.guild.channels if ch.permissions_for(ctx.author).read_messages]
-    if not ctx.arg_str:
-        ch = ctx.ch
-    else:
+    ch = ctx.ch
+    if ctx.arg_str:
         ch = await ctx.find_channel(ctx.arg_str, interactive=True, collection=valid_channels)
         if not ch:
             return
@@ -380,10 +375,9 @@ async def cmd_avatar(ctx: Context):
         or your own avatar if none was given.
     """
     user = ctx.author
-    if ctx.arg_str != "":
+    if ctx.arg_str:
         user = await ctx.find_member(ctx.arg_str, interactive=True)
         if not user:
-            await ctx.reply("No matching users found!")
             return
     if str(user.colour) == "#000000":
         colour = ParaCC["blue"]
