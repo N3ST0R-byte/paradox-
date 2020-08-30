@@ -199,7 +199,7 @@ class String(SettingType):
         Check that the user-entered string is of the correct length.
         Accept "None" to unset.
         """
-        if userstr == "None":
+        if userstr.lower() == "none":
             # Unsetting case
             return None
         elif cls._maxlen is not None and len(userstr) > cls._maxlen:

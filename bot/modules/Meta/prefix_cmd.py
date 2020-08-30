@@ -23,11 +23,6 @@ User properties:
         (app agnostic, user configured)
         Current user custom prefix.
         Must be less than `5` characters.
-
-Guild properties:
-    guild_prefix: str
-        (app agnostic, admin configured)
-        Current guild custom prefix.
 """
 
 
@@ -80,7 +75,7 @@ async def cmd_prefix(ctx, flags):
         guild_str = ""
         guild_prefix = None
         if ctx.guild:
-            guild_prefix = ctx.client.data.guilds.get(ctx.guild.id, "guild_prefix")
+            guild_prefix = ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, None)
             guild_str = ("The guild prefix  is `{}`.\n".format(guild_prefix)
                          if guild_prefix else "No custom guild prefix set.\n")
 
@@ -101,7 +96,6 @@ async def cmd_prefix(ctx, flags):
 @module.init_task
 def ensure_prefix_properties(client):
     client.data.users.ensure_exists("custom_prefix", shared=False)
-    client.data.guilds.ensure_exists("guild_prefix", shared=False)
 
 
 @module.init_task

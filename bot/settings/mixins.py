@@ -157,6 +157,8 @@ class BoolData(_tableData):
         """
         Write the provided boolean to storage by adding or removing the row.
         """
+        table = cls._get_table_interface(client)  # type: tableInterface
+
         params = {
             cls._guildid_column: guildid,
         }

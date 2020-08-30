@@ -82,7 +82,7 @@ class role_persistence_ignores(ListData, RoleList, GuildSetting):
 
     long_desc = "Roles which will not be given back to a member when they rejoin, even if they had them when they left."
 
-    _table_interface_name = "guild_role_persistence_ignore"
+    _table_interface_name = "guild_role_persistence_ignores"
     _data_column = "roleid"
 
 
