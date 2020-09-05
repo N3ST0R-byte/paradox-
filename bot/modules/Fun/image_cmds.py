@@ -118,7 +118,7 @@ async def cmd_duck(ctx: Context, flags):
 
 
 @module.cmd("cat",
-            short_help="Sends a random cat image",
+            desc="Sends a random cat image",
             aliases=["meow", "purr", "pussy"],
             flags=["t==", "c==", "cc=", "cs="])
 async def cmd_cat(ctx: Context, flags):
@@ -195,8 +195,8 @@ async def cmd_cat(ctx: Context, flags):
 
 
 @module.cmd("holo",
-            short_help="Holo")
-async def cmd_holo(ctx):
+            desc="Holo")
+async def cmd_holo(ctx: Context):
     """
     Usage``:
         {prefix}holo
