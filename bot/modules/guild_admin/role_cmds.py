@@ -1,116 +1,116 @@
-from paraCH import paraCH
 import discord
 import string
 
-cmds = paraCH()
+from wards import guild_moderator
+from cmdClient import Context
+from .module import guild_admin_module as module
 
 
-@cmds.cmd("rmrole",
-          category="Server Admin",
-          short_help="Deletes a role",
-          aliases=["removerole", "remrole", "deleterole", "delrole"])
-@cmds.require("has_manage_server")
-async def cmd_rmrole(ctx):
+@module.cmd("rmrole",
+            desc="Deletes the provided role",
+            aliases=["removerole", "remrole", "deleterole", "delrole"])
+@guild_moderator()
+async def cmd_rmrole(ctx: Context):
     """
-    Usage:
+    Usage``:
         {prefix}rmrole <rolename>
     Description:
         Deletes a role given by partial name or mention.
     """
-    if ctx.arg_str.strip() == "":
-        await ctx.reply("You must provide a role to delete.")
-        return
+    if not ctx.arg_str:
+        return await ctx.error_reply("Please provide a role to delete.")
     role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
-    if role is None:
+    if not role:
         return
+    # Various checks to avoid hard errors and prevent abuse.
     if role.managed:
-        await ctx.reply("⚠ This role is managed by an integration. You will have to reinvite its respective bot to recover the role.")
-    result = await ctx.ask("Are you sure you want to delete the role `{}`?".format(role.name))
-    if result is None:
-        await ctx.reply("Question timed out, aborting")
-        return
-    if result == 0:
-        await ctx.reply("Aborting...")
-        return
+        return await ctx.error_reply("Roles managed by an integration cannot be deleted.")
+    if (role > ctx.author.top_role) and (ctx.guild.owner != ctx.author):
+        return await ctx.error_reply("You cannot delete a role above you in the role hierarchy.")
+    if role > ctx.guild.me.top_role:
+        return await ctx.error_reply("I cannot delete a role above me in the role hierarchy.")
+    if not ctx.guild.me.guild_permissions.manage_roles:
+        return await ctx.error_reply("I lack the permissions to delete the role.")
+    if role == ctx.guild.default_role:
+        return await ctx.error_reply("The default role cannot be deleted.")
     try:
-        await ctx.bot.delete_role(ctx.server, role)
-    except discord.Forbidden:
-        await ctx.reply("I am unable to delete that role, insufficient permissions.")
-        return
+        await role.delete(reason=f"Moderator: {ctx.author}")
     except Exception:
-        await ctx.reply("I can't delete the `@everyone` role.")
-        return
+        return await ctx.error_reply("An unknown error occurred while attempting to delete the role. Please try again.")
     await ctx.reply("Successfully deleted the role.")
 
 
-@cmds.cmd("editrole",
-          category="Server Admin",
-          short_help="Create or edit a server role.",
-          aliases=["erole", "roleedit", "roledit", "editr"])
-@cmds.require("in_server_has_mod")
-@cmds.execute("flags", flags=["colour=", "color=", "name==", "perm==", "hoist=", "mention=", "pos=="])
-async def cmd_editrole(ctx):
+@module.cmd("editrole",
+            desc="Create or edit a server role.",
+            aliases=["erole", "roleedit", "roledit", "editr"],
+            flags=["colour=", "color=", "name==", "perm==", "hoist=", "mention=", "pos=="])
+@guild_moderator()
+async def cmd_editrole(ctx: Context, flags):
     """
-    Usage:
+    Usage``:
         {prefix}editrole <rolename> [flags]
     Description:
         Modifies the specified role, either interactively (WIP), or using the provided flags (see below).
         This may also be used to create a role.
-    Flags:
-        --colour/--color <hex value>:  Change the colour
-        --name <name>:  Change the name
-        --perm <permission>: Add or remove a permission (WIP)
-        --hoist <on/off>: Hoist or unhoist the role
-        --mention <on/off>: Make the role mentionable, or not
-        --pos < number | up | down | above <role> | below <role> >: Move the role in the heirachy (WIP)
+    Flags::
+        colour:  Change the colour of the role (input: hex code)
+        name: Change the name of the role
+        perm: Add or remove a permission (WIP)
+        hoist: Hoist or unhoist the role (input: "yes"/"no")
+        mention: Toggle the ability for everybody to mention this role (input: "yes"/"no")
+        pos: Modify the role's hierarchy. (input: number | up | down | above <role> | below <role>)
     Examples:
         {prefix}erole Member --colour #0047AB --name Noob
         {prefix}erole Regular --pos above Member
     """
-    role = await ctx.find_role(ctx.arg_str, create=True, interactive=True)
-    if role is None:
+    if not ctx.arg_str:
+        return await ctx.error_reply("Please provide a role to edit.")
+
+    params = ctx.args.split(maxsplit=1)
+    role = await ctx.find_role(params[0], create=True, interactive=True)
+    if not role:
         return
     edits = {}
-    ctx.me = ctx.server.me  # Not actually required, just due to a bug in contextBot TODO
-    if role >= ctx.me.top_role:
-        await ctx.reply("The role specified is above or equal to my top role, aborting.")
-        return
-    if not (ctx.flags["colour"] or ctx.flags["color"] or ctx.flags["name"] or ctx.flags["perm"] or ctx.flags["hoist"] or ctx.flags["mention"] or ctx.flags["pos"]):
-        await ctx.reply("Interactive role editing is a work in progress, please check back later!")
-        return
-    if ctx.flags["colour"] or ctx.flags["color"]:
-        colour = ctx.flags["colour"] if ctx.flags["colour"] else ctx.flags["color"]
+    if role >= ctx.guild.me.top_role:
+        return await ctx.error_reply("I can't edit a role equal to or above my top role.")
+
+    if not ctx.guild.me.guild_permissions.manage_roles:
+        return await ctx.error_reply("I require the permission `Manage Roles` to run this command.")
+
+    if flags["colour"] or flags["color"]:
+        colour = flags["colour"] if flags["colour"] else flags["color"]
         hexstr = colour.strip("#")
         if not (len(hexstr) == 6 or all(c in string.hexdigits for c in hexstr)):
-            await ctx.reply("Please provide a valid hex colour (e.g. #0047AB).")
-            return
+            return await ctx.error_reply("Please provide a valid hex colour (e.g. #0047AB).")
         edits["colour"] = discord.Colour(int(hexstr, 16))
-    if ctx.flags["name"]:
-        edits["name"] = ctx.flags["name"]
-    if ctx.flags["perm"]:
-        await ctx.reply("Sorry, perm modification is a work in progress. Please check back later!")
-        return
-    if ctx.flags["hoist"]:
-        if ctx.flags["hoist"].lower() in ["enable", "yes", "on"]:
+
+    if flags["name"]:
+        edits["name"] = flags["name"]
+
+    if flags["perm"]:
+        return await ctx.reply("Sorry, perm modification is a work in progress. Please check back later!")
+
+    if flags["hoist"]:
+        if flags["hoist"].lower() in ["enable", "yes", "on"]:
             hoist = True
-        elif ctx.flags["hoist"].lower() in ["disable", "no", "off"]:
+        elif flags["hoist"].lower() in ["disable", "no", "off"]:
             hoist = False
         else:
-            await ctx.reply("I don't understand your argument to --hoist! See the help for usage.")
-            return
+            return await ctx.error_reply("An invalid argument was passed to `--hoist`. Use `help editrole` for usage.")
         edits["hoist"] = hoist
-    if ctx.flags["mention"]:
-        if ctx.flags["mention"].lower() in ["enable", "yes", "on"]:
+
+    if flags["mention"]:
+        if flags["mention"].lower() in ["enable", "yes", "on"]:
             mention = True
-        elif ctx.flags["mention"].lower() in ["disable", "no", "off"]:
+        elif flags["mention"].lower() in ["disable", "no", "off"]:
             mention = False
         else:
-            await ctx.reply("I don't understand your argument to --mention! See the help for usage.")
-            return
+            return await ctx.error_reply("An invalid argument was passed to `--mention`. Use `help editrole` for usage.")
         edits["mentionable"] = mention
+
     position = None
-    if ctx.flags["pos"]:
-        pos_flag = ctx.flags["pos"]
+    if flags["pos"]:
+        pos_flag = flags["pos"]
         if pos_flag.isdigit():
             position = int(pos_flag)
         elif pos_flag.lower() == "up":
@@ -124,50 +124,25 @@ async def cmd_editrole(ctx):
             target_role = await ctx.find_role((' '.join(pos_flag.split(' ')[1:])).strip(), create=False, interactive=True)
             position = target_role.position
         else:
-            await ctx.reply("I didn't understand your argument to --pos. See the help for usage.")
-#    msg = ""
+            return await ctx.error_reply("An invalid argument was passed to `--pos`. Use `help editrole` for usage.")
+
     if position is not None:
-        if position > ctx.me.top_role.position:
-            await ctx.reply("The target position is above me, aborting.")
-            return
+        if position > ctx.guild.me.top_role.position:
+            return await ctx.error_reply("The target position is higher than my top role.")
         if position == 0:
-            await ctx.reply("Can't move a role to position 0, aborting.")
-            return
+            return await ctx.error_reply("The role can't be below the default server role.")
         try:
-            await ctx.bot.move_role(ctx.server, role, position)
-#            msg += "Moved role to position {}!".format(
+            await role.edit(position=position)
         except discord.Forbidden:
-            await ctx.reply("I am unable to move the role, insufficient permissions.")
-            return
+            return await ctx.error_reply("I lack the permissions to edit the role.")
         except discord.HTTPException:
-            await ctx.reply("Something went wrong while moving the role! Possibly I am of too low a rank.")
-            return
+            return await ctx.error_reply("An unknown error occurred while trying to modify the role position.")
     if edits:
         try:
-            await ctx.bot.edit_role(ctx.server, role, **edits)
+            await role.edit(**edits, reason=f"Moderator: {ctx.author}")
         except discord.Forbidden:
-            await ctx.reply("I don't have enough permissions to make the specified edits.")
-            return
+            return await ctx.error_reply("I don't have enough permissions to make the specified edits.")
+
+    if not (flags["colour"] or flags["color"] or flags["name"] or flags["perm"] or flags["hoist"] or flags["mention"] or flags["pos"]):
+        return await ctx.reply("Interactive role editing is a work in progress, please check back later!")
     await ctx.reply("The role was modified successfully.")
-
-"""
-@cmds.cmd("roledesc",
-          category="Server Admin",
-          short_help="Set a role description",
-          flags=["clear", "set="])
-@cmds.require("has_manage_server")
-async def cmd_roledesc(ctx):
-    "
-    Usage:
-        {prefix}roledesc <rolename> [--set description] [--clear]
-    Description:
-        Set or clear the description for the provided role.
-        The role description is shown in {prefix}roleinfo.
-    Examples:
-        {prefix}roledesc Owner --set The all powerful.
-    "
-    role = await ctx.find_role(ctx.arg_str, create=True, interactive=True)
-    if role is None:
-        return
-
-"""
