@@ -42,28 +42,27 @@ async def cmd_image(ctx: Context):
     API_KEY = "10259038-12ef42751915ae10017141c86"
 
     if not ctx.arg_str:
-        await ctx.reply("Please enter something to search for.")
-        return
+        return await ctx.reply("Please enter something to search for.")
     search_for = urllib.parse.quote_plus(ctx.arg_str)
-    r = requests.get('https://pixabay.com/api/?key={}&q={}&image_type=photo'.format(API_KEY, search_for))
-    if r.status_code == 200:
-        js = r.json()
-        hits = js['hits'] if 'hits' in js else None
-        if not hits:
-            await ctx.reply("Didn't get any results for this query!")
-            return
-        hit_pages = []
-        for hit in [random.choice(hits) for i in range(20)]:
-            embed = discord.Embed(title="Here you go!", color=discord.Colour.light_grey())
-            if "webformatURL" in hit:
-                embed.set_image(url=hit["webformatURL"])
+    async with aiohttp.ClientSession() as sess:
+        async with sess.get('https://pixabay.com/api/?key={}&q={}&image_type=photo'.format(API_KEY, search_for)) as r:
+            if r.status == 200:
+                js = await r.json()
+                hits = js['hits'] if 'hits' in js else None
+                if not hits:
+                    return await ctx.reply("Didn't get any results for this query!")
+                hit_pages = []
+                for hit in [random.choice(hits) for i in range(20)]:
+                    embed = discord.Embed(title="Here you go!", color=discord.Colour.light_grey())
+                    if "webformatURL" in hit:
+                        embed.set_image(url=hit["webformatURL"])
+                    else:
+                        continue
+                    embed.set_footer(text="Images thanks to the free Pixabay API!")
+                    hit_pages.append(embed)
+                await ctx.offer_delete(await ctx.pager(hit_pages, embed=True))
             else:
-                continue
-            embed.set_footer(text="Images thanks to the free Pixabay API!")
-            hit_pages.append(embed)
-        await ctx.offer_delete(await ctx.pager(hit_pages, embed=True))
-    else:
-        return await ctx.error_reply("An error occurred while fetching images. Please try again later.")
+                return await ctx.error_reply("An error occurred while fetching images. Please try again later.")
 
 
 @module.cmd("dog",
