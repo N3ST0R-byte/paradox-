@@ -6,6 +6,8 @@ from logger import log
 from settings import ColumnData, String, Channel, GuildSetting
 from registry import tableInterface, Column, ColumnType, schema_generator
 
+from wards import guild_manager
+
 from .module import guild_admin_module as module
 
 
@@ -14,6 +16,8 @@ from .module import guild_admin_module as module
 class greeting_channel(ColumnData, Channel, GuildSetting):
     attr_name = "greeting_channel"
     category = "Greeting message"
+    read_check = None
+    write_check = guild_manager
 
     name = "greeting_ch"
     desc = "Channel in which to greet new members."
@@ -29,6 +33,8 @@ class greeting_channel(ColumnData, Channel, GuildSetting):
 class greeting_message(ColumnData, String, GuildSetting):
     attr_name = "greeting_message"
     category = "Greeting message"
+    read_check = None
+    write_check = guild_manager
 
     name = "greeting"
     desc = "Greeting message for new members."
@@ -60,6 +66,8 @@ class greeting_message(ColumnData, String, GuildSetting):
 class farewell_channel(ColumnData, Channel, GuildSetting):
     attr_name = "farewell_channel"
     category = "Farewell message"
+    read_check = None
+    write_check = guild_manager
 
     name = "farewell_ch"
     desc = "Channel in which to to say farewell to leaving members."
@@ -75,6 +83,8 @@ class farewell_channel(ColumnData, Channel, GuildSetting):
 class farewell_message(ColumnData, String, GuildSetting):
     attr_name = "farewell_message"
     category = "Farewell message"
+    read_check = None
+    write_check = guild_manager
 
     name = "farewell"
     desc = "Farewell message for members who have left."

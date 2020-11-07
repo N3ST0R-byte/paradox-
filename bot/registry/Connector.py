@@ -5,6 +5,7 @@ from logger import log
 
 # TODO: Versioning
 # TODO: is not null
+# TODO: Documentation and interface examples
 class Connector:
     """
     Abstract base class representing a high level database connector.

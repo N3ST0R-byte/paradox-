@@ -38,6 +38,20 @@ async def guild_moderator(ctx, *args, **kwargs):
     return has_mod
 
 
+@check(name="GUILD_MANAGER",
+       msg="You need the `manage guild` permission to do this!",
+       requires=[in_guild])
+async def guild_manager(ctx, *args, **kwargs):
+    return ctx.author.guild_permissions.manage_guild
+
+
+@check(name="GUILD_ADMIN",
+       msg="You need the `administrator` permission to do this!",
+       requires=[in_guild])
+async def guild_admin(ctx, *args, **kwargs):
+    return ctx.author.guild_permissions.administrator
+
+
 # Old wards, not migrated
 # async def perm_manage_server(ctx):
 #     if (ctx.user is None) or (ctx.server is None):
@@ -82,8 +96,6 @@ async def guild_moderator(ctx, *args, **kwargs):
 #         return (0, "")
 #     else:
 #         return (1, "You don't have the moderator role in this server!")
-
-
 
 # async def check_in_server_can_ban(ctx):
 #     """

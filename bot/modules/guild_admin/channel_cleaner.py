@@ -6,6 +6,8 @@ from cmdClient import Context
 from settings import ListData, ChannelList, GuildSetting
 from registry import tableInterface, Column, ColumnType, schema_generator
 
+from wards import guild_manager
+
 from .module import guild_admin_module as module
 
 
@@ -13,6 +15,7 @@ from .module import guild_admin_module as module
 @module.cmd("autoclean",
             desc="Automatic deletion of messages in the current channel.",
             aliases=["cleanch", "autodelete"])
+@guild_manager()
 async def cmd_autoclean(ctx: Context):
     """
     Usage``:

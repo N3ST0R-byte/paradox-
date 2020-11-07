@@ -1,53 +1,58 @@
 import logging
 import datetime as dt
 
+from cmdClient.lib import UserCancelled
+
 from settings import GuildSetting, Boolean, RoleList, ListData, BoolData
 from registry import tableInterface, schema_generator, Column, ColumnType
 from logging import log
 
+from utils.interactive import ask  # noqa
+
+from wards import guild_admin, guild_manager
+
 from .module import guild_admin_module as module
 
 
-# TODO: Ward with admin ward
-# @module.cmd('forgetuser',
-#             short_help="Forget stored persistent roles for one or all users.",
-#             flags=['all'])
-# async def cmds_forgetuser(ctx, flags):
-#     """
-#     Usage``:
-#         {prefix}forgetuser <userid>
-#         {prefix}forgetuser --all
-#     Description:
-#         Forgets the persistent roles stored for a user.
-#         When used with '--all', forgets all persistent roles for this guild.
-#     """
-#     if ctx.flags['all']:
-#         # Confirm the author actually wants to do this
-#         result = await ctx.ask(
-#             "This will forget all stored persistent roles for this guild?")
-#         if result == 0:
-#             await ctx.reply("Cancelling rol")
-#         else:
-#             ctx.data.conn.cursor().execute("delete from members_long where serverid = {} and property = 'persistent_roles'".format(ctx.server.id))
-#             ctx.data.conn.commit()
-#             await ctx.reply("Persistent roles forgotten.")
-#     elif ctx.arg_str:
-#         # They want us to forget a single user.
-#         if not ctx.arg_str.isdigit():
-#             await ctx.reply("User to forget must be given by userid.")
-#         else:
-#             # Try and make sure the user exists
-#             user = await ctx.bot.get_user_info(ctx.arg_str)
-#             if user:
-#                 # Forget persistent roles for this user
-#                 await ctx.data.members_long.set(ctx.server.id, user.id, "persistent_roles", None)
-#                 await ctx.reply("Persistent roles cleared for user `{}`!".format(ctx.arg_str))
-#             else:
-#                 # The user doesn't exist
-#                 await ctx.reply("This user isn't known to Discord!")
-#     else:
-#         # Usage statement
-#         await ctx.reply("Please see `{}help forgetuser` for usage!".format((await ctx.bot.get_prefixes(ctx))[0]))
+@module.cmd("forgetrolesfor",
+            desc="Forget stored persistent roles for one or all members.",
+            flags=['all'])
+@guild_admin()
+async def cmd_forgetrolesfor(ctx, flags):
+    """
+    Usage``:
+        {prefix}forgetrolesfor <userid>
+        {prefix}forgetrolesfor --all
+    Description:
+        Forgets the persistent roles stored for the given user, or all users.
+    Arguments::
+        userid: The numerical id of the user to forget.
+    Flags::
+        all: Forget stored roles for all users.
+    """
+    if flags['all']:
+        # Confirm deletion of all stored persistent roles
+        if await ctx.ask("Are you sure you want me to forget all the stored persistent roles for this guild?"):
+            # Delete all stored persistent roles
+            ctx.client.data.member_stored_roles.delete_where(guildid=ctx.guild.id)
+            await ctx.reply("Purged stored persistent roles for all users.")
+        else:
+            raise UserCancelled("Cancelled upon user request.")
+    elif ctx.args:
+        # Deleting stored roles for a single user
+        if not ctx.args.isdigit():
+            return await ctx.error_reply("Please supply the id of the user to forget.")
+        else:
+            # Lookup the user
+            user = await ctx.client.fetch_user(ctx.args)
+
+            if not user:
+                return await ctx.error_reply("User `{}` is not known to Discord.".format(ctx.args))
+            else:
+                ctx.client.data.member_stored_roles.delete_where(guildid=ctx.guild.id, userid=user.id)
+                await ctx.reply("Purged stored persistent roles for {} (uid:`{}`).".format(user, user.id))
+    else:
+        await ctx.reply("Please see the help for this command for usage.")
 
 
 # Define configuration settings
@@ -57,6 +62,8 @@ from .module import guild_admin_module as module
 class role_persistence(BoolData, Boolean, GuildSetting):
     attr_name = "role_persistence"
     category = "Moderation"
+    read_check = None
+    write_check = guild_manager
 
     name = "role_persistence"
     desc = "Whether roles will be given back to members who re-join."
@@ -76,6 +83,8 @@ class role_persistence(BoolData, Boolean, GuildSetting):
 class role_persistence_ignores(ListData, RoleList, GuildSetting):
     attr_name = "role_persistence_ignores"
     category = "Moderation"
+    read_check = None
+    write_check = guild_manager
 
     name = "role_persistence_ignores"
     desc = "List of roles ignored by role persistence."
@@ -100,11 +109,11 @@ async def store_roles(client, member):
         return
 
     # Delete the stored roles associated to this member
-    client.data.members_stored_roles.delete_where(guildid=member.guild.id, userid=member.id)
+    client.data.member_stored_roles.delete_where(guildid=member.guild.id, userid=member.id)
 
     # Insert the new roles if there are any
     if role_list:
-        client.data.members_stored_roles.insert_many(
+        client.data.member_stored_roles.insert_many(
             *((member.guild.id, member.id, role.id) for role in role_list),
             insert_keys=('guildid', 'userid', 'roleid')
         )
@@ -119,7 +128,7 @@ async def restore_roles(client, member):
         return
 
     # Retrieve the stored roles for this member
-    roleids = client.data.members_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
+    roleids = client.data.member_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
 
     if roleids:
         # Get the ignored roles
@@ -182,6 +191,7 @@ member_stored_roles_schema = schema_generator(
     Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("roleid", ColumnType.SNOWFLAKE, primary=False, required=True)
 )
+
 
 @module.data_init_task
 def attach_rolepersistence_data(client):

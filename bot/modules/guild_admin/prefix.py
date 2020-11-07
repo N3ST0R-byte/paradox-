@@ -1,6 +1,8 @@
 from settings import GuildSetting, String, ColumnData
 from registry import tableInterface, schema_generator, Column, ColumnType
 
+from wards import guild_manager
+
 from .module import guild_admin_module as module
 
 
@@ -9,6 +11,8 @@ from .module import guild_admin_module as module
 class guild_prefix(ColumnData, String, GuildSetting):
     attr_name = "prefix"
     category = "Guild admin"
+    read_check = None
+    write_check = guild_manager
 
     name = "prefix"
     desc = "Custom guild prefix."
@@ -33,7 +37,7 @@ class guild_prefix(ColumnData, String, GuildSetting):
         if self._data:
             self.client.objects["guild_prefix_cache"][self.guildid] = self._data
         else:
-            self.client.objects["guild_prefix_cache"].pop(self.guildid)
+            self.client.objects["guild_prefix_cache"].pop(self.guildid, None)
 
         super().write(**kwargs)
 

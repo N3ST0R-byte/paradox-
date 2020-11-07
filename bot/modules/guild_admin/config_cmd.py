@@ -5,7 +5,7 @@ from utils.ctx_addons import best_prefix  # noqa
 
 from settings import BadUserInput
 
-from wards import guild_moderator
+from wards import guild_manager
 
 from .module import guild_admin_module as module
 
@@ -21,7 +21,7 @@ conf_pages = {
 # TODO: Write wards
 
 
-def _build_config_pages(ctx, show_help=True):
+async def _build_config_pages(ctx, show_help=True):
     """
     Build guild configuration pages.
     """
@@ -44,9 +44,16 @@ def _build_config_pages(ctx, show_help=True):
         for cat in page_cats:
             if cat in cats:
                 # Tabulate option name and values
-                names = [option.name for option in cats[cat]]
-                values = [option.desc if show_help else option.get(ctx.client, ctx.guild.id).formatted or "Not Set"
-                          for option in cats[cat]]
+                names = []
+                values = []
+                for option in cats[cat]:
+                    names.append(option.name)
+                    if show_help:
+                        values.append(option.desc)
+                    elif await option.read_check.run(ctx):
+                        values.append(option.get(ctx.client, ctx.guild.id).formatted or "Not Set")
+                    else:
+                        values.append("Hidden")
                 cat_str = prop_tabulate(names, values)
 
                 # Add table as the cat field
@@ -92,11 +99,11 @@ async def cmd_config(ctx):
     params = ctx.args.split(maxsplit=1)
     if not ctx.args:
         # Handle empty argument case, show options with values
-        pages = _build_config_pages(ctx, show_help=False)
+        pages = await _build_config_pages(ctx, show_help=False)
         await ctx.pager(pages)
     elif ctx.args.lower() == "help":
         # Handle sole help argument, show options with descriptions
-        pages = _build_config_pages(ctx, show_help=True)
+        pages = await _build_config_pages(ctx, show_help=True)
         await ctx.pager(pages)
     elif params[0] not in settings:
         # Handle unrecognised option
@@ -113,7 +120,7 @@ async def cmd_config(ctx):
         setting = settings[option]
 
         # Check write permissions
-        write_ward = setting.write_check or guild_moderator
+        write_ward = setting.write_check or guild_manager
         if not await write_ward.run(ctx):
             await ctx.error_reply(write_ward.msg)
         else:
@@ -125,7 +132,7 @@ async def cmd_config(ctx):
                     await ctx.error_reply(e.msg)
                 else:
                     await ctx.error_reply(
-                        "Couldn't understand provided input, "
+                        "Did not understand the provided value, "
                         "please check the accepted values and try again."
                     )
             else:

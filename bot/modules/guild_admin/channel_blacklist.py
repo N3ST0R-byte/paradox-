@@ -3,12 +3,16 @@ from registry import tableInterface, Column, ColumnType, schema_generator
 
 from .module import guild_admin_module as module
 
+from wards import guild_manager
+
 
 # Define guild settings
 @module.guild_setting
 class disabled_channels(ListData, ChannelList, GuildSetting):
     attr_name = "disabled_channels"
     category = "Guild admin"
+    read_check = None
+    write_check = guild_manager
 
     name = "disabled_channels"
     desc = "List of channels where I don't listen to commands."
