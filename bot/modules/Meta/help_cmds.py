@@ -144,11 +144,13 @@ async def cmd_help(ctx: Context):
 async def cmd_list(ctx: Context):
     """
     Usage``:
-        {prefix}list
+        {prefix}list [module]
         {prefix}ls
     Description:
         Provides a paged list of my commands with brief descriptions.
         When used as `ls`, provides a briefer single-page listing without descriptions..
+    Arguments::
+        module: Show only commands from this module.
     Related:
         help
     """
@@ -187,8 +189,17 @@ async def cmd_list(ctx: Context):
         ).format(ctx.best_prefix(), ctx.client.app_info["support_guild"])
 
         # Build the command groups
-        groups = {cat.name: (cat, [(cmd.name, cmd.desc) for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))])
-                  for cat in ctx.client.modules if show_hidden or not cat.hidden}
+        groups = {cat.name: (cat, [(cmd.name,
+                                    getattr(cmd, "desc", "See `{0}help {1}`.".format(ctx.best_prefix(), cmd.name)))
+                                   for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))])
+                  for cat in ctx.client.modules if
+                  (show_hidden or not cat.hidden)
+                  and (not ctx.args or (ctx.args.lower() in cat.name.lower()))}
+
+        if not groups:
+            return await ctx.error_reply(
+                "No matching modules! See `{}ls` for a list of modules and their commands.".format(ctx.best_prefix())
+            )
 
         # Sort the command groups based on sorted_cats and extract the required data
         stringy_groups = [(groups[catname][0], prop_tabulate(*zip(*groups[catname][1])))

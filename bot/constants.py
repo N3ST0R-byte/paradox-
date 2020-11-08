@@ -26,6 +26,7 @@ region_map = {
 }
 
 sorted_cats = [
+    "Bot Admin",
     "Info",
     "Fun",
     "Social",
@@ -45,5 +46,5 @@ sorted_conf_pages = [
 
 ParaCC = {
     "purple": discord.Colour(int("7927eb", 16)),
-    "blue": discord.Colour(int("00a7fe", 16)) 
+    "blue": discord.Colour(int("00a7fe", 16))
 }

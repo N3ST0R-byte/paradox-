@@ -186,7 +186,7 @@ async def _pager(ctx, out_msg, pages, locked):
     # Check function to determine whether a reaction is valid
     def check(reaction, user):
         result = reaction.message.id == out_msg.id
-        result = result and str(reaction.emoji) in [str(next_emoji), str(prev_emoji)]
+        result = result and reaction.emoji in [next_emoji, prev_emoji]
         result = result and not (user.id == ctx.client.user.id)
         result = result and not (locked and user != ctx.author)
         return result

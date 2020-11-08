@@ -93,7 +93,8 @@ logger.addHandler(file_handler)
 client = cmdClient(
     prefix=PREFIX,
     shard_id=shard_num,
-    shard_count=SHARD_COUNT
+    shard_count=SHARD_COUNT,
+    intents=discord.Intents.all()
 )
 client.log = log
 client.conf = conf
