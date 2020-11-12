@@ -2,7 +2,6 @@ from .Connector import Connector
 from .Interface import Interface
 
 
-# TODO: App-aware interface with an app column
 class tableInterface(Interface):
     """
     Data interface containing standard methods to access a single table.
@@ -14,7 +13,8 @@ class tableInterface(Interface):
     _sqlite_schema = None
 
     def __init__(self, conn: Connector, table_name, app, column_data,
-                 shared=True, mysql_schema=None, sqlite_schema=None):
+                 shared=True, app_column='app', app_column_primary=True,
+                 mysql_schema=None, sqlite_schema=None):
         self.conn = conn
         self.table = table_name
         self.app = app
@@ -24,6 +24,11 @@ class tableInterface(Interface):
         self.sqlite_schema = sqlite_schema or self._sqlite_schema
 
         self.columns = {p[0]: p[1] for p in column_data}
+        self.app_column = app_column
+        self.app_column_primary = app_column_primary
+
+        if not self.shared and (self.app_column not in self.columns):
+            raise ValueError("App column not found in non-shared table specification.")
 
     @property
     def schema(self):
@@ -46,30 +51,57 @@ class tableInterface(Interface):
                         param, self.table
                     ))
 
+    def add_app(self, params):
+        """
+        Add app to parameters for non-shared tables.
+        """
+        if not self.shared and self.app_column not in params:
+            params[self.app_column] = self.app
+
     def select_where(self, select_columns=None, **conditions):
         self.check_keys(conditions)
+        self.add_app(conditions)
         return self.conn.select_where(self.table, select_columns=select_columns, **conditions)
 
     def update_where(self, valuedict, **conditions):
         self.check_keys(conditions)
+        self.add_app(conditions)
         return self.conn.update_where(self.table, valuedict, **conditions)
 
     def delete_where(self, **conditions):
         self.check_keys(conditions)
+        self.add_app(conditions)
         return self.conn.delete_where(self.table, **conditions)
 
     def insert(self, allow_replace=False, **values):
         self.check_keys(values)
+        self.add_app(values)
         return self.conn.insert(self.table, allow_replace=allow_replace, **values)
 
     def insert_many(self, *value_tuples, insert_keys=None):
+        """
+        Note that insert_many does not support automatic app insertion or value checking without `insert_keys`.
+        """
         if insert_keys:
+            # Value checking
             for v_tuple in value_tuples:
                 values = {key: value for key, value in zip(insert_keys, v_tuple)}
                 self.check_keys(values)
 
+            # App insertion
+            if not self.shared and self.app_column not in insert_keys:
+                insert_keys = (*insert_keys, self.app_column)
+                value_tuples = [(*tup, self.app) for tup in value_tuples]
+
         return self.conn.insert_many(self.table, *value_tuples, insert_keys=insert_keys)
 
-    def upsert(self, constraint, **values):
+    def upsert(self, constraint, add_app_constraint=True, **values):
         self.check_keys(values)
+        self.add_app(values)
+        if add_app_constraint and self.app_column_primary:
+            if isinstance(constraint, str):
+                constraint = (constraint, self.app_column)
+            else:
+                constraint = (*constraint, self.app_column)
+
         return self.conn.upsert(self.table, constraint, **values)

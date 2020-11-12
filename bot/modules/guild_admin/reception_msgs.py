@@ -176,6 +176,7 @@ def attach_reception_handlers(client: cmdClient):
 # Define data schemas
 greeting_mysql_schema, greeting_sqlite_schema, greeting_columns = schema_generator(
     "guild_greetings",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('channelid', ColumnType.SNOWFLAKE),
     Column('message', ColumnType.TEXT)
@@ -183,6 +184,7 @@ greeting_mysql_schema, greeting_sqlite_schema, greeting_columns = schema_generat
 
 farewell_mysql_schema, farewell_sqlite_schema, farewell_columns = schema_generator(
     "guild_farewells",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('channelid', ColumnType.SNOWFLAKE),
     Column('message', ColumnType.TEXT)

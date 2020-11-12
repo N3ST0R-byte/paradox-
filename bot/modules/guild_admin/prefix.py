@@ -56,6 +56,7 @@ class guild_prefix(ColumnData, String, GuildSetting):
 # Define data schema
 prefix_mysql_schema, prefix_sqlite_schema, prefix_columns = schema_generator(
     "guild_prefixes",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('prefix', ColumnType.SHORTSTRING)
 )

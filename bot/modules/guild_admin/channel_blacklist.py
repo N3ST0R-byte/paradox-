@@ -56,6 +56,7 @@ class disabled_channels(ListData, ChannelList, GuildSetting):
 # Define data schema
 mysql_schema, sqlite_schema, columns = schema_generator(
     "guild_disabled_channels",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('channelid', ColumnType.SNOWFLAKE, primary=True, required=True)
 )

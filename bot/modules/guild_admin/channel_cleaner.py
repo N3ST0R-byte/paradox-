@@ -160,6 +160,7 @@ def attach_channel_cleaner(client):
 # Define data schema
 mysql_schema, sqlite_schema, columns = schema_generator(
     "guild_cleaned_channels",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('channelid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('delay', ColumnType.INT, required=True, default=cleaned_channels.default_delay)

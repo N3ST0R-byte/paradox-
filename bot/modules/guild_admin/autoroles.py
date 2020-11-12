@@ -6,6 +6,8 @@ from logger import log
 from settings import ListData, RoleList, GuildSetting
 from registry import tableInterface, Column, ColumnType, schema_generator
 
+from wards import guild_admin
+
 from .module import guild_admin_module as module
 
 
@@ -14,6 +16,8 @@ from .module import guild_admin_module as module
 class autoroles(ListData, RoleList, GuildSetting):
     attr_name = "autoroles"
     category = "Guild admin"
+    read_check = None
+    write_check = guild_admin
 
     name = "autoroles"
     desc = "Roles automatically given to new members."
@@ -28,6 +32,8 @@ class autoroles(ListData, RoleList, GuildSetting):
 class bot_autoroles(ListData, RoleList, GuildSetting):
     attr_name = "bot_autoroles"
     category = "Guild admin"
+    read_check = None
+    write_check = guild_admin
 
     name = "bot_autoroles"
     desc = "Roles automatically given to new bots."
@@ -83,12 +89,14 @@ def attach_autorole_handler(client: cmdClient):
 # Define data schemas
 ar_mysql_schema, ar_sqlite_schema, ar_columns = schema_generator(
     "guild_autoroles",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('roleid', ColumnType.SNOWFLAKE, primary=True, required=True)
 )
 
 bar_mysql_schema, bar_sqlite_schema, bar_columns = schema_generator(
     "guild_bot_autoroles",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('roleid', ColumnType.SNOWFLAKE, primary=True, required=True)
 )

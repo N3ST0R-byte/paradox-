@@ -176,17 +176,20 @@ def attach_restore_roles(client):
 # Define data interfaces
 role_persistence_schema = schema_generator(
     "guild_role_persistence",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True)
 )
 
 role_persistence_ignores_schema = schema_generator(
     "guild_role_persistence_ignores",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True)
 )
 
 member_stored_roles_schema = schema_generator(
     "member_stored_roles",
+    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("roleid", ColumnType.SNOWFLAKE, primary=False, required=True)

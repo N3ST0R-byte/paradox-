@@ -50,7 +50,7 @@ async def _build_config_pages(ctx, show_help=True):
                     names.append(option.name)
                     if show_help:
                         values.append(option.desc)
-                    elif await option.read_check.run(ctx):
+                    elif (option.read_check is None) or await option.read_check.run(ctx):
                         values.append(option.get(ctx.client, ctx.guild.id).formatted or "Not Set")
                     else:
                         values.append("Hidden")

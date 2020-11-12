@@ -56,7 +56,7 @@ conf = Conf(config_file, section_name)
 # Read the environment variables
 # ------------------------------
 PREFIX = conf.get("PREFIX", "~")
-CURRENT_APP = conf.get("APP", "")
+CURRENT_APP = conf.get("APP", "paradox")
 
 # Discord channel ids for logging endpoints and internal communication
 FEEDBACK_CH = conf.getint("FEEDBACK_CH")
