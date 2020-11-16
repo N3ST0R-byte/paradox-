@@ -58,14 +58,14 @@ fi
 
 # Header for every LaTeX source file
 header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
-    \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
+    \n\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
     \n\\nonstopmode"
 
 """
 # Alternative header to support discord emoji, but not other unicode
 header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
-    \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
-    \\usepackage{discord-emoji}
+    \n\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
+    \n\\usepackage{discord-emoji}
     \n\\nonstopmode"
 """
 

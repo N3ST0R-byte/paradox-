@@ -427,6 +427,9 @@ async def test_submission(ctx, userid, manager):
     Compile a piece of test LaTeX to test the provided userid's preamble.
     Replies with the compiled LaTeX output, and any error that occurs.
     """
+    # Separate staging folder for testing purposes
+    testid = manager.id * 10000
+    
     # Retrieve the pending preamble if it exists, otherwise return
     preamble = await ctx.bot.data.users_long.get(userid, "pending_preamble")
 
@@ -435,9 +438,9 @@ async def test_submission(ctx, userid, manager):
         return
 
     # Compile the latex with this preamble
-    log = await ctx.makeTeX(preamble_test_code, manager.id, preamble=preamble)
+    log = await ctx.makeTeX(preamble_test_code, testid, preamble=preamble)
 
-    file_name = "tex/staging/{id}/{id}.png".format(id=manager.id)
+    file_name = "tex/staging/{id}/{id}.png".format(id=testid)
 
     if not log:
         message = "Test compile for pending preamble of {}.\
