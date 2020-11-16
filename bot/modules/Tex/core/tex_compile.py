@@ -78,11 +78,17 @@ to_compile = "{header}\
 
 
 @Context.util
-async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="default", header=header, pad=True):
-    path = "tex/staging/{}".format(userid)
+async def makeTeX(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
+    # Target's staging directory
+    path = "tex/staging/{}".format(targetid)
+
+    # Remove the staging directory, if it exists
+    shutil.rmtree(path, ignore_errors=True)
+
+    # Recreate staging directory
     os.makedirs(path, exist_ok=True)
 
-    fn = "{}/{}.tex".format(path, userid)
+    fn = "{}/{}.tex".format(path, targetid)
 
     with open(fn, 'w') as work:
         work.write(to_compile.format(header=header, preamble=preamble, source=source))
@@ -94,9 +100,9 @@ async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="defaul
         "cd {path}\n"
         "{colour}\n"
         "{pad}").format(compile_script=compile_script_path,
-                        id=userid, path=path,
+                        id=targetid, path=path,
                         colour=colourschemes[colour] or "",
-                        pad=pad_script if pad else "").format(image="{}.png".format(userid))
+                        pad=pad_script if pad else "").format(image="{}.png".format(targetid))
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -108,5 +114,7 @@ def setup_structure(client):
     Set up the initial tex directory structure,
     including copying the required resources.
     """
+    # Delete and recreate the staging directory, if it exists
+    shutil.rmtree("tex/staging", ignore_errors=True)
     os.makedirs("tex/staging", exist_ok=True)
     shutil.copy(failed_image_path, "tex")

@@ -2,7 +2,7 @@ cd tex/staging/$1/
 
 chmod --quiet -R o+rwx .
 
-rm -f *
+# find . ! -name "$1.tex" -type f -exec rm -f {} +
 
 sudo -u latex timeout 1m pdflatex -no-shell-escape $1.tex > texout.log 2>&1
 

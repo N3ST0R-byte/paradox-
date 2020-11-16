@@ -8,13 +8,14 @@ from .core.tex_utils import ParseMode
 
 @module.cmd("tex",
             desc="Render LaTeX code.",
-            aliases=[',', 'align', 'latex', 'texsp', 'texw'],
-            flags=['config', 'keepmsg', 'color', 'colour', 'alwaysmath', 'allowother', 'name'])
+            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw'],
+            flags=['config', 'keepsourcefor', 'color', 'colour', 'alwaysmath', 'allowother', 'name'])
 async def cmd_tex(ctx, flags):
     """
     Usage``:
         {prefix}tex <code>
         {prefix}, <code>
+        {prefix}mtex <equations>
         {prefix}align <align block>
         {prefix}texsp <code>
     Description:
@@ -32,9 +33,9 @@ async def cmd_tex(ctx, flags):
         is generally not required.
     Aliases::
         tex: The default mode, compile the code as written inside a LaTeX `document` environment.
-        ,: Render the code in maths mode. Specifically, in a `gather*` environment.
+        , / mtex: Render the code in maths mode. Specifically, in a `gather*` environment.
         align: Render the code in an align block. Specifically, in an `align*` environment.
-        texsp: Same as `tex`, but spoiler the output image.
+        texsp: Same as `tex`, but ||spoiler|| the output image.
         texw: Don't crop the output after compilation.
     Related:
         autotex, texconfig, preamble
@@ -43,8 +44,12 @@ async def cmd_tex(ctx, flags):
         {prefix}, \\int^\\infty_0 f(x)~dx
         {prefix}align a + 1 &= 2\\\\ a &= 1
     """
+    # Handle flags
     if any(flags.values()):
-        return await ctx.error_reply("LaTeX configuration has moved to the `texconfig` command.")
+        return await ctx.error_reply(
+            "LaTeX configuration has moved to the `texconfig` command.\n"
+            "Please see `{}help texconfig` for usage."
+        ).format(ctx.best_prefix)
 
     # Handle empty input
     if not ctx.args:
@@ -56,18 +61,33 @@ async def cmd_tex(ctx, flags):
             "See `{0}help` and `{0}help tex` for detailed usage and further examples!".format(ctx.best_prefix())
         )
 
+    # Handle `tex help`
+    if ctx.args.lower() == 'help':
+        return await ctx.error_reply("Please use `{}help tex` for command help.")
+
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)
     luser = LatexUser.get(ctx.author.id)
 
-    # Determine parse mode
+    # Determine parse mode and flags
+    flags = {}
     parse_mode = ParseMode.DOCUMENT
+
+    lalias = ctx.alias.lower()
+    if lalias in [',', 'mtex']:
+        parse_mode = ParseMode.GATHER
+    elif lalias == 'align':
+        parse_mode = ParseMode.ALIGN
+    elif lalias == 'texsp':
+        flags["spoiler"] = True
+    elif lalias == "texw":
+        flags["wide"] = True
 
     # Clean mentions
     content = ctx.clean_arg_str()
 
     # Parse source
-    source = LatexContext.parse_content(content, parse_mode)
+    source = LatexContext.parse_content(content, parse_mode, **flags)
 
     # Create the LatexContext
     lctx = LatexContext(ctx, source, lguild, luser)

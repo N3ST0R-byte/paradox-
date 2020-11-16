@@ -331,10 +331,10 @@ class autotex_level(LatexUserSetting, IntegerEnum):
         elif data == AutoTexLevel.CODEBLOCK:
             return "I will now only render your messages with `tex` or `latex` codeblocks."
         elif data == AutoTexLevel.STRICT:
-            return ("I will now require explicit mathmode macros, environments or codeblocks to render your messages. "
+            return ("I will now require explicit mathmode macros, environments or codeblocks to render your messages.\n"
                     "Guild configuration (`latex_level`) may locally upgrade this to `CODEBLOCK`.")
         elif data == AutoTexLevel.WEAK:
-            return ("I will now do my best to detect all LaTeX in your messages. "
+            return ("I will now do my best to detect all LaTeX in your messages.\n"
                     "Guild configuration (`latex_level`) may locally upgrade this to `STRICT` or `CODEBLOCK`.")
 
     @classmethod
