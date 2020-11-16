@@ -1,5 +1,8 @@
+import logging
+import traceback
 import asyncio
 
+from logger import log
 from cmdClient import cmdClient
 
 from .module import latex_module as module
@@ -23,15 +26,9 @@ async def latex_message_parser(client, message):
     while not module.ready:
         await asyncio.sleep(1)
 
-    # TODO: Handle whitelisted bots
-    if message.author.bot:
-        return
-
     # Make sure there's content
     if not message.content:
         return
-
-    # TODO: Handle blacklisted users and guilds
 
     # Get the latex guild
     lguild = LatexGuild.get(message.guild.id if message.guild else 0)
@@ -81,7 +78,17 @@ async def latex_message_parser(client, message):
         return
 
     # We have a valid piece of LaTeX, and we are listening for it. We may now compile.
-    # TODO: Log
+
+    # Log the message
+    log(("Automatically rendering LaTeX "
+         "from user '{message.author}' (uid:{message.author.id}) "
+         "in guild '{message.guild}' (gid:{guildid}) "
+         "in channel '{message.channel}' (cid:{message.channel.id}).\n"
+         "{content}").format(
+             message=message,
+             guildid=message.guild.id if message.guild else None,
+             content='\n'.join(('\t' + line for line in message.content.splitlines()))),
+        context="mid:{}".format(message.id))
 
     # First create a context for the message and add it to the context caches
     ctx = client.baseContext(client=client, message=message)
@@ -94,13 +101,25 @@ async def latex_message_parser(client, message):
         lctx = LatexContext(ctx, source, lguild=lguild, luser=luser)
 
         # Compile the source
-        await lctx.make()
+        output_msg = await lctx.make()
 
-        # Wait for the context to deactivate
-        await lctx.lifetime()
+        if output_msg:
+            log("Rendered source, now waiting for the LaTeXContext to deactivate.",
+                context="mid:{}".format(message.id),
+                level=logging.DEBUG)
+
+            # Wait for the context to deactivate
+            await lctx.lifetime()
     except Exception as e:
-        # TODO: Log
+        full_traceback = traceback.format_exc()
+        log("Caught the following exception while rendering LaTeX.\n{}".format(full_traceback),
+            context="mid:{}".format(message.id),
+            level=logging.ERROR)
         raise e
+    else:
+        log("Automatic LaTeX compilation completed normally.",
+            context="mid:{}".format(message.id),
+            level=logging.INFO)
     finally:
         client.ctx_cache[message.id] = ctx.flatten()
         client.active_contexts.pop(message.id, None)

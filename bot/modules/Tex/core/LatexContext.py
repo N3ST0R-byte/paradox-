@@ -1,8 +1,11 @@
 import os
 import re
 import time
+import logging
 import asyncio
 import discord
+
+from logger import log
 
 from cmdClient import cmdClient, Context
 
@@ -41,6 +44,11 @@ class Bucket:
         self._last_checked = time.time()
 
         self._last_full = False
+
+    @property
+    def overfull(self):
+        self._leak()
+        return self._level > self.max_level
 
     def _leak(self):
         if self._level:
@@ -212,17 +220,31 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            return
+            log("Aborting compile due to `BucketOverfull`.",
+                context="mid:{}".format(ctx.msg.id),
+                level=logging.INFO)
+            return None
         except BucketFull:
+            log("Aborting compile due to BucketFull`.",
+                context="mid:{}".format(ctx.msg.id),
+                level=logging.INFO)
             # Ratelimit warning
-            await ctx.error_reply("Too many requests, please slow down!")
-            return
+            await ctx.error_reply("Too many requests, please slow down!\n"
+                                  "(You may try again in `5` seconds.)")
+            return None
 
         # Retrieve the user lock, creating it if required
         if luser.id not in self.user_locks:
             self.user_locks[luser.id] = asyncio.Lock()
 
         async with self.user_locks[luser.id]:
+            # Don't compile if the bucket is already overfull
+            if self.user_buckets[luser.id].overfull:
+                log("Aborting compile due to a newly overfull bucket.",
+                    context="mid:{}".format(ctx.msg.id),
+                    level=logging.INFO)
+                return
+
             # Compile the source
             error = await self.compile()
 
@@ -318,6 +340,9 @@ class LatexContext:
                 if self.emoji_delete_source in (r.emoji for r in msg.reactions):
                     await msg.clear_reaction(self.emoji_delete_source)
         except asyncio.CancelledError:
+            log("LatexContext lifetime cancelled, probably due to an edit.",
+                context="mid:{}".format(self.ctx.msg.id),
+                level=logging.DEBUG)
             pass
         except discord.Forbidden:
             pass

@@ -1,8 +1,10 @@
 import os
 import shutil
+import logging
 
 from cmdClient import Context
 
+from logger import log
 from utils import ctx_addons  # noqa
 
 from ..module import latex_module as module
@@ -79,6 +81,15 @@ to_compile = "{header}\
 
 @Context.util
 async def makeTeX(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
+    log(
+        "Beginning LaTeX compilation for (tid:{targetid}).\n{content}".format(
+            targetid=targetid,
+            content='\n'.join(('\t' + line for line in source.splitlines()))
+        ),
+        level=logging.DEBUG,
+        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid)
+    )
+
     # Target's staging directory
     path = "tex/staging/{}".format(targetid)
 

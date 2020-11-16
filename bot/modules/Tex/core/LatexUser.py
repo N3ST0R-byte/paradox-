@@ -1,3 +1,7 @@
+import logging
+
+from logger import log
+
 from ..module import latex_module as module
 
 from . import LatexUserSetting
@@ -49,13 +53,24 @@ class LatexUser:
                 self.id,
                 setting.default if not rows or rows[0][name] is None else rows[0][name]
             )
-            print("{}: {}".format(name, value))
             setattr(self, name, value)
 
         # Get preamble
         rows = self._client.data.user_latex_preambles.select_where(userid=self.id)
         if rows:
             self.preamble = rows[0]['preamble'] or self.preamble
+
+    def get_setting_data(self, name: str):
+        """
+        Convenience method to retrieve the data for the requested setting.
+        """
+        if name not in self.settings:
+            raise ValueError("Requested setting `{}` does not exist.".format(name))
+
+        setting = self.settings[name]
+        value = getattr(self, name)
+
+        return setting._data_from_value(self._client, self.id, value)
 
     @classmethod
     def get(cls, id):

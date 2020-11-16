@@ -98,7 +98,8 @@ async def run_in_shell(ctx: Context, script):
         "Executing the following script:\n{}\nwith pid '{}'.".format(
             "\n".join("\t{}".format(line) for line in script.splitlines()),
             process.pid
-        )
+        ),
+        level=logging.DEBUG
     )
     stdout, stderr = await process.communicate()
     ctx.log("Completed the script with pid '{}'{}".format(

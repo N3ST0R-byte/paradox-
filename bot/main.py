@@ -73,8 +73,16 @@ SHARD_COUNT = conf.getint("SHARD_COUNT") or 1
 # Initialise the logger file handler
 # ------------------------------
 LOGFILE = conf.get("LOGFILE")
+LOGLEVEL = (conf.get("LOGLEVEL") or "INFO").strip()
+DISCORD_LOGLEVEL = (conf.get("DISCORD_LOGLEVEL") or "INFO").strip()
 
+# Get the logger
 logger = logging.getLogger()
+
+# Set the log levels
+logger.setLevel(LOGLEVEL)
+logging.getLogger('discord').setLevel(DISCORD_LOGLEVEL)
+
 file_handler = RotatingFileHandler(
     filename=LOGFILE,
     maxBytes=5000000,
