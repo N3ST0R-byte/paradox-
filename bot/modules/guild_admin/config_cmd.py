@@ -11,7 +11,7 @@ from .module import guild_admin_module as module
 
 
 conf_pages = {
-    "General options": ["Guild admin", "Starboard", "Mathematical"],
+    "General options": ["Guild admin", "Starboard", "LaTeX"],
     "Manual Moderation settings": ["Moderation", "Logging"],
     "Greeting and Farewell messages": ["Greeting message", "Farewell message"]
 }
@@ -29,7 +29,7 @@ async def _build_config_pages(ctx, show_help=True):
     pages = []
 
     # Generated sorted lists of options in each cat
-    for option in sorted(ctx.client.guild_config.settings.values(), key=lambda s: s.name):
+    for option in sorted(ctx.client.guild_config.settings.values(), key=lambda s: len(s.name)):
         cat = option.category
         if cat not in cats:
             cats[cat] = []
@@ -128,12 +128,20 @@ async def cmd_config(ctx):
             try:
                 (await setting.parse(ctx, value)).write()
             except BadUserInput as e:
-                if e.msg:
-                    await ctx.error_reply(e.msg)
-                else:
-                    await ctx.error_reply(
-                        "Did not understand the provided value, "
-                        "please check the accepted values and try again."
+                desc = e.msg or (
+                    "Did not understand the provided value, "
+                    "please check the accepted values and try again."
+                )
+                embed = discord.Embed(
+                    description=desc,
+                    color=discord.Color.red()
+                )
+                embed.set_footer(
+                    text="Use `{}config {}` to see more detailed information about this setting.".format(
+                        ctx.best_prefix(),
+                        setting.name
                     )
+                )
+                await ctx.reply(embed=embed)
             else:
                 await ctx.reply("The setting has been set successfully!")

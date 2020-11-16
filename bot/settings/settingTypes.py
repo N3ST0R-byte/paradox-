@@ -1,4 +1,5 @@
 from typing import Any, Optional, List
+from enum import Enum
 
 import discord
 from cmdClient import cmdClient, Context
@@ -96,6 +97,8 @@ class Boolean(SettingType):
         Looks up the provided string in the truthy and falsey tables.
         """
         _userstr = userstr.lower()
+        if _userstr == "none":
+            return None
         if _userstr in cls._truthy:
             return True
         elif _userstr in cls._falsey:
@@ -121,7 +124,11 @@ class Integer(SettingType):
         value: Optional[int]
             The stored integer value.
     """
-    accepts = "Any number"
+    accepts = "An integer."
+
+    # Set limits on the possible integers
+    _min = -4096
+    _max = 4096
 
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[bool], **kwargs):
@@ -144,10 +151,20 @@ class Integer(SettingType):
         """
         Relies on integer casting to convert the user string
         """
+        if userstr.lower() == "none":
+            return None
+
         try:
-            return int(userstr)
+            num = int(userstr)
         except Exception:
-            raise BadUserInput("Couldn't parse number.") from None
+            raise BadUserInput("Couldn't parse provided integer.") from None
+
+        if num > cls._max:
+            raise BadUserInput("Provided integer was too large!")
+        elif num < cls._min:
+            raise BadUserInput("Provided integer was too small!")
+
+        return num
 
     @classmethod
     def _format_data(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
@@ -219,6 +236,70 @@ class String(SettingType):
             return "`{}`".format(data)
         else:
             return None
+
+
+class IntegerEnum(SettingType):
+    """
+    Integer Enum type, accepting limited strings, storing an integer, and returning an IntEnum value
+
+    Types:
+        data: Optional[int]
+            The stored integer.
+        value: Optional[Any]
+            The corresponding Enum member
+    """
+    accepts = "A valid option."
+
+    # Enum to use for mapping values
+    _enum: Enum = None
+
+    # Custom map to format the data. If None, uses the enum.
+    _output_map = None
+
+    @classmethod
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[Any], **kwargs):
+        """
+        Return the value corresponding to the enum member
+        """
+        if value is not None:
+            return value.value
+
+    @classmethod
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs):
+        """
+        Return the enum member corresponding to the provided integer
+        """
+        if data is not None:
+            return cls._enum(data)
+
+    @classmethod
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+        """
+        Find the corresponding enum member's value to the provided user input.
+        Accept "None" to unset.
+        """
+        userstr = userstr.lower()
+
+        options = {name.lower(): mem.value for name, mem in cls._enum.__members__.items()}
+
+        if userstr == "none":
+            # Unsetting case
+            return None
+        elif userstr not in options:
+            raise BadUserInput("Invalid option!")
+        else:
+            return options[userstr]
+
+    @classmethod
+    def _format_data(cls, client: cmdClient, guildid: int, data: int, **kwargs):
+        """
+        Format the data using either the `_enum` or the provided output map.
+        """
+        if data is not None:
+            if cls._output_map:
+                return cls._output_map(data)
+            else:
+                return cls._enum(data).name
 
 
 class Member(SettingType):

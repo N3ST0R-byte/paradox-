@@ -30,14 +30,6 @@ Here is a display equation: \[(a+b)^2 = a^2 + b^2\]
 (in fields of order $2$)
 """
 
-# Load default preamble from file
-with open(os.path.join(__location__, "preamble.tex"), 'r') as preamble:
-    default_preamble = preamble.read()
-
-# Load list of whitelisted packages from file
-with open(os.path.join(__location__, "package_whitelist.txt"), 'r') as pw:
-    whitelisted_packages = [line.strip() for line in pw]
-
 # Load list of preamble presets from directory
 preset_dir = os.path.join(__location__, "presets")
 presets = [os.path.splitext(fn)[0] for fn in os.listdir(preset_dir) if fn.endswith('.tex')]

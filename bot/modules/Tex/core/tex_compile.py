@@ -1,7 +1,13 @@
 import os
 import shutil
 
-from tex_config import default_preamble
+from cmdClient import Context
+
+from utils import ctx_addons  # noqa
+
+from ..module import latex_module as module
+
+from ..resources import default_preamble, failed_image_path, compile_script_path
 
 """
 Provides a single context utility to compile LaTeX code from a user and return any error message
@@ -43,15 +49,12 @@ width=`convert {image} -format "%[fx:w]" info:`
 minwidth=1000
 extra=$((minwidth-width))
 
-if (( extra > 0 )); then
+if [ $extra -gt 0 ]; then
     convert {image} \
         -gravity East +antialias -splice ${{extra}}x\
         -alpha set -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image}
 fi
 """
-
-# Path to the compile script
-compile_path = os.path.join(__location__, "texcompile.sh")
 
 # Header for every LaTeX source file
 header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
@@ -74,6 +77,7 @@ to_compile = "{header}\
     \n\\end{{document}}"
 
 
+@Context.util
 async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="default", header=header, pad=True):
     path = "tex/staging/{}".format(userid)
     os.makedirs(path, exist_ok=True)
@@ -89,24 +93,20 @@ async def makeTeX(ctx, source, userid, preamble=default_preamble, colour="defaul
         "{compile_script} {id} || exit;\n"
         "cd {path}\n"
         "{colour}\n"
-        "{pad}").format(compile_script=compile_path,
+        "{pad}").format(compile_script=compile_script_path,
                         id=userid, path=path,
                         colour=colourschemes[colour] or "",
                         pad=pad_script if pad else "").format(image="{}.png".format(userid))
 
     # Run the script in an async executor
-    return await ctx.run_sh(script)
+    return await ctx.run_in_shell(script)
 
 
-def setup_structure():
+@module.init_task
+def setup_structure(client):
     """
     Set up the initial tex directory structure,
     including copying the required resources.
     """
     os.makedirs("tex/staging", exist_ok=True)
-    shutil.copy(os.path.join(__location__, "failed.png"), "tex")
-
-
-def load_into(bot):
-    setup_structure()
-    bot.add_to_ctx(makeTeX)
+    shutil.copy(failed_image_path, "tex")

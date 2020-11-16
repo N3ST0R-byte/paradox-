@@ -39,7 +39,7 @@ sorted_cats = [
 ]
 
 sorted_conf_pages = [
-    ("General", ["Guild settings", "Starboard", "Mathematical settings"]),
+    ("General", ["Guild settings", "Starboard", "LaTeX"]),
     ("Manual Moderation", ["Moderation", "Logging"]),
     ("Join/Leave Messages", ["Join message", "Leave message"])
 ]

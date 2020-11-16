@@ -287,3 +287,21 @@ async def dm_reply(ctx: Context, *args, **kwargs):
         await ctx.author.send(*args, **kwargs)
     except discord.Forbidden:
         return await ctx.error_reply("I can't DM you! Do you have DMs disabled?")
+
+
+@Context.util
+def clean_arg_str(ctx: Context):
+    """
+    Re-parse a command message using `Message.clean_content`
+    to clean mentions from the arguments.
+
+    Returns: str
+        The clean version of `Context.arg_str`.
+    """
+    # TODO: Apply the content cleaner manually to `ctx.args` and/or `ctx.arg_str`.
+    content = ctx.msg.clean_content
+
+    if ctx.prefix == ctx.alias:
+        content = content[len(ctx.prefix):]
+
+    return content.partition(ctx.alias)[2].strip()
