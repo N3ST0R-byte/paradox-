@@ -1,16 +1,18 @@
-import discord
-from cmdClient import Context
-from wards import in_guild
 from datetime import datetime
-from utils.lib import emb_add_fields, paginate_list, strfdelta, prop_tabulate, format_activity, join_list
-from constants import region_map, ParaCC
+import discord
 from discord import Status
+
+from cmdClient import Context
+
+from wards import in_guild
+from constants import region_map, ParaCC
+from utils.lib import emb_add_fields, paginate_list, strfdelta, prop_tabulate, format_activity, join_list
 
 from .module import info_module as module
 
 # Provides serverinfo, userinfo, roleinfo, whohas, avatar
 """
-Provides a number of information providing commands
+Provides a number of information lookup commands on Discord objects
 
 Commands provided:
     userinfo:
@@ -29,7 +31,7 @@ Commands provided:
 
 
 @module.cmd(name="roleinfo",
-            desc="Displays information about a role",
+            desc="Displays information about a role.",
             aliases=["role", "rinfo", "ri"])
 @in_guild()
 async def cmd_role(ctx: Context):
@@ -39,28 +41,31 @@ async def cmd_role(ctx: Context):
     Description:
         Provides information about the given role.
     """
+    # Get a sorted list of guild roles by position
     guild_roles = sorted(ctx.guild.roles, key=lambda role: role.position)
 
-    if ctx.arg_str.strip() == "":
+    # Handle not having arguments, list all the current roles
+    if not ctx.args:
         await ctx.pager(paginate_list([role.name for role in reversed(guild_roles)], title="Guild roles"))
         return
-    role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
+    role = await ctx.find_role(ctx.args, create=False, interactive=True)
     if not role:
         return
 
-    title = f"{role.name} ({role.id})"
-
+    # Prepare the role properties
     colour = role.colour if role.colour.value else discord.Colour.light_grey()
     num_users = len(role.members)
-    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - role.created_at, minutes=False))
     created = role.created_at.strftime("%I:%M %p, %d/%m/%Y")
+    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - role.created_at, minutes=False))
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
 
+    # Build the property/value table
     prop_list = ["Colour", "Hoisted", "Mentionable", "Number of members", "Created at", ""]
     value_list = [str(role.colour), hoisted, mentionable, num_users, created, created_ago]
     desc = prop_tabulate(prop_list, value_list)
 
+    # Build the hierarchy graph
     pos = role.position
     position = "```markdown\n"
     for i in reversed(range(-3, 4)):
@@ -69,20 +74,28 @@ async def cmd_role(ctx: Context):
             break
         if line_pos >= len(guild_roles):
             continue
-        position += "{:>4}.   {} {}\n".format(line_pos, ">" if guild_roles[line_pos]==role else " ", guild_roles[line_pos])
+        position += "{:>4}.   {} {}\n".format(
+            line_pos,
+            ">" if guild_roles[line_pos] == role else " ",
+            guild_roles[line_pos]
+        )
+
+    # Build the relative string
     position += "```"
     if not ctx.guild.default_role == ctx.author.top_role:
         if role > ctx.author.top_role:
-            diff_str = "(Higher than your highest role)"
+            diff_str = "(This role is above your highest role.)"
         elif role < ctx.author.top_role:
-            diff_str = "(Lower than your highest role)"
+            diff_str = "(This role is below your highest role.)"
         elif role == ctx.author.top_role:
             diff_str = "(This is your highest role!)"
         position += diff_str
 
+    # Finally, build the embed and reply
+    title = f"{role.name} ({role.id})"
     embed = discord.Embed(title=title, colour=colour, description=desc)
     emb_fields = [("Position in the hierarchy", position, 0)]
-    await emb_add_fields(embed, emb_fields)
+    emb_add_fields(embed, emb_fields)
     await ctx.reply(embed=embed)
 
 
@@ -97,11 +110,10 @@ async def cmd_rolemembers(ctx: Context):
     Description:
     Lists the users with this role.
      """
-
-    if ctx.arg_str.strip() == "":
+    if not ctx.args:
         return await ctx.error_reply("Please provide a role to list the members of.")
 
-    role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
+    role = await ctx.find_role(ctx.args, create=False, interactive=True)
     if not role:
         return
 
@@ -123,10 +135,9 @@ async def cmd_userinfo(ctx: Context):
     Description:
         Sends information on the provided user, or yourself.
     """
-
     user = ctx.author
-    if ctx.arg_str:
-        user = await ctx.find_member(ctx.arg_str, interactive=True)
+    if ctx.args:
+        user = await ctx.find_member(ctx.args, interactive=True)
         if not user:
             return
     colour = (user.colour if user.colour.value else discord.Colour.light_grey())
@@ -140,7 +151,7 @@ async def cmd_userinfo(ctx: Context):
         Status.idle: "Away",
     }
 
-    # Acceptable statuses to be considered as active. 
+    # Acceptable statuses to be considered as active.
     activestatus = [Status.online, Status.idle, Status.dnd]
 
     devicestatus = {
@@ -151,7 +162,7 @@ async def cmd_userinfo(ctx: Context):
 
     if any(devicestatus.values()):
         # String if the user is "online" on one or more devices.
-        device = "Active on {}".format(join_list(string=[k for k,v in devicestatus.items() if v]))
+        device = "Active on {}".format(join_list(string=[k for k, v in devicestatus.items() if v]))
     else:
         # String if the user isn't "online" on any device.
         device = "Not active on any device."
@@ -164,14 +175,16 @@ async def cmd_userinfo(ctx: Context):
     joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - user.created_at, minutes=False))
     created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
-    usernames = ctx.client.data.users.get(user.id, "name_history")
-    name_list = "{}{}".format("..., " if len(usernames) > 10 else "",
-                              ", ".join(usernames[-10:])) if usernames else "No recent past usernames."
-    nicknames = ctx.client.data.members.get(ctx.guild.id, user.id, "nickname_history")
-    nickname_list = "{}{}".format("..., " if len(nicknames) > 10 else "",
-                                  ", ".join(nicknames[-10:])) if nicknames else "No recent past nicknames."
-    prop_list = ["Full name", "Nickname", "Presence", "Activity", "Device", "Usernames", "Nicknames", "Seen in", "Joined at", "", "Created at", ""]
-    value_list = [name, user.display_name, presence, activity, device, name_list, nickname_list, shared, joined, joined_ago, created, created_ago]
+    # usernames = ctx.client.data.users.get(user.id, "name_history")
+    # name_list = "{}{}".format("..., " if len(usernames) > 10 else "",
+    #                           ", ".join(usernames[-10:])) if usernames else "No recent past usernames."
+    # nicknames = ctx.client.data.members.get(ctx.guild.id, user.id, "nickname_history")
+    # nickname_list = "{}{}".format("..., " if len(nicknames) > 10 else "",
+    #                               ", ".join(nicknames[-10:])) if nicknames else "No recent past nicknames."
+    prop_list = ["Full name", "Nickname", "Presence", "Activity", "Device",
+                 "Seen in", "Joined at", "", "Created at", ""]
+    value_list = [name, user.display_name, presence, activity, device,
+                  shared, joined, joined_ago, created, created_ago]
     desc = prop_tabulate(prop_list, value_list)
 
     roles = [r.name for r in user.roles if r.name != "@everyone"]
@@ -186,7 +199,12 @@ async def cmd_userinfo(ctx: Context):
             continue
         if line_pos >= len(joined):
             break
-        positions.append("{:>4}.   {} {}".format(line_pos + 1, ">" if joined[line_pos]==user else " ", joined[line_pos]))
+        positions.append(
+            "{:>4}.   {} {}".format(
+                line_pos + 1, ">" if joined[line_pos] == user else " ",
+                joined[line_pos]
+            )
+        )
     join_seq = "```markdown\n{}\n```".format("\n".join(positions))
 
     embed = discord.Embed(color=colour, description=desc)
@@ -195,22 +213,22 @@ async def cmd_userinfo(ctx: Context):
     embed.set_thumbnail(url=user.avatar_url)
 
     emb_fields = [("Roles", roles, 0), ("Join order", join_seq, 0)]
-    await emb_add_fields(embed, emb_fields)
+    emb_add_fields(embed, emb_fields)
     await ctx.reply(embed=embed)
 
 
-@module.cmd("serverinfo",
+@module.cmd("guildinfo",
             desc="Shows information about the guild.",
-            aliases=["sinfo", "si", "guildinfo", "gi"],
+            aliases=["serverinfo", "sinfo", "si", "gi"],
             flags=["icon"])
 @in_guild()
 async def cmd_serverinfo(ctx: Context, flags):
     """
     Usage``:
-        {prefix}serverinfo [--icon]
+        {prefix}guilinfo [--icon]
     Description:
-        Shows information about the server you are in.
-        With --icon, just displays the server icon.
+        Shows information about the guild you are in.
+        With --icon, just displays the guild icon.
     """
     guild = ctx.guild
 
@@ -238,11 +256,11 @@ async def cmd_serverinfo(ctx: Context, flags):
     category = len(guild.categories)
     total = len(guild.channels)
 
-    statuses = [s for s in Status if s!=Status.invisible]
-    activestatus = [s for s in statuses if s!=Status.offline]
+    statuses = [s for s in Status if s != Status.invisible]
+    activestatus = [s for s in statuses if s != Status.offline]
     emoji = {s: ctx.client.conf.emojis.getemoji(s.name) for s in statuses}
 
-    counts = {s:0 for s in statuses}
+    counts = {s: 0 for s in statuses}
     desktop = mobile = web = 0
 
     for m in guild.members:
@@ -259,16 +277,17 @@ async def cmd_serverinfo(ctx: Context, flags):
     members = "{} humans, {} bots | {} total".format(guild.member_count - bots,
                                                      bots, guild.member_count)
 
-    owner = "{0} ({0.id})".format(guild.owner)                                                 
+    owner = "{0} ({0.id})".format(guild.owner)
     icon = "[Icon Link]({})".format(guild.icon_url)
-    is_large = ("More" if guild.large else "Less")+ " than 250 members"
+    is_large = ("More" if guild.large else "Less") + " than 250 members"
     mfa = "Enabled" if guild.mfa_level else "Disabled"
     channels = "{} text, {} voice, {} categories | {} total".format(text, voice, category, total)
     boosts = "Level {} | {} boosts total".format(guild.premium_tier, guild.premium_subscription_count)
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - guild.created_at, minutes=False))
 
-    prop_list = ["Owner", "Region", "Icon", "Large server?", "Verification", "2FA", "Roles", "Members", "Channels", "Server Boosts", "Created at", ""]
+    prop_list = ["Owner", "Region", "Icon", "Large server?", "Verification",
+                 "2FA", "Roles", "Members", "Channels", "Server Boosts", "Created at", ""]
     value_list = [owner,
                   region,
                   icon,
@@ -279,26 +298,32 @@ async def cmd_serverinfo(ctx: Context, flags):
                   members, channels, boosts, created, created_ago]
     desc = prop_tabulate(prop_list, value_list)
 
-    embed = discord.Embed(color=guild.owner.colour if guild.owner.colour.value else discord.Colour.teal(), description=desc)
+    embed = discord.Embed(
+        color=guild.owner.colour if guild.owner.colour.value else discord.Colour.teal(),
+        description=desc
+    )
     embed.set_author(name="{0} ({0.id})".format(ctx.guild))
     embed.set_thumbnail(url=guild.icon_url)
 
     emb_fields = [("Member Status", status, 0), ("Member Status by Device", devicestatus, 0)]
 
-    await emb_add_fields(embed, emb_fields)
+    emb_add_fields(embed, emb_fields)
     await ctx.reply(embed=embed)
 
 
 @module.cmd("channelinfo",
             desc="Displays information about a channel.",
-            aliases=["ci"])
+            aliases=["ci"],
+            flags=["topic"])
 @in_guild()
-async def cmd_channelinfo(ctx: Context):
+async def cmd_channelinfo(ctx: Context, flags):
     """
     Usage``:
-        {prefix}channelinfo [<channel-name> | <channel-mention> | <channel-id]
+        {prefix}channelinfo [<channel-name> | <channel-mention> | <channel-id] [--topic]
     Description:
         Gives information on a text channel, voice channel, or category.
+    Flags::
+        topic: Reply with only the channel topic.
     """
     tv = {
         "text": "Text channel",
@@ -308,57 +333,75 @@ async def cmd_channelinfo(ctx: Context):
         "store": "Store channel"
     }
 
-    # Disallow selecting channels that the user cannot see. Channels the bot can see still work.
+    # Disallow selecting channels that the user cannot see. Channels the bot can't see still work.
     valid_channels = [ch for ch in ctx.guild.channels if ch.permissions_for(ctx.author).read_messages]
     ch = ctx.ch
-    if ctx.arg_str:
-        ch = await ctx.find_channel(ctx.arg_str, interactive=True, collection=valid_channels)
+    if ctx.args:
+        ch = await ctx.find_channel(ctx.args, interactive=True, collection=valid_channels)
         if not ch:
             return
-    # Generic embed info, valid for every channel type. 
+
+    if flags['topic']:
+        if isinstance(ch, discord.TextChannel):
+            return await ctx.reply(
+                "**Channel topic for {}**:\n{}".format(ch.mention, ch.topic)
+                if ch.topic else "{} does not have a topic!".format(ch.mention))
+        else:
+            return await ctx.reply("Only text channels have topics!")
+
+    # Generic embed info, valid for every channel type.
     name = f"{ch.name} [{ch.mention}]" if isinstance(ch, discord.TextChannel) else f"{ch.name}"
     created = ch.created_at.strftime("%d/%m/%Y")
     created_ago = f"({strfdelta(datetime.utcnow() - ch.created_at, minutes=True)} ago)"
 
     category = "{0} ({0.id})".format(ch.category) if ch.category else "None"
 
-    # Embed info specific to text channels.
+    embed = discord.Embed(color=ParaCC["blue"])
+    embed.set_author(name=f"Channel information for {ch.name}.")
+
     if isinstance(ch, discord.TextChannel):
+        # Embed info specific to text channels.
         topic = ch.topic or "No topic."
         nsfw = "Yes" if ch.nsfw else "No"
-        prop_list = ["Name", "Type", "ID", "NSFW", "Category", "Created at", "", "Topic"]
-        value_list = [name, tv[str(ch.type)], ch.id, nsfw, category, created, created_ago, topic]
+        prop_list = ["Name", "Type", "ID", "NSFW", "Category", "Created at", ""]
+        value_list = [name, tv[str(ch.type)], ch.id, nsfw, category, created, created_ago]
 
-    # Embed info specific to voice channels.
+        if len(topic) > 30:
+            embed.add_field(name="Topic", value=topic)
+        else:
+            prop_list.append("Topic")
+            value_list.append(topic)
     elif isinstance(ch, discord.VoiceChannel):
+        # Embed info specific to voice channels.
         userlimit = ch.user_limit or "Unlimited"
 
         prop_list = ["Name", "Type", "ID", "Category", "Created at", "", "User limit"]
         value_list = [name, tv[str(ch.type)], ch.id, category, created, created_ago, userlimit]
 
-    # If any other type is present, provide generic information only.
+        # List current members.
+        if ch.members:
+            mems = "\n".join(f'{mem} ({mem.id})' for mem in ch.members)
+            members = f"```{mems}```"
+            field = [(f"Members: {len(ch.members)}", members, 0)]
+            emb_add_fields(embed, field)
+        else:
+            embed.add_field(name="Members", value="None")
     else:
+        # If any other type is present, provide generic information only.
         prop_list = ["Name", "Type", "ID", "Created at", ""]
         value_list = [name, tv[str(ch.type)], ch.id, created, created_ago]
 
-    desc = prop_tabulate(prop_list, value_list)
-    embed = discord.Embed(color=ParaCC["blue"], description=desc)
-    embed.set_author(name=f"Channel information for {ch.name}.")
-
-    # List current members in a voice channel.
-    if isinstance(ch, discord.VoiceChannel) and ch.members:
-        mems = "\n".join(f'{mem} ({mem.id})' for mem in ch.members)
-        members = f"```{mems}```"
-        field = [(f"Members: {len(ch.members)}", members, 0)]
-        await emb_add_fields(embed, field)
-
-    # List visible channels in a category
     if isinstance(ch, discord.CategoryChannel):
+        # List visible channels in a category
         valid = [chan for chan in ch.channels if chan.permissions_for(ctx.author).read_messages]
         if valid:
             chlist = ", ".join(chan.mention if isinstance(chan, discord.TextChannel) else chan.name for chan in valid)
             field = [(f"Channels under this category: {len(ch.channels)}", chlist, 0)]
-            await emb_add_fields(embed, field)
+            emb_add_fields(embed, field)
+
+    # Add the embed description
+    desc = prop_tabulate(prop_list, value_list)
+    embed.description = desc
 
     await ctx.reply(embed=embed)
 
@@ -368,15 +411,15 @@ async def cmd_channelinfo(ctx: Context):
             aliases=["av"])
 async def cmd_avatar(ctx: Context):
     """
-    Usage```:
+    Usage``:
         {prefix}avatar [user]
     Description:
         Replies with the avatar of the provided user,
         or your own avatar if none was given.
     """
     user = ctx.author
-    if ctx.arg_str:
-        user = await ctx.find_member(ctx.arg_str, interactive=True)
+    if ctx.args:
+        user = await ctx.find_member(ctx.args, interactive=True)
         if not user:
             return
     if str(user.colour) == "#000000":
