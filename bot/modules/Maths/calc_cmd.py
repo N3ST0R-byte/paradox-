@@ -1,8 +1,8 @@
-from paraCH import paraCH
 import aiohttp
 import json
 
-cmds = paraCH()
+from .module import maths_module as module
+
 """
 Provides the calc command
 """
@@ -10,39 +10,40 @@ Provides the calc command
 API_ADDR = 'http://api.mathjs.org/v4/'
 
 
-@cmds.cmd("calc",
-          category="Maths",
-          edit_handler=cmds.edit_handler_rerun,
-          short_help="Calculate short mathematical expressions.")
-async def cmd_rotate(ctx):
+@module.cmd("calc",
+            desc="Calculate short mathematical expressions.")
+async def cmd_calc(ctx):
     """
-    Usage:
-        {prefix}calc <expr1>
-        <expr2>
-        <expr3>...
+    Usage``:
+        {prefix}calc <expr>
     Description:
         Calculates the provided expressions and returns the result.
-        Use newlines to separate distinct expressions. Variables defined in one expression will be remembered in the expressions below.
-        Currently uses http://api.mathjs.org/ . See this site for detailed examples of usage.
-    Examples:
+
+        Multiple expressions may be entered simultaneously, separated by newlines.
+        Variables defined in one expression will be remembered in the expressions below.
+
+        For further documentation see the [mathjs API docs](http://api.mathjs.org/).
+    Examples``:
         {prefix}calc sin(45 deg)
         {prefix}calc det([1, 1; 2, 3])
         {prefix}calc 5 inches to cm
-        {prefix}calc a=1
-        a/2
     """
-    if not ctx.arg_str:
-        await ctx.reply("Please give me something to evaluate. See help for usage details.")
-        return
-    exprs = ctx.arg_str.split('\n')
+    if not ctx.args:
+        return await ctx.error_reply(
+            "Please give me something to evaluate.\n"
+            "See `{}help calc` for usage details.".format(ctx.best_prefix())
+        )
+    exprs = ctx.args.split('\n')
     request = {"expr": exprs,
                "precision": 14}
     async with aiohttp.ClientSession() as session:
         async with session.post(API_ADDR, data=json.dumps(request)) as resp:
             answer = await resp.json()
     if "error" not in answer or "result" not in answer:
-        await ctx.reply("Something unknown went wrong, sorry! Could not complete your request.")
-        return
+        return await ctx.error_reply(
+            "Sorry, could not complete your request.\n"
+            "An unknown error occurred during calculation!"
+        )
     if answer["error"]:
         await ctx.reply("The following error occured while calculating:\n`{}`".format(answer["error"]))
         return
