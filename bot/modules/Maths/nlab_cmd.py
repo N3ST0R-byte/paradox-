@@ -1,10 +1,12 @@
-from paraCH import paraCH
 import aiohttp
 from bs4 import BeautifulSoup
 import urllib
 import discord
 
-cmds = paraCH()
+from utils.lib import emb_add_fields
+
+from .module import maths_module as module
+
 """
 Provides the nlab command
 """
@@ -73,51 +75,55 @@ def field_pager(strings):
     return pages
 
 
-@cmds.cmd("nlab",
-          category="Maths",
-          short_help="Searches the nLab",
-          aliases=["nlablink", "nl"])
+@module.cmd("nlab",
+            desc="Searches the [nlab](https://ncatlab.org)",
+            aliases=["nlablink", "nl"])
 async def cmd_nlab(ctx):
     """
-    Usage:
+    Usage``:
         {prefix}nlab <search>
         {prefix}nlablink <page name>
     Description:
-        If used as nlab, searched the nLab for the provided search string.
-        Currently only provides the top 10 results of each type.
+        If used as nlab, searches the [nlab](https://ncatlab.org) for the `search` string.
+
         If used as nlablink, provides the direct link to the nlab page with the given name.
         This does not check whether the page exists.
-    Examples:
+    Examples``:
         {prefix}nlablink category
         {prefix}nlab categorical group
     """
-    direct_page = nlab_url.format("/nlab/show/{}".format(urllib.parse.quote_plus(ctx.arg_str)))
-    if ctx.used_cmd_name == "nlablink":
-        await ctx.reply(direct_page if ctx.arg_str else nlab_url[:-2])
+    direct_page = nlab_url.format("/nlab/show/{}".format(urllib.parse.quote_plus(ctx.args)))
+    if ctx.alias.lower() == "nlablink":
+        await ctx.reply(direct_page if ctx.args else nlab_url[:-2])
         return
 
-    if not ctx.arg_str:
-        await ctx.reply("Give me something to search for!")
-        return
+    if not ctx.args:
+        return await ctx.error_reply("Please give me something to search for!")
 
-    loading_emoji = ctx.aemoji_mention(ctx.bot.objects["emoji_loading"])
+    loading_emoji = ctx.client.conf.emojis.getemoji('loading')
 
     out_msg = await ctx.reply("Searching the ncatlab, please wait. {}".format(loading_emoji))
 
-    url = search_target.format(urllib.parse.quote_plus(ctx.arg_str))
+    url = search_target.format(urllib.parse.quote_plus(ctx.args))
 
     soup = await soup_site(url)
     direct_soup = await soup_site(direct_page)
-    direct_found = False if not direct_soup.find("title") or "Page not found" in direct_soup.find("title").contents[0] else True
-    direct_str = "\nDirect page found at: [{}]({})".format(ctx.arg_str, direct_page) if direct_found else ""
+    direct_found = False if (
+        not direct_soup.find("title") or "Page not found" in direct_soup.find("title").contents[0]
+    ) else True
+    direct_str = "\nDirect page found at: [{}]({})".format(ctx.args, direct_page) if direct_found else ""
 
     title = soup.find("title")
     if title is None or "Search results" not in title.contents[0]:
-        await ctx.bot.edit_message(out_msg, "Nlab redirected the search to the following page:\n{}".format(soup.find("a").attrs["href"]))
+        await out_msg.edit(
+            content="Nlab redirected the search to the following page:\n{}".format(soup.find("a").attrs["href"])
+        )
         return
     parsed = await search_page_parse(soup)
     if not parsed:
-        await ctx.bot.edit_message(out_msg, "I don't understand the search results. Read them yourself at:\n{}".format(url))
+        await out_msg.edit(
+            content="I don't understand the search results. Read them yourself at:\n{}".format(url)
+        )
         return
     in_title, in_body = parsed
 
@@ -127,12 +133,17 @@ async def cmd_nlab(ctx):
         in_title_links = ["[{}]({})".format(link[0], nlab_url.format(link[1])) for link in in_title]
         in_title_fields_raw = field_pager(in_title_links)
 
-        base_title = "{} result{} where query appeared in title.".format(len(in_title), "" if len(in_title) == 1 else "s")
+        base_title = "{} result{} where query appeared in title.".format(
+            len(in_title), "" if len(in_title) == 1 else "s"
+        )
         if len(in_title_fields_raw) == 1:
             in_title_fields = [(base_title, in_title_fields_raw[0], 0)]
         else:
             page_num = len(in_title_fields_raw)
-            in_title_fields = [("{} (Page {}/{})".format(base_title, i + 1, page_num), page, 0) for i, page in enumerate(in_title_fields_raw)]
+            in_title_fields = [
+                ("{} (Page {}/{})".format(base_title, i + 1, page_num), page, 0)
+                for i, page in enumerate(in_title_fields_raw)
+            ]
 
     in_body_fields = []
     if in_body:
@@ -145,10 +156,13 @@ async def cmd_nlab(ctx):
             in_body_fields = [(base_title, in_body_fields_raw[0], 0)]
         else:
             page_num = len(in_body_fields_raw)
-            in_body_fields = [("{} (Page {}/{})".format(base_title, i + 1, page_num), page, 0) for i, page in enumerate(in_body_fields_raw)]
+            in_body_fields = [
+                ("{} (Page {}/{})".format(base_title, i + 1, page_num), page, 0)
+                for i, page in enumerate(in_body_fields_raw)
+            ]
 
     if not in_title and not in_body:
-        await ctx.bot.edit_message(out_msg, "No results found at:\n{}".format(url))
+        await out_msg.edit(content="No results found at:\n{}".format(url))
         return
 
     emb_pages = []
@@ -164,7 +178,7 @@ async def cmd_nlab(ctx):
 
     emb_pages.extend([[field] for field in in_body_fields[1:]])
 
-    params = {"title": "Search results for {}".format(ctx.arg_str),
+    params = {"title": "Search results for {}".format(ctx.args),
               "description": "From {}{}".format(url, direct_str),
               "color": discord.Colour.light_grey()
               }
@@ -172,11 +186,11 @@ async def cmd_nlab(ctx):
     embeds = []
     for page in emb_pages:
         page_embed = discord.Embed(**params)
-        await ctx.emb_add_fields(page_embed, page)
+        emb_add_fields(page_embed, page)
         embeds.append(page_embed)
 
     try:
-        await ctx.bot.delete_message(out_msg)
+        await out_msg.delete()
     except discord.NotFound:
         pass
-    await ctx.pager(embeds, embed=True)
+    await ctx.pager(embeds)

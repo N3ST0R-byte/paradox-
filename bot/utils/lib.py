@@ -326,7 +326,7 @@ async def mail(client: discord.Client, channelid: int, **msg_args):
     return await channel.send(**msg_args)
 
 
-async def emb_add_fields(embed, emb_fields):
+def emb_add_fields(embed, emb_fields):
     """
     Append embed fields to an embed.
     Parameters
