@@ -4,3 +4,4 @@ from .guild_admin import *
 from .Fun import *
 from .Info import *
 from .Tex import *
+from .Maths import *

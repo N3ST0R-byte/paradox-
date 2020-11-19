@@ -224,11 +224,10 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
 
         # If we couldn't bulk delete, delete them one by one
         if not deleted:
-            for message in to_delete:
-                try:
-                    await message.delete()
-                except Exception:
-                    pass
+            try:
+                asyncio.gather(*[message.delete() for message in to_delete], return_exceptions=True)
+            except Exception:
+                pass
     except asyncio.TimeoutError:
         # Timed out waiting for the reaction, attempt to remove the delete reaction
         try:
@@ -265,7 +264,7 @@ async def safe_delete_msgs(ctx: Context, *msgs):
         The message(s) to delete.
     """
     try:
-        await asyncio.gather(*[msg.delete() for msg in msgs])
+        await asyncio.gather(*[msg.delete() for msg in msgs], return_exceptions=True)
     except discord.Forbidden:
         pass
     except discord.NotFound:

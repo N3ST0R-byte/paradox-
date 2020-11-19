@@ -27,13 +27,14 @@ region_map = {
 
 sorted_cats = [
     "Bot Admin",
+    "LaTeX Rendering",
+    "Guild Admin",
     "Info",
+    "Utility",
     "Fun",
     "Social",
-    "Utility",
     "Moderation",
-    "Guild Admin",
-    "Maths",
+    "Mathematics",
     "Meta",
     "Misc"
 ]

@@ -1,4 +1,3 @@
-from paraCH import paraCH
 import discord
 import asyncio
 import aiohttp
@@ -7,7 +6,10 @@ import json
 from io import BytesIO
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
-cmds = paraCH()
+from .module import maths_module as module
+from .resources import font_path
+
+from . import wolf_data  # noqa
 # Provides Wolf
 
 ENDPOINT = "http://api.wolframalpha.com/v2/query?"
@@ -17,7 +19,7 @@ WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacke
 WOLF_SMALL_ICON = "https://media.discordapp.net/attachments/670154440413675540/703864724122632253/a.png"
 
 # truetype/liberation2/LiberationSans-Bold.ttf
-FONT = ImageFont.truetype("resources/wolf_font.ttf", 15, encoding="unic")
+FONT = ImageFont.truetype(font_path, 15, encoding="unic")
 
 
 def build_web_url(query):
@@ -52,14 +54,16 @@ async def get_query(query, appid, **kwargs):
     payload.update(kwargs)
 
     # Get the query response
-    async with aiohttp.get(ENDPOINT, params=payload) as r:
-        if r.status == 200:
-            # Read the response, interp as json, and return
-            data = await r.read()
-            return json.loads(data.decode('utf8'))
-        else:
-            # If some error occurs, unintelligently fail out
-            return None
+    async with aiohttp.ClientSession() as session:
+        async with session.get(ENDPOINT, params=payload) as r:
+            if r.status == 200:
+                # Read the response, interp as json, and return
+                data = await r.read()
+                return json.loads(data.decode('utf8'))
+            else:
+                # If some error occurs, unintelligently fail out
+                print(r.status, r)
+                return None
 
 
 async def assemble_pod_image(atoms, dimensions):
@@ -217,64 +221,102 @@ def triage_pods(pod_list):
         return (important, extra)
 
 
-@cmds.cmd("query",
-          category="Maths",
-          short_help="Sends a query to Wolfram Alpha",
-          aliases=["ask", "wolf", "w", "?w"],
-          edit_handler=cmds.edit_handler_rerun)
-@cmds.execute("flags", flags=["text"])
-async def cmd_query(ctx):
+@module.cmd("query",
+            desc="Query the [Wolfram Alpha computation engine]({}).".format(WEB),
+            flags=["text"],
+            aliases=["ask", "wolf", "w", "?w"])
+async def cmd_query(ctx, flags):
     """
-    Usage:
+    Usage``:
         {prefix}w [query] [--text]
     Description:
         Sends the query to the Wolfram Alpha computational engine and returns the result.
         Use the reactions to show more output or delete the output.
-    Flags:2
-        text:: Attempts to reply with a copyable plaintext version of the output.
+    Flags::
+        text: Respond with a copyable text version of the output rather than an image (if possible).
     """
-    if ctx.arg_str == "":
-        await ctx.reply("Please submit a valid query! For example, `{}ask differentiate x+y^2 with respect to x`.".format(ctx.used_prefix))
-        return
-    loading_emoji = "<a:{}:{}>".format(ctx.bot.objects["emoji_loading"].name, ctx.bot.objects["emoji_loading"].id)
+    # Preload the required emojis
+    loading_emoji = ctx.client.conf.emojis.getemoji("loading")
+    more_emoji = ctx.client.conf.emojis.getemoji("more")
+    prefix = ctx.best_prefix()
 
+    # Handle no arguments
+    if not ctx.args:
+        return await ctx.error_reply(
+            "Please submit a valid query! "
+            "For example, `{}ask differentiate x+y^2 with respect to x`.".format(prefix)
+        )
+
+    # Send the temporary loading message.
     temp_msg = await ctx.reply("Sending query to Wolfram Alpha, please wait. {}".format(loading_emoji))
 
-    appid = await ctx.data.servers.get(ctx.server.id, "wolf_app_id") if ctx.server else None
-    appid = appid if appid else ctx.bot.objects["wolf_appid"]
+    # TODO: Get appid
+    appid = ctx.get_guild_setting.wolfram_id.value
+    if appid:
+        custom_appid = True
+    else:
+        custom_appid = False
+        appid = ctx.client.conf.get("wolfram_id").strip()
 
+    # Query the API, handle errors
     try:
-        result = await get_query(ctx.arg_str, appid)
-    except Exception:
-        await ctx.reply("An unknown exception occurred while fetching the Wolfram Alpha query. If the problem persists please contact support.")
-        return
+        result = await get_query(ctx.args, appid)
+    except Exception as e:
+        print(e)
+        return await ctx.error_reply(
+            "An unknown exception occurred while fetching the Wolfram Alpha query!\n"
+            "If the problem persists please contact support."
+        )
     if not result:
-        await ctx.soft_delete(temp_msg)
-        await ctx.reply("Failed to get a response from Wolfram Alpha. If the problem persists, please contact support.")
-        return
+        await ctx.safe_delete_msgs(temp_msg)
+        return await ctx.error_reply(
+            "Failed to get a response from Wolfram Alpha.\n"
+            "If the problem persists, please contact support."
+        )
     if "queryresult" not in result:
-        await ctx.soft_delete(temp_msg)
-        await ctx.reply("Did not get a valid response from Wolfram Alpha. If the problem persists, please contact support.")
-        return
+        await ctx.safe_delete_msgs(temp_msg)
+        return await ctx.error_reply(
+            "Did not get a valid response from Wolfram Alpha.\n"
+            "If the problem persists, please contact support."
+        )
 
-    link = "[Click here to refine your query online]({})".format(build_web_url(ctx.arg_str))
+    link = "[Click here to refine your query online]({})".format(build_web_url(ctx.args))
     link2 = "[Upgrade to WolframAlpha Pro!]({})".format("http://www.wolframalpha.com/pro/")
     if not result["queryresult"]["success"] or result["queryresult"]["numpods"] == 0:
-        desc = "Wolfram Alpha doesn't understand your query!\n Perhaps try rephrasing your question?\n{}".format(link)
+        if result["queryresult"]["error"] and 'code' in result["queryresult"]["error"]:
+            error = result["queryresult"]["error"]
+            if custom_appid:
+                if error['code'] == '1':
+                    desc = ("Couldn't send your query!\n"
+                            "**Error:** Invalid Wolfram Alpha `AppID`!\n"
+                            "Please ask a guild admin to re-configure the `wolfram_id`.\n"
+                            "(See `{}config wofram_id` for more information.)").format(ctx.best_prefix())
+                else:
+                    desc = ("An unknown error occurred querying the WolframAlpha API!\n"
+                            "**ERROR:** {}\t{}").format(error['code'], error['msg'])
+            else:
+                desc = ("There was an unhandled error querying the WolframAlpha API!\n"
+                        "This should be fixed soon, but if the issue persists, please contact "
+                        "[our support team]({}).").format(ctx.client.app_info["support_guild"])
+        else:
+            desc = (
+                "Wolfram Alpha doesn't understand your query!\n"
+                "Perhaps try rephrasing your question?\n{}"
+            ).format(link)
         embed = discord.Embed(description=desc)
         embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
         embed.set_thumbnail(url=WOLF_ICON)
-        await ctx.soft_delete(temp_msg)
+        await ctx.safe_delete_msgs(temp_msg)
         await ctx.offer_delete(await ctx.reply(embed=embed))
         return
 
-    if ctx.flags["text"]:
+    if flags["text"]:
         fields = await pods_to_textdata(result["queryresult"]["pods"])
         embed = discord.Embed(description=link)
         embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
         embed.set_thumbnail(url=WOLF_ICON)
         await ctx.emb_add_fields(embed, fields)
-        await ctx.soft_delete(temp_msg)
+        await ctx.safe_delete_msgs(temp_msg)
         out_msg = await ctx.reply(embed=embed)
         await ctx.offer_delete(out_msg)
         return
@@ -293,52 +335,52 @@ async def cmd_query(ctx):
     embed.set_image(url="attachment://wolf.png")
     # embed.set_image(url="https://content.wolfram.com/uploads/sites/10/2016/12/WolframAlphaLogo_Web_sanstagline-med.jpg")
 
-    await ctx.safe_delete_msgs([temp_msg])
-    out_msg = await ctx.reply(file_data=data, file_name="wolf.png", embed=embed)
+    await ctx.safe_delete_msgs(temp_msg)
+    dfile = discord.File(data, filename="wolf.png")
+    out_msg = await ctx.reply(file=dfile, embed=embed)
     asyncio.ensure_future(ctx.offer_delete(out_msg))
 
     embed.set_image(url="")
     if extra:
         try:
-            await ctx.bot.add_reaction(out_msg, ctx.bot.objects["emoji_more"])
+            await out_msg.add_reaction(more_emoji)
         except discord.Forbidden:
             pass
         except discord.HTTPException:
             pass
         else:
-            res = await ctx.bot.wait_for_reaction(message=out_msg,
-                                                  user=ctx.author,
-                                                  emoji=ctx.bot.objects["emoji_more"],
-                                                  timeout=300)
-            if res is None:
+            try:
+                reaction, user = await ctx.client.wait_for(
+                    'reaction_add',
+                    check=lambda reaction, user: (user == ctx.author
+                                                  and reaction.message == out_msg
+                                                  and reaction.emoji == more_emoji),
+                    timeout=300
+                )
+            except asyncio.TimeoutError:
                 try:
-                    await ctx.bot.remove_reaction(out_msg, ctx.bot.objects["emoji_more"], ctx.me)
+                    await out_msg.remove_reaction(more_emoji, ctx.me)
                 except discord.NotFound:
                     pass
                 except Exception:
                     pass
-            elif res.reaction.emoji == ctx.bot.objects["emoji_more"]:
-                temp_msg = await ctx.reply("Processing results, please wait. {}".format(loading_emoji))
+            temp_msg = await ctx.reply("Processing results, please wait. {}".format(loading_emoji))
 
-                output_data[0].seek(0)
-                output_data.extend(await pods_to_filedata(extra))
-                try:
-                    await ctx.soft_delete(out_msg)
-                    await ctx.soft_delete(temp_msg)
-                except discord.NotFound:
-                    pass
+            output_data[0].seek(0)
+            output_data.extend(await pods_to_filedata(extra))
+            try:
+                await ctx.safe_delete_msgs(temp_msg, out_msg)
+            except discord.NotFound:
+                pass
 
-                out_msgs = []
-                for file_data in output_data[:-1]:
-                    out_msgs.append(await ctx.reply(file_data=file_data, file_name="wolf.png"))
-                out_msgs.append(await ctx.reply(file_data=output_data[-1], file_name="wolf.png", embed=embed))
-                out_msg = out_msgs[-1]
-                asyncio.ensure_future(ctx.offer_delete(out_msg, to_delete=out_msgs))
+            out_msgs = []
+            for file_data in output_data[:-1]:
+                dfile = discord.File(file_data, filename="wolf.png")
+                out_msgs.append(await ctx.reply(file=dfile))
+            dfile = discord.File(output_data[-1], filename="wolf.png")
+            out_msgs.append(await ctx.reply(file=dfile, embed=embed))
+            out_msg = out_msgs[-1]
+            asyncio.ensure_future(ctx.offer_delete(out_msg, *out_msgs))
 
     for output in output_data:
         output.close()
-
-
-def load_into(bot):
-    bot.objects["wolf_appid"] = bot.bot_conf.get("WOLF_APPID")
-    bot.data.servers.ensure_exists("wolf_app_id")

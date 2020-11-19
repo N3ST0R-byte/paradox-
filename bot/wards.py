@@ -2,6 +2,12 @@ from cmdClient import check
 from config import get_conf
 
 
+@check(name="ALWAYS_FAIL",
+       msg="This operation is impossible!")
+async def fail_ward(ctx, *args, **kwargs):
+    return False
+
+
 @check(name="IS_MASTER",
        msg="You must be a bot owner to use this command!")
 async def is_master(ctx, *args, **kwargs):

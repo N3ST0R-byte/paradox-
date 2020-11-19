@@ -11,7 +11,7 @@ from .module import guild_admin_module as module
 
 
 conf_pages = {
-    "General options": ["Guild admin", "Starboard", "LaTeX"],
+    "General options": ["Guild admin", "Starboard", "LaTeX", "Misc"],
     "Manual Moderation settings": ["Moderation", "Logging"],
     "Greeting and Farewell messages": ["Greeting message", "Farewell message"]
 }
@@ -113,7 +113,12 @@ async def cmd_config(ctx):
         ))
     elif len(params) == 1:
         # Assume argument is an option, display option information
-        await ctx.reply(embed=settings[params[0]].get(ctx.client, ctx.guild.id).embed)
+        option = settings[params[0]].get(ctx.client, ctx.guild.id)
+        if ((option.read_check is None) or await option.read_check.run(ctx)):
+            embed = option.embed
+        else:
+            embed = option.hidden_embed
+        await ctx.reply(embed=embed)
     else:
         # Handle setting an option
         option, value = params

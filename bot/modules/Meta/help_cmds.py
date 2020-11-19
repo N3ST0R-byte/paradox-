@@ -169,7 +169,8 @@ async def cmd_list(ctx: Context):
             if cat.lower() in cats:
                 embed.add_field(
                     name=cat,
-                    value="`{}`".format('`, `'.join(cmd.name for cmd in cats[cat.lower()])),
+                    value="`{}`".format('`, `'.join(cmd.name for cmd in cats[cat.lower()]
+                                                    if (show_hidden or not cmd.hidden))),
                     inline=False
                 )
         embed.set_footer(text="Use '{0}help' or '{0}help cmd' for detailed help, "
@@ -191,7 +192,8 @@ async def cmd_list(ctx: Context):
         # Build the command groups
         groups = {cat.name: (cat, [(cmd.name,
                                     getattr(cmd, "desc", "See `{0}help {1}`.".format(ctx.best_prefix(), cmd.name)))
-                                   for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))])
+                                   for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))
+                                   if (show_hidden or not cmd.hidden)])
                   for cat in ctx.client.modules if
                   (show_hidden or not cat.hidden)
                   and (not ctx.args or (ctx.args.lower() in cat.name.lower()))}
@@ -211,8 +213,8 @@ async def cmd_list(ctx: Context):
         current_page_len = 0  # Current length of the page being built
         for cat, catstr in stringy_groups:
             # Create new field
-            field = (cat.name, cat.description + '\n' + catstr)
-            if current_page_len + len(field[1]) > 1000:
+            new_field = (cat.name, cat.description + '\n' + catstr)
+            if current_page_len + len(new_field[1]) > 1000:
                 # Flush to a new page
                 # Create the embed
                 embed = discord.Embed(description=help_str, colour=discord.Colour(0x9b59b6), title=help_title)
@@ -225,10 +227,10 @@ async def cmd_list(ctx: Context):
                 # Flush page trackers
                 current_page_fields = []
                 current_page_len = 0
-            else:
-                # Add to current page and continue
-                current_page_fields.append(field)
-                current_page_len += len(field[1])
+
+            # Add to current page and continue
+            current_page_fields.append(new_field)
+            current_page_len += len(new_field[1])
 
         # If there is anything left, add it as the last page
         if current_page_fields:

@@ -413,11 +413,14 @@ class LatexContext:
         Checks whether there is a `$\S` followed by `\S$` anywhere in the content.
         (`\S` is a non-whitespace character).
         """
+        if not content:
+            return False
+
         if '$' in content and content.strip('$'):
             # Regex match for the $ pattern
             return (cls.dollars_pattern.search(content) is not None)
         else:
-            return None
+            return False
 
     @classmethod
     def strict_hastex(cls, content):
@@ -428,6 +431,9 @@ class LatexContext:
             - A latex environment (by `\begin{` and `\end{`).
             - A latex mathmode macro (i.e. {`\(`, `\)`} and {`\[`, `\]`}).
         """
+        if not content:
+            return False
+
         has_tex = False
 
         # Check for `$$`

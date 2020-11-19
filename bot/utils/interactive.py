@@ -203,7 +203,7 @@ async def _pager(ctx, out_msg, pages, locked):
         asyncio.ensure_future(_safe_async_future(out_msg.remove_reaction(reaction.emoji, user)))
 
         # Change the page number
-        page += 1 if str(reaction.emoji) == str(next_emoji) else -1
+        page += 1 if reaction.emoji == next_emoji else -1
         page %= len(pages)
 
         # Edit the message with the new page

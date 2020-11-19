@@ -38,7 +38,7 @@ class GuildSetting:
         self.guildid = guildid
         self._data = data
 
-    # Configuration embed
+    # Configuration embeds
     @property
     def embed(self):
         """
@@ -49,6 +49,22 @@ class GuildSetting:
         )
         fields = ("Current value", "Default value", "Accepted input")
         values = (self.formatted or "Not Set",
+                  self._format_data(self.client, self.guildid, self.default) or "None",
+                  self.accepts)
+        table = prop_tabulate(fields, values)
+        embed.description = "{}\n{}".format(self.long_desc, table)
+        return embed
+
+    @property
+    def hidden_embed(self):
+        """
+        Discord Embed showing an information summary about the setting, shown when `read_check` fails.
+        """
+        embed = discord.Embed(
+            title="Configuration options for `{}`".format(self.name),
+        )
+        fields = ("Current value", "Default value", "Accepted input")
+        values = ("Hidden",
                   self._format_data(self.client, self.guildid, self.default) or "None",
                   self.accepts)
         table = prop_tabulate(fields, values)

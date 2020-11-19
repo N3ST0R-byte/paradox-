@@ -100,7 +100,7 @@ class tableInterface(Interface):
     def upsert(self, constraint, add_app_constraint=True, **values):
         self.check_keys(values)
         self.add_app(values)
-        if add_app_constraint and self.app_column_primary:
+        if add_app_constraint and not self.shared and self.app_column_primary:
             if isinstance(constraint, str):
                 constraint = (constraint, self.app_column)
             else:

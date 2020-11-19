@@ -19,6 +19,8 @@ class paraModule(Module):
 
         self.guild_settings = []
 
+        self.baseCommand.hidden = False
+
     def guild_setting(self, cls):
         """
         Class decorator to attach a guild setting

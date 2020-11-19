@@ -365,6 +365,7 @@ async def general_menu(ctx):
 
 
 @module.cmd("preambleadmin",
+            hidden=True,
             desc="Administrate the LaTeX preamble system",
             aliases=["pa"],
             flags=["user==", "guild==", "menu", "approve=", "deny=", "a=", "d=", "r=="])
