@@ -192,6 +192,32 @@ def parse_dur(time_str):
     return datetime.timedelta(seconds=seconds)
 
 
+def substitute_ranges(ranges_str, max_match=20, max_range=1000, separator=','):
+    """
+    Substitutes a user provided list of numbers and ranges,
+    and replaces the ranges by the corresponding list of numbers.
+
+    Parameters
+    ----------
+    ranges_str: str
+        The string to ranges in.
+    max_match: int
+        The maximum number of ranges to replace.
+        Any ranges exceeding this will be ignored.
+    max_range: int
+        The maximum length of range to replace.
+        Attempting to replace a range longer than this will raise a `ValueError`.
+    """
+    def _repl(match):
+        n1 = int(match.group(1))
+        n2 = int(match.group(2))
+        if n2 - n1 > max_range:
+            raise ValueError("Provided range exceeds the allowed maximum.")
+        return separator.join(str(i) for i in range(n1, n2 + 1))
+
+    return re.sub(r'(\d+)\s*-\s*(\d+)', _repl, ranges_str, max_match)
+
+
 def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
     """
     Format a message into a string with various information, such as:
@@ -329,7 +355,7 @@ def join_list(string):
         The list to join together.
     """
     if len(string) > 1:
-        return "{}{} and {}.".format((", ").join(string[:-1]), 
+        return "{}{} and {}.".format((", ").join(string[:-1]),
                                      "," if len(string) > 2 else "", string[-1])
     else:
         return "{}.".format("".join(string))
@@ -377,7 +403,7 @@ def format_activity(user):
         return "Streaming {}.".format(a.name)
 
     if str(AT) == "ActivityType.listening":
-        try: 
+        try:
             string = "Listening to {}".format(a.title)
             if len(a.artists) > 1:
                 string += " by {}".format(join_list(string=a.artists))

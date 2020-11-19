@@ -89,13 +89,13 @@ async def cmd_texconfig(ctx):
             if luser.preamble:
                 preamble_field = (
                     "Using a custom personal preamble with `{}` lines!"
-                ).format(len(luser.preamble))
+                ).format(len(luser.preamble.splitlines()))
             else:
                 lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)
                 if lguild.preamble:
                     preamble_field = (
                         "No personal preamble, using the custom guild preamble with `{}` lines."
-                    ).format(len(lguild.preamble))
+                    ).format(len(lguild.preamble.splitlines()))
                 else:
                     preamble_field = (
                         "No personal or guild preamble, using the global default preamble."

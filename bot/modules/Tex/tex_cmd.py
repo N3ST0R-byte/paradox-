@@ -48,7 +48,7 @@ async def cmd_tex(ctx, flags):
     if any(flags.values()):
         return await ctx.error_reply(
             "LaTeX configuration has moved to the `texconfig` command.\n"
-            "Please see `{}help texconfig` for usage."
+            "Please see `{}help texconfig` for usage.".format(ctx.best_prefix())
         ).format(ctx.best_prefix)
 
     # Handle empty input
@@ -63,7 +63,7 @@ async def cmd_tex(ctx, flags):
 
     # Handle `tex help`
     if ctx.args.lower() == 'help':
-        return await ctx.error_reply("Please use `{}help tex` for command help.")
+        return await ctx.error_reply("Please use `{}help tex` for command help.".format(ctx.best_prefix()))
 
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)

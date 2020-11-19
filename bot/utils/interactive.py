@@ -238,15 +238,18 @@ async def _safe_async_future(future):
 
 
 @Context.util
-async def input(ctx, msg="", timeout=120):
+async def input(ctx, msg=None, delete_after=True, timeout=120):
     """
     Listen for a response in the current channel, from ctx.author.
     Returns the response from ctx.author, if it is provided.
     Parameters
     ----------
-    msg: string
-        Allows a custom input message to be provided.
-        Will use default message if not provided.
+    msg: Optional[Union[string, discord.Message]]
+        When given a `Message`, treats it as the prompt message.
+        When given a string, sends the message and uses it as the prompt message.
+        Will use a default message if not provided.
+    delete_after: bool
+        Whether to delete the prompt message after input is given.
     timeout: int
         Number of seconds to wait before timing out.
     Raises
@@ -255,7 +258,12 @@ async def input(ctx, msg="", timeout=120):
         Raised when ctx.author does not provide a response before the function times out.
     """
     # Deliver prompt
-    offer_msg = await ctx.reply(msg or "Please enter your input.")
+    if msg is None or isinstance(msg, str):
+        offer_msg = await ctx.reply(msg or "Please enter your input.")
+    elif isinstance(msg, discord.Message):
+        offer_msg = msg
+    else:
+        raise ValueError("Invalid prompt message given.")
 
     # Criteria for the input message
     def checks(m):
@@ -270,11 +278,12 @@ async def input(ctx, msg="", timeout=120):
     result = result_msg.content
 
     # Attempt to delete the prompt and reply messages
-    try:
-        await offer_msg.delete()
-        await result_msg.delete()
-    except Exception:
-        pass
+    if delete_after:
+        try:
+            await offer_msg.delete()
+            await result_msg.delete()
+        except Exception:
+            pass
 
     return result
 
