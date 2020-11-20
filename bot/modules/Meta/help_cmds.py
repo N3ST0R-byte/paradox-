@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from cmdClient import Context
 
@@ -27,6 +28,8 @@ async def cmd_help(ctx: Context):
         {prefix}help [command name]
     Description:
         Shows detailed usage information for the requested command or sends you the general help message.
+
+        Using the `man` alias will automatically show the full help embed.
     Related:
         list
     Example``:
@@ -118,6 +121,53 @@ async def cmd_help(ctx: Context):
             title="`{}` command documentation. {}".format(command.name, alias_str),
             colour=discord.Colour(0x9b59b6)
         )
+        out_msg = None
+
+        if (
+            not ctx.alias.lower() == 'man'
+            and len(help_fields) > 2
+            and sum(len(field[1].splitlines()) for field in help_fields) > 15
+            and (not ctx.guild or (ctx.ch.permissions_for(ctx.guild.me).add_reactions
+                                   and ctx.ch.permissions_for(ctx.guild.me).use_external_emojis))
+        ):
+            # Show a "short" version of the help with a `MORE` reaction.
+            more_emoji = ctx.client.conf.emojis.getemoji("more")
+            embed.description = (
+                "{}"
+            ).format(command.desc)
+
+            for fieldname, fieldvalue in help_fields:
+                if fieldname in ['Usage']:
+                    # Format the field
+                    fieldvalue = fieldvalue.format(ctx=ctx, prefix=ctx.client.prefix)
+                    fieldvalue += "\n\nClick {} to show more information.".format(more_emoji)
+
+                    embed.add_field(name=fieldname, value=fieldvalue, inline=False)
+            out_msg = await ctx.reply(embed=embed)
+            asyncio.ensure_future(ctx.offer_delete(out_msg))
+            await out_msg.add_reaction(more_emoji)
+            try:
+                await ctx.client.wait_for("reaction_add",
+                                          check=lambda r, u: (r.emoji == more_emoji
+                                                              and r.message == out_msg
+                                                              and u != ctx.client.user),
+                                          timeout=300)
+            except asyncio.TimeoutError:
+                return
+            finally:
+                # Clean up
+                try:
+                    if (ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages):
+                        await out_msg.clear_reaction(more_emoji)
+                    else:
+                        await out_msg.remove_reaction(more_emoji, ctx.client.user)
+                except discord.NotFound:
+                    pass
+                except discord.Forbidden:
+                    pass
+            embed.description = discord.Embed.Empty
+            embed.remove_field(0)
+
         for fieldname, fieldvalue in help_fields:
             # Format the field
             fieldvalue = fieldvalue.format(ctx=ctx, prefix=ctx.client.prefix)
@@ -134,7 +184,10 @@ async def cmd_help(ctx: Context):
         embed.set_footer(text="[optional] and <required> denote optional and required arguments, respectively.")
 
         # Post the embed
-        await ctx.reply(embed=embed)
+        if out_msg:
+            await out_msg.edit(embed=embed)
+        else:
+            await ctx.offer_delete(await ctx.reply(embed=embed))
         # await ctx.offer_delete(await ctx.reply(embed=embed))
 
 
@@ -177,8 +230,7 @@ async def cmd_list(ctx: Context):
                          "or get support with {0}support.".format(ctx.best_prefix()))
 
         # Send the command list
-        # await ctx.offer_delete(await ctx.reply(embed=embed))
-        await ctx.reply(embed=embed)
+        await ctx.offer_delete(await ctx.reply(embed=embed))
     else:
         # Handle long response format
         help_title = "My commands!"  # Title of detailed list embed
@@ -247,5 +299,4 @@ async def cmd_list(ctx: Context):
             embed.set_footer(text="Page {}/{}".format(i+1, len(help_embeds)))
 
         # Send the embeds
-        await ctx.pager(help_embeds)
-        # await ctx.offer_delete(await ctx.pager(help_embeds))
+        await ctx.offer_delete(await ctx.pager(help_embeds))
