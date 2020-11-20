@@ -6,6 +6,8 @@ from utils.lib import prop_tabulate
 from .tex_utils import TexNameStyle, AutoTexLevel
 from . import user_data  # noqa
 
+from constants import ParaCC
+
 
 class LatexUserSetting(SettingType):
     """
@@ -69,6 +71,7 @@ class LatexUserSetting(SettingType):
         """
         embed = discord.Embed(
             title="Configuration options for `{}`".format(cls.name),
+            color=ParaCC["purple"]
         )
         fields = ("Current value", "Default value", "Accepted input")
         values = (cls._format_data(ctx.client, ctx.author.id, current_data),

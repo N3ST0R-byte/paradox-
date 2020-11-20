@@ -9,6 +9,8 @@ from .module import latex_module as module
 from .core.LatexUser import LatexUser
 from .core.LatexGuild import LatexGuild
 
+from constants import ParaCC
+
 
 @module.cmd("texconfig",
             desc="View or modify your personal LaTeX rendering options.",
@@ -73,8 +75,8 @@ async def cmd_texconfig(ctx):
         # Create the description
         desc = (
             "{0}\n"
-            "*To see more detailed information use `{1}texconfig <option>`.*\n"
-            "*To set an option use `{1}texconfig <option> <value>`.*"
+            "To see more detailed information use `{1}texconfig <option>`.\n"
+            "To set an option use `{1}texconfig <option> <value>`."
         ).format(setting_table, ctx.best_prefix())
 
         # Create the preamble field contents
@@ -107,7 +109,8 @@ async def cmd_texconfig(ctx):
         embed = discord.Embed(
             title="Personal LaTeX configuration.",
             description=desc,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
+            color=ParaCC["purple"]
         )
         embed.add_field(name="Preamble", value=preamble_field)
 
