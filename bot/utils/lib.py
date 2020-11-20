@@ -346,19 +346,23 @@ def emb_add_fields(embed, emb_fields):
         embed.add_field(name=str(field[0]), value=str(field[1]), inline=bool(field[2]))
 
 
-def join_list(string):
+def join_list(string, nfs=False):
     """
     Join a list together, separated with commas, plus add "and" to the beginning of the last value.
     Parameters
     ----------
     string: list
         The list to join together.
+    nfs: bool
+        (no fullstops)
+        Whether to exclude fullstops/periods from the output messages.
+        If not provided, fullstops will be appended to the output. 
     """
     if len(string) > 1:
-        return "{}{} and {}.".format((", ").join(string[:-1]),
-                                     "," if len(string) > 2 else "", string[-1])
+        return "{}{} and {}{}".format((", ").join(string[:-1]),
+                                      "," if len(string) > 2 else "", string[-1], "" if nfs else ".")
     else:
-        return "{}.".format("".join(string))
+        return "{}{}".format("".join(string), "" if nfs else ".")
 
 
 def format_activity(user):
@@ -383,7 +387,7 @@ def format_activity(user):
         and any extra information about the activity (such as current song artists for Spotify)
     """
     if not user.activity:
-        return "Nothing."
+        return "Nothing"
 
     AT = user.activity.type
     a = user.activity
@@ -391,7 +395,7 @@ def format_activity(user):
         return "Status: {}".format(a)
 
     if str(AT) == "ActivityType.playing":
-        string = "Playing {}.".format(a.name)
+        string = "Playing {}".format(a.name)
         try:
             string += " ({})".format(a.details)
         except Exception:
@@ -400,7 +404,7 @@ def format_activity(user):
         return string
 
     if str(AT) == "ActivityType.streaming":
-        return "Streaming {}.".format(a.name)
+        return "Streaming {}".format(a.name)
 
     if str(AT) == "ActivityType.listening":
         try:
@@ -408,13 +412,13 @@ def format_activity(user):
             if len(a.artists) > 1:
                 string += " by {}".format(join_list(string=a.artists))
             else:
-                string += " by {}.".format(a.artist)
+                string += " by {}".format(a.artist)
         except Exception:
-            string = "Listening to {}.".format(a.name)
+            string = "Listening to {}".format(a.name)
         return string
 
     if str(AT) == "ActivityType.watching":
-        return "Watching `{}`.".format(a.name)
+        return "Watching `{}`".format(a.name)
 
     if str(AT) == "ActivityType.unknown":
-        return "Unknown."
+        return "Unknown"

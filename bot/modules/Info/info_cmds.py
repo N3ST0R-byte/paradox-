@@ -34,7 +34,7 @@ Commands provided:
             desc="Displays information about a role.",
             aliases=["role", "rinfo", "ri"])
 @in_guild()
-async def cmd_role(ctx: Context):
+async def cmd_roleinfo(ctx: Context):
     """
     Usage``:
         {prefix}roleinfo [<role-name> | <role-mention> | <role-id>]
@@ -140,7 +140,7 @@ async def cmd_userinfo(ctx: Context):
         user = await ctx.find_member(ctx.args, interactive=True)
         if not user:
             return
-    colour = (user.colour if user.colour.value else discord.Colour.light_grey())
+    colour = (user.colour if user.colour.value else ParaCC["blue"])
 
     name = "{} {}".format(user, ctx.client.conf.emojis.getemoji("bot") if user.bot else "")
 
@@ -162,25 +162,19 @@ async def cmd_userinfo(ctx: Context):
 
     if any(devicestatus.values()):
         # String if the user is "online" on one or more devices.
-        device = "Active on {}".format(join_list(string=[k for k, v in devicestatus.items() if v]))
+        device = "Active on {}".format(join_list(string=[k for k, v in devicestatus.items() if v], nfs=True))
     else:
         # String if the user isn't "online" on any device.
-        device = "Not active on any device."
+        device = "Not active on any device"
 
     activity = format_activity(user)
     presence = "{} {}".format(ctx.client.conf.emojis.getemoji(user.status.name), statusnames[user.status])
     numshared = sum(g.get_member(user.id) is not None for g in ctx.client.guilds)
-    shared = "{} guild{}.".format(numshared, "s" if numshared > 1 else "")
+    shared = "{} guild{}".format(numshared, "s" if numshared > 1 else "")
     joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - user.joined_at, minutes=False))
     joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - user.created_at, minutes=False))
     created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
-    # usernames = ctx.client.data.users.get(user.id, "name_history")
-    # name_list = "{}{}".format("..., " if len(usernames) > 10 else "",
-    #                           ", ".join(usernames[-10:])) if usernames else "No recent past usernames."
-    # nicknames = ctx.client.data.members.get(ctx.guild.id, user.id, "nickname_history")
-    # nickname_list = "{}{}".format("..., " if len(nicknames) > 10 else "",
-    #                               ", ".join(nicknames[-10:])) if nicknames else "No recent past nicknames."
     prop_list = ["Full name", "Nickname", "Presence", "Activity", "Device",
                  "Seen in", "Joined at", "", "Created at", ""]
     value_list = [name, user.display_name, presence, activity, device,
