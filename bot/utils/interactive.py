@@ -59,7 +59,7 @@ async def listen_for(ctx, allowed_input=None, timeout=120, lower=True, check=Non
 
 
 @Context.util
-async def selector(ctx, header, select_from, timeout=120, max_len=20):
+async def selector(ctx, header, select_from, timeout=120, max_len=20, allow_single=True):
     """
     Interactive routine to prompt the `ctx.author` to select an item from a list.
     Returns the list index that was selected.
@@ -76,6 +76,8 @@ async def selector(ctx, header, select_from, timeout=120, max_len=20):
     max_len: int
         The maximum number of items to display on each page.
         Decrease this if the items are long, to avoid going over the char limit.
+    allow_single: bool
+        Whether to show the selector for only one option.
 
     Returns
     -------
@@ -92,6 +94,10 @@ async def selector(ctx, header, select_from, timeout=120, max_len=20):
     # Handle improper arguments
     if len(select_from) == 0:
         raise ValueError("Selection list passed to `selector` cannot be empty.")
+
+    # Handle having a single item to select
+    if len(select_from) == 1 and not allow_single:
+        return 0
 
     # Generate the selector pages
     footer = "Please type the number corresponding to your selection, or type `c` now to cancel."
