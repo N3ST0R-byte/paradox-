@@ -17,8 +17,6 @@ conf_pages = {
 }
 
 # TODO: Cat descriptions
-# TODO: Read wards
-# TODO: Write wards
 
 
 async def _build_config_pages(ctx, show_help=True):
@@ -51,7 +49,9 @@ async def _build_config_pages(ctx, show_help=True):
                     if show_help:
                         values.append(option.desc)
                     elif (option.read_check is None) or await option.read_check.run(ctx):
-                        values.append(option.get(ctx.client, ctx.guild.id).formatted or "Not Set")
+                        value = option.get(ctx.client, ctx.guild.id).formatted or "Not Set"
+                        value = value if len(value) < 100 else "(Too long to display)"
+                        values.append(value)
                     else:
                         values.append("Hidden")
                 cat_str = prop_tabulate(names, values)

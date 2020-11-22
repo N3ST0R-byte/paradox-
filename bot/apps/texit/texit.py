@@ -25,27 +25,37 @@ info = {
 disabled_modules = [
     "Fun",
     "Social",
-    "extended_utils",
-    "emoji",
 ]
-
-# TODO: (rewrite) this will be added as a launch task for the TeX module
-async def enable_latex_listening(client, guild):
-    client.data.guilds.ensure_exists("latex_listen_enabled", shared=False)
-    listening = client.data.guilds.get(guild.id, "latex_listen_enabled")
-
-    if listening is None:
-        client.data.guilds.set(guild.id, "latex_listen_enabled", True)
-
-        listens = client.objects["guild_tex_listeners"]
-        channels = client.data.guilds.get(guild.id, "maths_channels")
-        listens[str(guild.id)] = channels if channels else []
+disabled_commands = {
+    'colour',
+    'echo',
+    'emoji',
+    'invitebot',
+    'jumpto',
+    'names',
+    'piggybank',
+    'quote',
+    'secho'
+}
 
 
 def load_into(client):
     # client.add_after_event("guild_join", enable_latex_listening)
     client.app_info = info
 
+    # Disable and remove the modules and commands we don't want
     for module in client.modules:
         if module.name in disabled_modules:
             module.enabled = False
+        else:
+            module.cmds = [cmd for cmd in module.cmds if cmd.name not in disabled_commands]
+
+    client.update_cmdnames()
+
+    # Set the default latex guild listening to True
+    latex_module = [module for module in client.modules if module.name == "LaTeX Rendering"][0]
+    latex_module.LatexGuild.defaults['autotex'] = True
+    latex_setting = [
+        setting for setting in latex_module.guild_settings if setting.name == "latex"
+    ][0]
+    latex_setting._default = True

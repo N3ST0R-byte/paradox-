@@ -209,11 +209,12 @@ async def cmd_list(ctx: Context):
     """
     # Flag for whether we display hidden modules in the list or not
     show_hidden = await is_manager.run(ctx)
+    modules = [module for module in ctx.client.modules if module.enabled and (show_hidden or not module.hidden)]
 
     if ctx.alias.lower() == "ls":
         # Make the cats (category/module command lists)
         cats = {cat.name.lower(): sorted(cat.cmds, key=lambda cmd: cmd.name)
-                for cat in ctx.client.modules if show_hidden or not cat.hidden}
+                for cat in modules}
 
         # Build brief listing embed
         embed = discord.Embed(title="My commands!", color=discord.Colour.green())
@@ -246,9 +247,7 @@ async def cmd_list(ctx: Context):
                                     getattr(cmd, "desc", "See `{0}help {1}`.".format(ctx.best_prefix(), cmd.name)))
                                    for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))
                                    if (show_hidden or not cmd.hidden)])
-                  for cat in ctx.client.modules if
-                  (show_hidden or not cat.hidden)
-                  and (not ctx.args or (ctx.args.lower() in cat.name.lower()))}
+                  for cat in modules if (not ctx.args or (ctx.args.lower() in cat.name.lower()))}
 
         if not groups:
             return await ctx.error_reply(

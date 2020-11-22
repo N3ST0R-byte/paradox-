@@ -200,7 +200,11 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
             result = result or user.server_permissions.administrator
             result = result or user.server_permissions.manage_messages
             """
-            return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
+            if not (reaction.message.id == react_msg.id and reaction.emoji == emoji):
+                return False
+            if user == ctx.guild.me:
+                return False
+            return (user == ctx.author) or (user.guild_permissions.manage_messages)
     else:
         def check(reaction, user):
             return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji

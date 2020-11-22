@@ -83,6 +83,9 @@ class LatexGuild:
         return cls.cached_guilds[id]
 
 
+module.LatexGuild = LatexGuild
+
+
 @module.data_init_task
 def attach_latexguild_client(client):
     LatexGuild._client = client
