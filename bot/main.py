@@ -235,6 +235,8 @@ async def on_message(message: discord.Message):
     # Handle messages from blacklisted users
     if message.author.id in conf.getintlist("blacklisted_users", []):
         return
+    if message.author.id in client.objects['user_blacklist']:
+        return
 
     if message.guild:
         # Handle messages from blacklisted guilds

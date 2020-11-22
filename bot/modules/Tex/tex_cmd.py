@@ -36,7 +36,7 @@ async def cmd_tex(ctx, flags):
         , / mtex: Render the code in maths mode. Specifically, in a `gather*` environment.
         align: Render the code in an align block. Specifically, in an `align*` environment.
         texsp: Same as `tex`, but ||spoiler|| the output image.
-        texw: Don't crop the output after compilation.
+        texw: Don't pad the output (with transparent pixels) after compilation.
     Related:
         autotex, texconfig, preamble
     Examples``:
