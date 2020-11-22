@@ -38,13 +38,20 @@ class paraModule(Module):
                 guild_config.attach_setting(setting)
                 setting.initialise(client)
 
+        # Caches we expect
+        if "disabled_guild_commands" not in client.objects:
+            client.objects["disabled_guild_commands"] = {}
+        if "disabled_guild_channels" not in client.objects:
+            client.objects["disabled_guild_channels"] = {}
+
         super().initialise(client)
 
-    async def pre_cmd(self, ctx):
+    async def pre_command(self, ctx):
         if ctx.guild:
-            banned_cmds = await ctx.data.guilds.get(ctx.guild.id, "banned_cmds")
-            if banned_cmds and ctx.cmd.name in banned_cmds:
-                raise SafeCancellation
+            disabled = ctx.client.objects["disabled_guild_commands"]
+            if ctx.guild.id in disabled and ctx.cmd.name in disabled[ctx.guild.id]:
+                if not ctx.author.guild_permissions.administrator:
+                    raise SafeCancellation
 
             # Handle blacklisted guild channels
             disabled = ctx.client.objects["disabled_guild_channels"]

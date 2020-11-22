@@ -68,11 +68,19 @@ class ListData(_tableData):
         # TODO: Compare existing values in table to avoid double-handling data
         # TODO: Transaction lock on the table so this is atomic
 
+        table = cls._get_table_interface(client)  # type: tableInterface
+
+        # Handle special case of data being None first
+        if data is None:
+            params = {
+                cls._guildid_column: guildid
+            }
+            table.delete_where(**params)
+            return
+
         current = cls._reader(client, guildid, **kwargs)
         to_insert = [item for item in data if item not in current]
         to_remove = [item for item in current if item not in data]
-
-        table = cls._get_table_interface(client)  # type: tableInterface
 
         # Handle required deletions
         if to_remove:

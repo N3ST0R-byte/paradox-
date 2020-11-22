@@ -2,7 +2,7 @@ from .module import utils_module as module
 
 
 @module.cmd("notifyme",
-            desc="DMs you messages matching given triggers.",
+            desc="~~DMs you messages matching given triggers.~~ (disabled)",
             aliases=["tellme", "pounce", "listenfor", "notify"])
 async def cmd_notifyme(ctx):
     """

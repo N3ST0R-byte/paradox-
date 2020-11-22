@@ -655,3 +655,11 @@ class MemberList(SettingList):
     """
     accepts = "Comma separated list of user mentions/ids/names. Use 'None' to unset."
     _setting = Member
+
+
+class StringList(SettingList):
+    """
+    List of strings
+    """
+    accepts = "Comma separated list of strings. Use 'None' to unset."
+    _setting = String

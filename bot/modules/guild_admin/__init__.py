@@ -6,3 +6,4 @@ from . import config_cmd
 from . import role_persistence
 from . import prefix
 from . import role_cmds
+from . import disable
