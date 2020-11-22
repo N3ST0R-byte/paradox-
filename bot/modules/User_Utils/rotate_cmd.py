@@ -66,7 +66,7 @@ async def cmd_rotate(ctx):
             break
 
     if image_url is None:
-        return await ctx.error_reply("Couldn't find an attached image in the last 10 messages")
+        return await ctx.error_reply("Couldn't find an attached image in the last 10 messages.")
 
     async with aiohttp.ClientSession() as session:
         async with session.get(image_url) as r:
