@@ -398,7 +398,7 @@ async def ask(ctx, msg, timeout=30, use_msg=None, add_hints=True, del_on_timeout
     use_msg: discord.Message
         Edit a pre-sent message with the prompt, instead of sending a new message.
     add_hints: bool
-        Whether to add the answer hints to the primpt.
+        Whether to add the answer hints to the prompt.
     del_on_timeout: bool
         Whether to delete the question if it times out.
     Raises
