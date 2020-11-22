@@ -44,7 +44,13 @@ class paraModule(Module):
         if ctx.guild:
             banned_cmds = await ctx.data.guilds.get(ctx.guild.id, "banned_cmds")
             if banned_cmds and ctx.cmd.name in banned_cmds:
-                raise SafeCancellation()
+                raise SafeCancellation
+
+            # Handle blacklisted guild channels
+            disabled = ctx.client.objects["disabled_guild_channels"]
+            if ctx.guild.id in disabled and ctx.ch.id in disabled[ctx.guild.id]:
+                if not ctx.author.guild_permissions.administrator:
+                    raise SafeCancellation
 
     def data_init_task(self, func):
         """

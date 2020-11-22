@@ -65,6 +65,9 @@ async def cmd_tex(ctx, flags):
     if ctx.args.lower() == 'help':
         return await ctx.error_reply("Please use `{}help tex` for command help.".format(ctx.best_prefix()))
 
+    # TODO: Warning about \begin{document} and \documentclass
+    # TODO: Warning about \usepackage
+
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)
     luser = LatexUser.get(ctx.author.id)
@@ -72,6 +75,8 @@ async def cmd_tex(ctx, flags):
     # Determine parse mode and flags
     flags = {}
     parse_mode = ParseMode.DOCUMENT
+
+    # TODO: Handle `alwaysmath`
 
     lalias = ctx.alias.lower()
     if lalias in [',', 'mtex']:

@@ -133,6 +133,94 @@ async def selector(ctx, header, select_from, timeout=120, max_len=20, allow_sing
 
 
 @Context.util
+async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allow_single=True):
+    """
+    Interactive routine to prompt the `ctx.author` to select multiple items from a list.
+    Returns a list of list indices that were selected.
+
+    Parameters
+    ----------
+    header: str
+        String to put at the top of each page of selection options.
+        Intended to be information about the list the user is selecting from.
+    select_from: List(str)
+        The list of strings to select from.
+    timeout: int
+        The number of seconds to wait before throwing `ResponseTimedOut`.
+    max_len: int
+        The maximum number of items to display on each page.
+        Decrease this if the items are long, to avoid going over the char limit.
+    allow_single: bool
+        Whether to show the selector for only one option.
+
+    Returns
+    -------
+    List[int]:
+        The list of indices selected by the user.
+
+    Raises
+    ------
+    cmdClient.lib.UserCancelled:
+        Raised if the user manually cancels the selection.
+    cmdClient.lib.ResponseTimedOut:
+        Raised if the user fails to respond to the selector within `timeout` seconds.
+    """
+    # Handle improper arguments
+    if len(select_from) == 0:
+        raise ValueError("Selection list passed to `selector` cannot be empty.")
+
+    # Handle having a single item to select
+    if len(select_from) == 1 and not allow_single:
+        return [0]
+
+    # Generate the selector pages
+    footer = ("Please type the numbers corresponding to your selection, "
+              "separated by commas, or type `c` now to cancel. (E.g. `2, 3, 5, 7, 11`)")
+    list_pages = paginate_list(select_from, block_length=max_len)
+    pages = ["\n".join([header, page, footer]) for page in list_pages]
+
+    # Post the pages in a paged message
+    out_msg = await ctx.pager(pages)
+
+    # Listen for valid input
+    valid_num_strs = set(str(i+1) for i in range(0, len(select_from)))
+
+    def _check(message):
+        if not ((message.channel == ctx.ch) and (message.author == ctx.author)):
+            return False
+        if not message.content:
+            return False
+
+        content = message.content.lower()
+        if (content == 'c') or all(chars.strip() in valid_num_strs for chars in content.split(',')):
+            return True
+        else:
+            return False
+
+    try:
+        result_msg = await ctx.client.wait_for('message', check=_check, timeout=timeout)
+    except asyncio.TimeoutError:
+        raise ResponseTimedOut("Selector timed out waiting for a response.")
+
+    # Try and delete the selector message and the user response.
+    try:
+        await out_msg.delete()
+        await result_msg.delete()
+    except discord.NotFound:
+        pass
+    except discord.Forbidden:
+        pass
+
+    # Handle user cancellation
+    if result_msg.content in ['c', 'C']:
+        raise UserCancelled("User cancelled selection.")
+
+    # The content must now be a valid set of indicies. Collect and return it.
+    index = [int(chars.strip()) - 1 for chars in result_msg.content.split(',')]
+    return index
+
+
+@Context.util
 async def pager(ctx, pages, locked=True, **kwargs):
     """
     Shows the user each page from the provided list `pages` one at a time,
@@ -295,7 +383,7 @@ async def input(ctx, msg=None, delete_after=True, timeout=120):
 
 
 @Context.util
-async def ask(ctx, msg, timeout=30, use_msg=None, del_on_timeout=False):
+async def ask(ctx, msg, timeout=30, use_msg=None, add_hints=True, del_on_timeout=False):
     """
     Ask ctx.author a yes/no question.
     Returns 0 if ctx.author answers no
@@ -307,15 +395,17 @@ async def ask(ctx, msg, timeout=30, use_msg=None, del_on_timeout=False):
         Requires an input.
     timeout: int
         Number of seconds to wait before timing out.
-    use_msg: string
-        A completely custom string to use instead of the default string.
+    use_msg: discord.Message
+        Edit a pre-sent message with the prompt, instead of sending a new message.
+    add_hints: bool
+        Whether to add the answer hints to the primpt.
     del_on_timeout: bool
         Whether to delete the question if it times out.
     Raises
     ------
     Nothing
     """
-    out = "{} {}".format(msg, "`y(es)`/`n(o)`")
+    out = "{} {}".format(msg, "`y(es)`/`n(o)`") if add_hints else msg
 
     offer_msg = use_msg or await ctx.reply(out)
     if use_msg:

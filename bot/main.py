@@ -241,12 +241,6 @@ async def on_message(message: discord.Message):
         if message.author.id in conf.getintlist("blacklisted_guilds", []):
             return
 
-        # Handle blacklisted guild channels
-        disabled = client.objects["disabled_guild_channels"]
-        if message.guild.id in disabled and message.channel.id in disabled[message.guild.id]:
-            if not message.author.guild_permissions.administrator:
-                return
-
     await client.parse_message(message)
 
 

@@ -20,7 +20,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 
 
 @module.cmd("preamble",
-            desc="View or modify your LaTeX preamble",
+            desc="View or modify your LaTeX preamble.",
             flags=['reset', 'retract', 'add', 'remove', 'revert', 'usepackage', 'replace', 'preset'])
 async def cmd_preamble(ctx, flags):
     """

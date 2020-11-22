@@ -17,7 +17,9 @@ class disabled_channels(ListData, ChannelList, GuildSetting):
     name = "disabled_channels"
     desc = "List of channels where I don't listen to commands."
 
-    long_desc = "List of channels where I only respond to commands sent by a guild administrator."
+    long_desc = ("List of channels where I only respond to commands sent by a guild administrator.\n"
+                 "This does not affect LaTeX rendering. Use the `latex_channels` config to "
+                 "restrict where automatic LaTeX compilation may occur.")
 
     _table_interface_name = "guild_disabled_channels"
     _data_column = "channelid"
