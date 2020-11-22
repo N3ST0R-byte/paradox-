@@ -127,3 +127,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# vscode config files
+**/.vscode
