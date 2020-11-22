@@ -246,7 +246,7 @@ class alwaysmath(LatexUserSetting, Boolean):
 
 class alwayswide(LatexUserSetting, Boolean):
     name = "alwayswide"
-    desc = "Whether to skip the automatic horizontal crop on LaTeX output."
+    desc = "Whether to skip the automatic horizontal addition of transparent pixels to LaTeX output."
 
     default = False
     _outputs = {
@@ -260,10 +260,11 @@ class alwayswide(LatexUserSetting, Boolean):
     @classmethod
     def response(cls, ctx, data):
         if not data:
-            return ("Your rendered LaTeX will be horizontally cropped to improve previews. "
-                    "Use the `texw` command to remove the cropping for a single compile.")
+            return ("Transparent pixels will be added to your rendered LaTeX to improve previews."
+                    "Use the `texw` command to disable this for a single compile.")
         else:
-            return "Your rendered LaTeX will no longer be horizontally cropped."
+            return ("Transparent pixels will no longer be added to your rendered LaTeX."
+                    ":warning: If your input is short, Discord will make the rendered image huge!")
 
 
 class namestyle(LatexUserSetting, IntegerEnum):
