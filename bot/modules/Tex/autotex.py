@@ -119,7 +119,7 @@ async def latex_message_parser(client, message):
     else:
         log("Automatic LaTeX compilation completed normally.",
             context="mid:{}".format(message.id),
-            level=logging.INFO)
+            level=logging.DEBUG)
     finally:
         client.ctx_cache[message.id] = ctx.flatten()
         client.active_contexts.pop(message.id, None)

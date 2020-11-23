@@ -6,7 +6,7 @@ import discord
 from cmdClient import cmdClient
 
 from config import Conf
-from logger import log, log_fmt
+from logger import log, log_fmt, attach_log_client
 from apps import load_app
 
 from registry.connectors import mysqlConnector, sqliteConnector
@@ -196,6 +196,7 @@ async def get_prefixes(client, message):
 
 @client.event
 async def on_ready():
+    # Set activity
     activity_name = "Type {}help for usage!".format(client.prefix)
     client.objects["activity_name"] = activity_name
     await client.change_presence(
@@ -203,10 +204,20 @@ async def on_ready():
         activity=discord.Game(name=activity_name)
     )
 
+    # Attach global channels
+    client.objects["feedback_channel"] = discord.utils.get(client.get_all_channels(), id=FEEDBACK_CH)
+    client.objects["preamble_channel"] = discord.utils.get(client.get_all_channels(), id=PREAMBLE_CH)
+    client.objects["guild_log_channel"] = discord.utils.get(client.get_all_channels(), id=GUILD_LOG_CH)
+
+    # Launch modules
     await client.launch_modules()
-    log_msg = ("Logged in as\n{client.user.name}\n{client.user.id}\n"
-               "Using configuration {app}.\n"
-               "Logged into {n} guilds on shard {shard}/{shard_count}.\n"
+
+    # Attach the log client and log the alive message
+    attach_log_client(client)
+
+    log_msg = ("Logged in as\n{client.user.name} (uid:{client.user.id}).\n"
+               "Using configuration \"{app}\".\n"
+               "Logged into {n} guilds on shard {shard} with {shard_count} shard(s).\n"
                "Loaded {m} modules with {mn} commands.\n"
                "Listening for {mnn} command keywords.\n"
                "Ready to take commands.".format(
@@ -220,10 +231,6 @@ async def on_ready():
                    mnn=len(client.cmd_names)
                ))
     log(log_msg)
-
-    client.objects["feedback_channel"] = discord.utils.get(client.get_all_channels(), id=FEEDBACK_CH)
-    client.objects["preamble_channel"] = discord.utils.get(client.get_all_channels(), id=PREAMBLE_CH)
-    client.objects["guild_log_channel"] = discord.utils.get(client.get_all_channels(), id=GUILD_LOG_CH)
 
 
 @client.event

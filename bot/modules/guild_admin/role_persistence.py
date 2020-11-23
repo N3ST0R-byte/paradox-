@@ -70,10 +70,12 @@ class role_persistence(BoolData, Boolean, GuildSetting):
 
     long_desc = ("Whether roles will be stored when a member leaves and given back when the member rejoins. "
                  "Any roles in the setting `role_persistence_ignores` will not be returned to them, "
-                 "and users may be forgetten with the command `forgetmember`.")
+                 "and users may be forgotten with the command `forgetrolesfor`.")
 
     _outputs = {True: "Enabled",
                 False: "Disabled"}
+
+    _default = False
 
     _table_interface_name = "guild_role_persistence"
 
@@ -111,6 +113,9 @@ async def store_roles(client, member):
     # Delete the stored roles associated to this member
     client.data.member_stored_roles.delete_where(guildid=member.guild.id, userid=member.id)
 
+    # TODO: This is asking for some nasty clashes between different apps
+    # We probably want to make it a db transaction, i.e. lock the table.
+
     # Insert the new roles if there are any
     if role_list:
         client.data.member_stored_roles.insert_many(
@@ -126,6 +131,9 @@ async def restore_roles(client, member):
     if not client.guild_conf.role_persistence.get(client, member.guild.id).value:
         # Return if role persistence is not enabled
         return
+
+    # TODO: Also asking for some nasty clashes between different apps, and `autorole` as well.
+    # We could place an async lock on role modifications for the user
 
     # Retrieve the stored roles for this member
     roleids = client.data.member_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
