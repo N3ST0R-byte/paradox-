@@ -40,7 +40,9 @@ async def in_guild(ctx, *args, **kwargs):
 async def guild_moderator(ctx, *args, **kwargs):
     has_mod = ctx.author.guild_permissions.administrator
     has_mod = has_mod or ctx.author.guild_permissions.manage_guild
-    # TODO: Moderation role
+
+    modrole = ctx.get_guild_setting.modrole.value
+    has_mod = has_mod or (modrole and modrole in ctx.author.roles)
     return has_mod
 
 
