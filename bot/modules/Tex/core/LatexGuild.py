@@ -6,6 +6,10 @@ from . import guild_config  # noqa
 
 
 class LatexGuild:
+    __slots__ = (
+        'id', 'autotex', 'autotex_level', 'require_codeblocks',
+        'latex_channels', 'preamble'
+    )
     # Cache of all guilds the client requests
     cached_guilds = {}
 

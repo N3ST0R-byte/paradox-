@@ -1,7 +1,3 @@
-import logging
-
-from logger import log
-
 from ..module import latex_module as module
 
 from . import LatexUserSetting
@@ -20,6 +16,8 @@ class LatexUser:
         "autotex_level": LatexUserSetting.autotex_level,
     }
 
+    __slots__ = (*settings.keys(), 'id', 'preamble')
+
     # Stored client for accessing data interfaces
     _client = None
 
@@ -32,7 +30,6 @@ class LatexUser:
         self.colour = None  # type: str
         self.alwaysmath = None  # type: bool
         self.alwayswide = None  # type: bool
-        self.allowother = None  # type: bool
         self.namestyle = None  # type: TexNameStyle
         self.autotex_level = None  # type: AutoTexLevel
 

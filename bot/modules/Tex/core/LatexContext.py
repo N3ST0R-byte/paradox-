@@ -74,6 +74,14 @@ class Bucket:
 
 
 class LatexContext:
+    __slots__ = (
+        'ctx', 'source', 'lguild', 'luser',
+        '_force_wide', 'wide', 'keepsourcefor', 'preamble',
+        '_source_message', '_dm_source', '_header_name', '_spoiler_output',
+        '_output_message', '_source_shown', '_header_collapsed', '_header_shown',
+        '_show_emoji', '_source_deletion_task', '_lifetime_task', '_last_reaction'
+    )
+
     # Compiled regex for the `$` latex content checker
     dollars_pattern = re.compile(r"\$(?=\S).*(?<=\S)\$")
 
