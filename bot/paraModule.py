@@ -20,6 +20,7 @@ class paraModule(Module):
         self.guild_settings = []
 
         self.baseCommand.hidden = False
+        self.baseCommand.disabled = False
 
     def guild_setting(self, cls):
         """

@@ -223,8 +223,8 @@ async def cmd_list(ctx: Context):
             if cat.lower() in cats:
                 embed.add_field(
                     name=cat,
-                    value="`{}`".format('`, `'.join(cmd.name for cmd in cats[cat.lower()]
-                                                    if (show_hidden or not cmd.hidden))),
+                    value=', '.join("~~`{}`~~".format(cmd.name) if cmd.disabled else "`{}`".format(cmd.name)
+                                    for cmd in cats[cat.lower()] if (show_hidden or not cmd.hidden)),
                     inline=False
                 )
         embed.set_footer(text="Use '{0}help' or '{0}help cmd' for detailed help, "
@@ -244,7 +244,7 @@ async def cmd_list(ctx: Context):
 
         # Build the command groups
         groups = {cat.name: (cat, [(cmd.name,
-                                    getattr(cmd, "desc", "See `{0}help {1}`.".format(ctx.best_prefix(), cmd.name)))
+                                    getattr(cmd, "desc", "See `{0}help {1}`.".format(ctx.best_prefix(), cmd.name)), cmd)
                                    for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))
                                    if (show_hidden or not cmd.hidden)])
                   for cat in modules if (not ctx.args or (ctx.args.lower() in cat.name.lower()))}
@@ -255,8 +255,20 @@ async def cmd_list(ctx: Context):
             )
 
         # Sort the command groups based on sorted_cats and extract the required data
-        stringy_groups = [(groups[catname][0], prop_tabulate(*zip(*groups[catname][1])))
-                          for catname in sorted_cats if catname in groups]
+        # stringy_groups = [(groups[catname][0], prop_tabulate(*zip(*groups[catname][1][:2])))
+        #                   for catname in sorted_cats if catname in groups]
+        # Quick hack to handle disabled commands
+        stringy_groups = []
+        for catname in sorted_cats:
+            if catname in groups:
+                cat = groups[catname][0]
+                props, values, commands = zip(*groups[catname][1])
+                table = prop_tabulate(props, values)
+                table = "\n".join(
+                    ("~~{}~~" if commands[i].disabled else "{}").format(line)
+                    for i, line in enumerate(table.splitlines())
+                )
+                stringy_groups.append((cat, table))
 
         # Now put everything into embeds
         help_embeds = []  # List of embed pages to respond with

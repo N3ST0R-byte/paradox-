@@ -236,8 +236,9 @@ async def cmd_invitebot(ctx):
 
 
 @module.cmd("piggybank",
-            desc="~~Keep track of money added towards a goal.~~ (disabled)",
-            aliases=["bank"])
+            desc="Keep track of money added towards a goal.",
+            aliases=["bank"],
+            disabled=True)
 async def cmd_piggybank(ctx):
     """
     Sorry!:
@@ -381,8 +382,9 @@ def col_invert(color_to_convert):
 
 
 @module.cmd("names",
-            desc="~~Lists previous recorded names for a user.~~ (disabled)",
-            aliases=["namesfor", "whowas"])
+            desc="Lists previous recorded names for a user.",
+            aliases=["namesfor", "whowas"],
+            disabled=True)
 async def cmd_names(ctx):
     """
     Sorry!:
