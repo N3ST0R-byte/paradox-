@@ -41,7 +41,12 @@ async def live_log(message, context, level):
         else:
             blocks = [message]
 
-        blocks = ["```md\n{}\n{}\n```".format(header, block) for block in blocks]
+        if len(blocks) > 1:
+            blocks = [
+                "```md\n{}[{}/{}]\n{}\n```".format(header, i+1, len(blocks), block) for i, block in enumerate(blocks)
+            ]
+        else:
+            blocks = ["```md\n{}\n{}\n```".format(header, blocks[0])]
 
         # Post the log messages
         if log_chid:

@@ -1,5 +1,12 @@
+import traceback
+import logging
+import asyncio
+
+import discord
+
 from cmdClient import cmdClient, Module
 from cmdClient.lib import SafeCancellation
+from cmdClient.Check import FailedCheck
 
 from settings import guild_config
 
@@ -85,6 +92,56 @@ class paraModule(Module):
             self.data_initialised = True
         else:
             log("Already initialised data, skipping data initialisation.", context=self.name)
+
+    async def on_exception(self, ctx, exception):
+        try:
+            raise exception
+        except (FailedCheck, SafeCancellation):
+            # cmdClient generated and handled exceptions
+            raise exception
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            # Standard command and task exceptions, cmdClient will also handle these
+            raise exception
+        except Exception as e:
+            # Unknown exception!
+            full_traceback = traceback.format_exc()
+            only_error = "".join(traceback.TracebackException.from_exception(e).format_exception_only())
+
+            log(("Caught an unhandled exception while "
+                 "executing command '{cmdname}' from module '{module}' "
+                 "from user '{message.author}' (uid:{message.author.id}) "
+                 "in guild '{message.guild}' (gid:{guildid}) "
+                 "in channel '{message.channel}' (cid:{message.channel.id}).\n"
+                 "Message Content:\n"
+                 "{content}\n"
+                 "Traceback:\n"
+                 "{traceback}\n\n"
+                 "{flat_ctx}").format(
+                     cmdname=ctx.cmd.name,
+                     module=ctx.cmd.module.name,
+                     message=ctx.msg,
+                     guildid=ctx.guild.id if ctx.guild else None,
+                     content='\n'.join('\t' + line for line in ctx.msg.content.splitlines()),
+                     traceback='\n'.join('\t' + line for line in full_traceback.splitlines()),
+                     flat_ctx=ctx.flatten()
+                 ),
+                context="mid:{}".format(ctx.msg.id),
+                level=logging.ERROR)
+
+            error_embed = discord.Embed(title="Something went wrong!")
+            error_embed.description = (
+                "An unexpected error occurred while processing your command!\n"
+                "The error has been reported and should be fixed soon.\n"
+                "If the error persists, please contact our friendly support team at "
+                "[our support guild]({})!".format(ctx.client.app_info['support_guild'])
+            )
+            if logging.getLogger().getEffectiveLevel() < logging.INFO:
+                error_embed.add_field(
+                    name="Exception",
+                    value="`{}`".format(only_error)
+                )
+
+            await ctx.reply(embed=error_embed)
 
 
 cmdClient.baseModule = paraModule

@@ -111,10 +111,11 @@ def split_text(text, blocksize=2000, code=True, syntax="", maxheight=50):
         if len(text) <= blocksize:
             blocks.append(text)
             break
+        text = text.strip('\n')
 
         # Find the last newline in the prototype block
         split_on = text[0:blocksize].rfind('\n')
-        split_on = blocksize if split_on == -1 else split_on
+        split_on = blocksize if split_on < blocksize // 5 else split_on
 
         # Add the block and truncate the text
         blocks.append(text[0:split_on])
@@ -356,7 +357,7 @@ def join_list(string, nfs=False):
     nfs: bool
         (no fullstops)
         Whether to exclude fullstops/periods from the output messages.
-        If not provided, fullstops will be appended to the output. 
+        If not provided, fullstops will be appended to the output.
     """
     if len(string) > 1:
         return "{}{} and {}{}".format((", ").join(string[:-1]),

@@ -28,7 +28,7 @@ async def cmd_calc(ctx):
         {prefix}calc det([1, 1; 2, 3])
         {prefix}calc 5 inches to cm
     """
-    if not ctx.args:
+    if not ctx.argd:
         return await ctx.error_reply(
             "Please give me something to evaluate.\n"
             "See `{}help calc` for usage details.".format(ctx.best_prefix())
