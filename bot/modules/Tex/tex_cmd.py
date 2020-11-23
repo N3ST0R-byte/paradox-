@@ -13,32 +13,39 @@ from .core.tex_utils import ParseMode
 async def cmd_tex(ctx, flags):
     """
     Usage``:
+        {prefix}, <equations>
         {prefix}tex <code>
-        {prefix}, <code>
-        {prefix}mtex <equations>
         {prefix}align <align block>
         {prefix}texsp <code>
+        {prefix}texw <code>
     Description:
-        Compiles and displays [LaTeX]() document code.
-        For a quick introduction to using LaTeX, see our [cheatsheet]().
+        Compiles and displays [LaTeX](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes) document code.\
+            For a quick introduction to using LaTeX, see one of the resources linked below.
 
-        The output is extensively configurable, see `{prefix}help texconfig`
-        for more information about the possible configuration options.
+        The output is extensively configurable, see `{prefix}help texconfig` \
+            for more information about the possible configuration options.
 
-        LaTeX macros and packages may also be used in this command via
-        inclusion into the *preamble*, see `{prefix}help preamble` for more information.
+        LaTeX macros and packages may also be used in this command via \
+            inclusion into the *preamble*, see `{prefix}help preamble` for more information.
 
-        If a guild or user has *latex recognition* enabled (see `{prefix}config latex` and `{prefix}help autotex`),
-        messages containing LaTeX will automatically be compiled and this command
-        is generally not required.
+        If a guild or user has *latex recognition* enabled (see `{prefix}config latex` and `{prefix}help autotex`), \
+            messages containing LaTeX will automatically be compiled and this command \
+            is generally not required.
     Aliases::
-        tex: The default mode, compile the code as written inside a LaTeX `document` environment.
+        tex: The default mode, compile the code given inside a LaTeX `document` environment.
         , / mtex: Render the code in maths mode. Specifically, in a `gather*` environment.
         align: Render the code in an align block. Specifically, in an `align*` environment.
         texsp: Same as `tex`, but ||spoiler|| the output image.
         texw: Don't pad the output (with transparent pixels) after compilation.
     Related:
         autotex, texconfig, preamble
+    LaTeX Resources:
+        [Our own LaTeX cheat-sheet](https://cdn.discordapp.com/attachments/570695825186095134/570696097572585483/texit_cheatsheet_1.pdf)
+        [LaTeX Mathematical symbols for undergrads (and everyone else)](http://tug.ctan.org/info/undergradmath/undergradmath.pdf)
+        [Find a LaTeX symbol by drawing it on Detexify](http://detexify.kirelabs.org/classify.html)
+        [Friendly introduction to mathematical LaTeX, with links](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes#Adding_math_to_LaTeX)
+        [TeX Stackexchange, where every question has been asked before](https://tex.stackexchange.com/)
+        [The LaTeX Support Discord server, origin of the LaTeX Support Network!](https://discord.gg/CbbUP7cDGK)
     Examples``:
         {prefix}tex This is a fraction: \\(\\frac{{1}}{{2}}\\)
         {prefix}, \\int^\\infty_0 f(x)~dx
@@ -62,11 +69,19 @@ async def cmd_tex(ctx, flags):
         )
 
     # Handle `tex help`
-    if ctx.args.lower() == 'help':
+    if ctx.args.lower() in ['help', '--help']:
         return await ctx.error_reply("Please use `{}help tex` for command help.".format(ctx.best_prefix()))
 
     # TODO: Warning about \begin{document} and \documentclass
-    # TODO: Warning about \usepackage
+    if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:
+        await ctx.error_reply(
+            "I compile the code you give me by putting it into a template LaTeX document, between "
+            "`\\begin{{document}}` and `\\end{{document}}` commands.\n"
+            "Please don't give me code that belongs outside of there!\nSee `{prefix}help tex` for some examples "
+            "of what I understand.\n\n"
+            "**If you want to modify the template to add packages or your own macros, "
+            "see `{prefix}help preamble`.**".format(prefix=ctx.best_prefix())
+        )
 
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)
@@ -75,8 +90,6 @@ async def cmd_tex(ctx, flags):
     # Determine parse mode and flags
     flags = {}
     parse_mode = ParseMode.DOCUMENT
-
-    # TODO: Handle `alwaysmath`
 
     lalias = ctx.alias.lower()
     if lalias in [',', 'mtex']:
@@ -92,10 +105,10 @@ async def cmd_tex(ctx, flags):
     content = ctx.clean_arg_str()
 
     # Parse source
-    source = LatexContext.parse_content(content, parse_mode, **flags)
+    source = LatexContext.parse_content(content, parse_mode)
 
     # Create the LatexContext
-    lctx = LatexContext(ctx, source, lguild, luser)
+    lctx = LatexContext(ctx, source, lguild, luser, **flags)
 
     # Make the LaTeX
     await lctx.make()

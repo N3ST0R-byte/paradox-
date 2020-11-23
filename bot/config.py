@@ -1,4 +1,3 @@
-import os
 import configparser as cfgp
 
 from paraEmoji import configEmoji
@@ -10,7 +9,6 @@ conf = None  # type: Conf
 class Conf:
     def __init__(self, configfile, section_name="DEFAULT"):
         self.configfile = configfile
-        self.section_name = section_name
 
         self.config = cfgp.ConfigParser(
             converters={
@@ -21,8 +19,10 @@ class Conf:
         )
         self.config.read(configfile)
 
+        self.section_name = section_name if section_name in self.config else 'DEFAULT'
+
         self.default = self.config["DEFAULT"]
-        self.section = self.config[section_name]
+        self.section = self.config[self.section_name]
         self.emojis = self.config['EMOJIS'] if 'EMOJIS' in self.config else self.section
 
         # Config file recursion, read in configuration files specified in every "ALSO_READ" key.

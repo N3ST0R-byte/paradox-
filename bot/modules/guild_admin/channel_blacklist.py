@@ -66,7 +66,7 @@ mysql_schema, sqlite_schema, columns = schema_generator(
 
 # Attach data interface
 @module.data_init_task
-def attach_autorole_data(client):
+def attach_disabled_channel_data(client):
     disabled_channel_interface = tableInterface(
         client.data,
         "guild_disabled_channels",
