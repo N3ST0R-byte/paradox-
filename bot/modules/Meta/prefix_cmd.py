@@ -53,7 +53,8 @@ async def cmd_prefix(ctx, flags):
     """
     if flags["reset"]:
         # Removes the previously-stored prefix
-        ctx.client.objects["user_prefix_cache"][ctx.author.id] = False
+        ctx.client.objects["user_prefix_cache"].pop(ctx.author.id, None)
+        ctx.client.data.users.set(ctx.author.id, "custom_prefix", None)
 
         # Inform the user
         await ctx.reply("Your personal command prefix has successfully been removed!"
