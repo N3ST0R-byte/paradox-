@@ -57,10 +57,10 @@ async def cmd_prefix(ctx, flags):
         ctx.client.data.users.set(ctx.author.id, "custom_prefix", None)
 
         # Inform the user
-        await ctx.reply("Your personal command prefix has successfully been removed!"
+        await ctx.reply("Your personal command prefix has successfully been removed!\n"
                         "Mentions and the current guild or global prefix will still function.")
 
-    else if flags["set"] or ctx.args:
+    elif flags["set"] or ctx.args:
         prefix = ctx.args
 
         # First check if the provided prefix is of an adequate length
@@ -76,7 +76,7 @@ async def cmd_prefix(ctx, flags):
         ctx.client.objects["user_prefix_cache"][ctx.author.id] = prefix
 
         # Inform the user
-        await ctx.reply("Your personal command prefix has been set to `{}`."
+        await ctx.reply("Your personal command prefix has been set to `{}`.\n"
                         "Mentions and the current guild or global prefix will still function.".format(prefix))
 
     else:
