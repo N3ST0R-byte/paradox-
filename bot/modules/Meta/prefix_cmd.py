@@ -104,7 +104,7 @@ async def cmd_prefix(ctx, flags):
 
         # Create the response and reply
         await ctx.reply(
-            "{}{}{}\nMentioning me will always work as a prefix:{}".format(
+            "{}{}{}\nMentioning me will always work as a prefix: {}".format(
                 personal_str, guild_str, global_str, ctx.client.user.mention
             )
         )
