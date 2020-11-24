@@ -67,7 +67,7 @@ async def cmd_prefix(ctx, flags):
         if len(prefix) > 5:
             return await ctx.error_reply("Sorry, the maximum length of a personal prefix is `5` characters.")
         if len(prefix) == 0:
-            return await cxt.error_reply("No prefix was provided! Please try again.")
+            return await ctx.error_reply("No prefix was provided! Please try again.")
 
         # Set the prefix user property
         ctx.client.data.users.set(ctx.author.id, "custom_prefix", prefix)
