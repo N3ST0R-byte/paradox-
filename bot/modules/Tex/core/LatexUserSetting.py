@@ -260,10 +260,10 @@ class alwayswide(LatexUserSetting, Boolean):
     @classmethod
     def response(cls, ctx, data):
         if not data:
-            return ("Transparent pixels will be added to your rendered LaTeX to improve previews."
+            return ("Transparent pixels will be added to your rendered LaTeX to improve previews.\n"
                     "Use the `texw` command to disable this for a single compile.")
         else:
-            return ("Transparent pixels will no longer be added to your rendered LaTeX."
+            return ("Transparent pixels will no longer be added to your rendered LaTeX.\n"
                     ":warning: If your input is short, Discord will make the rendered image huge!")
 
 
@@ -297,7 +297,7 @@ class namestyle(LatexUserSetting, IntegerEnum):
         elif data == TexNameStyle.MENTION.value:
             return "You will now be mentioned with your LaTeX output."
         elif data == TexNameStyle.HIDDEN.value:
-            return ("Your name will no longer be shown on LaTeX output. "
+            return ("Your name will no longer be shown on LaTeX output.\n"
                     "Note that the name of the output image is your userid, so you are still identifiable.")
 
     @classmethod
