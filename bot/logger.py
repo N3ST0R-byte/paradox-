@@ -35,7 +35,7 @@ async def live_log(message, context, level):
         log_chid = _client.conf.get("log_channel")
 
         # Generate the log messages
-        header = "[{}][{}]".format(logging.getLevelName(level), str(context))
+        header = "[{}][Shard {}][{}]".format(logging.getLevelName(level), _client.shard_id, str(context))
         if len(message) > 1900:
             blocks = split_text(message, blocksize=1900, code=False)
         else:
