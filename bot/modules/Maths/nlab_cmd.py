@@ -93,6 +93,9 @@ async def cmd_nlab(ctx):
         {prefix}nlab categorical group
     """
     direct_page = nlab_url.format("/nlab/show/{}".format(urllib.parse.quote_plus(ctx.args)))
+    if len(direct_page) > 1500:
+        return await ctx.error_reply("Search string given is too long!")
+
     if ctx.alias.lower() == "nlablink":
         await ctx.reply(direct_page if ctx.args else nlab_url[:-2])
         return
