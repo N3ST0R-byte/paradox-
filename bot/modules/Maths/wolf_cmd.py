@@ -250,8 +250,7 @@ async def cmd_query(ctx, flags):
     # Send the temporary loading message.
     temp_msg = await ctx.reply("Sending query to Wolfram Alpha, please wait. {}".format(loading_emoji))
 
-    # TODO: Get appid
-    appid = ctx.get_guild_setting.wolfram_id.value
+    appid = ctx.get_guild_setting.wolfram_id.value if ctx.guild else None
     if appid:
         custom_appid = True
     else:
@@ -364,6 +363,7 @@ async def cmd_query(ctx, flags):
                     pass
                 except Exception:
                     pass
+                return
             temp_msg = await ctx.reply("Processing results, please wait. {}".format(loading_emoji))
 
             output_data[0].seek(0)
