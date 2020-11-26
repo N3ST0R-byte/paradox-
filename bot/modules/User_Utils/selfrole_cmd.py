@@ -116,6 +116,10 @@ async def cmd_giveme(ctx: Context, flags):
                     "`{}`".format('`, `'.join(r.name for r in too_high_for_me_roles))
                 )
 
+            if any(role is None for role in roles):
+                # This shouldn't happen due to the `allow_notfound=False` in `find_role`.
+                return
+
             # Set roles
             selfrole_config.value = list(set(selfroles + roles))
 

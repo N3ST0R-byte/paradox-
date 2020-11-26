@@ -112,15 +112,19 @@ async def find_role(ctx, userstr, create=False, interactive=False, collection=No
                 resp = await ctx.ask("Would you like to create this role?", timeout=30)
                 if resp:
                     # They accepted, create the role
-                    role = await ctx.guild.create_role(
-                        name=userstr,
-                        reason="Interactive role creation for {} (uid:{})".format(ctx.author, ctx.author.id)
-                    )
-                    await msg.delete()
-                    await ctx.reply("You have created the role `{}`!".format(userstr))
+                    # Before creation, check if the role name is too long
+                    if len(userstr) > 100:
+                        await ctx.error_reply("Could not create a role with a name over 100 characters long!")
+                    else:
+                        role = await ctx.guild.create_role(
+                            name=userstr,
+                            reason="Interactive role creation for {} (uid:{})".format(ctx.author, ctx.author.id)
+                        )
+                        await msg.delete()
+                        await ctx.reply("You have created the role `{}`!".format(userstr))
 
             # If we still don't have a role, cancel unless allow_notfound is set
-            if roles is None and not allow_notfound:
+            if role is None and not allow_notfound:
                 raise SafeCancellation
         elif not allow_notfound:
             raise SafeCancellation(msgstr)
