@@ -29,7 +29,7 @@ def prop_tabulate(prop_list, value_list, indent=True):
     max_len = max(len(prop) for prop in prop_list)
     return "".join(["`{}{}{}`\t{}{}".format("​ " * (max_len - len(prop)) if indent else "",
                                             prop,
-                                            ":" if len(prop) > 1 else "​ " * 2,
+                                            ":" if len(prop) else "​ " * 2,
                                             value_list[i],
                                             '' if str(value_list[i]).endswith("```") else '\n')
                     for i, prop in enumerate(prop_list)])
