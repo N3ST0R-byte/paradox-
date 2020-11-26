@@ -33,7 +33,7 @@ async def cmd_tex(ctx, flags):
             is generally not required.
     Aliases::
         tex: The default mode, compile the code given inside a LaTeX `document` environment.
-        , / mtex: Render the code in maths mode. Specifically, in a `gather*` environment.
+        , or mtex: Render the code in maths mode. Specifically, in a `gather*` environment.
         align: Render the code in an align block. Specifically, in an `align*` environment.
         texsp: Same as `tex`, but ||spoiler|| the output image.
         texw: Don't pad the output (with transparent pixels) after compilation.
@@ -106,6 +106,13 @@ async def cmd_tex(ctx, flags):
 
     # Parse source
     source = LatexContext.parse_content(content, parse_mode)
+
+    if not source:
+        return await ctx.error_reply(
+            "Codeblocks found, but no LaTeX codeblocks!\n"
+            "Please write your codeblocks as follows.\n"
+            "\\`\\`\\`tex\ncode\n\\`\\`\\`"
+        )
 
     # Create the LatexContext
     lctx = LatexContext(ctx, source, lguild, luser, **flags)
