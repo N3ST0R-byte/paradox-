@@ -3,6 +3,7 @@ import asyncio
 import discord
 
 from cmdClient.lib import UserCancelled, ResponseTimedOut
+from wards import is_manager
 
 from .module import latex_module as module
 
@@ -369,6 +370,7 @@ async def general_menu(ctx):
             desc="Administrate the LaTeX preamble system",
             aliases=["pa"],
             flags=["user==", "guild==", "menu", "approve=", "deny=", "a=", "d=", "r=="])
+@is_manager()
 async def cmd_preambleadmin(ctx, flags):
     """
     Usage``:

@@ -12,7 +12,7 @@ with open(os.path.join(__location__, "package_whitelist.txt"), 'r') as pw:
     whitelisted_packages = [line.strip() for line in pw]
 
 # Store the path to the failed image
-failed_image_path = os.path.join(__location__, "package_whitelist.txt")
+failed_image_path = os.path.join(__location__, "failed.png")
 
 # Store the path to the latex compile script
 compile_script_path = os.path.join(__location__, "texcompile.sh")
