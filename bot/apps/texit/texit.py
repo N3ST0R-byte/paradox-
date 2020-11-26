@@ -19,7 +19,7 @@ info = {
     "brief": True,
     "app": "texit",
     "help_str": help_str,
-    "help_file": "resources/apps/texit/texit_thanks.png"
+    "help_file": "bot/resources/apps/texit/texit_thanks.png"
 }
 
 disabled_modules = [
