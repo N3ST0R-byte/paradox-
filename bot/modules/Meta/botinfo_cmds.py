@@ -126,7 +126,7 @@ async def cmd_ping(ctx: Context):
         {prefix}ping
     Description:
         Test the API round trip response by editing a message.
-        Also sends the websocket protocol latency (hearbeat).
+        Also sends the websocket protocol latency (heartbeat).
     """
     # Edit a message and see how long it takes
     msg = await ctx.reply("Beep")
