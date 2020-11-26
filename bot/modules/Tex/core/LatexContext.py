@@ -12,7 +12,7 @@ from cmdClient import cmdClient, Context
 from ..module import latex_module as module
 
 from .tex_utils import ParseMode, TexNameStyle
-from ..resources import default_preamble
+from ..resources import default_preamble, failed_image_path
 from .LatexUser import LatexUser
 from .LatexGuild import LatexGuild
 from .tex_compile import makeTeX  # noqa
@@ -290,7 +290,7 @@ class LatexContext:
             # Obtain the output image path, potentially the failed image
             file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
             exists = True if os.path.isfile(file_path) else False
-            file_path = "tex/failed.png" if not exists else file_path
+            file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
             output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)

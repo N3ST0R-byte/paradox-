@@ -11,7 +11,7 @@ from wards import is_manager
 from utils.lib import split_text, mail
 from utils import interactive  # noqa
 
-from ..resources import default_preamble
+from ..resources import default_preamble, failed_image_path
 
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -604,8 +604,11 @@ async def test_submission(ctx, userid, manager):
     # Compile the latex with this preamble
     log = await ctx.makeTeX(preamble_test_code, testid, preamble=preamble)
 
-    file_name = "tex/staging/{id}/{id}.png".format(id=testid)
-    dfile = discord.File(file_name)
+    file_path = "tex/staging/{id}/{id}.png".format(id=testid)
+    if os.path.isfile(file_path):
+        dfile = discord.File(file_path)
+    else:
+        dfile = discord.File(failed_image_path)
 
     if not log:
         message = "Test compile for pending preamble of {}.\
