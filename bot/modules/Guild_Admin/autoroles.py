@@ -48,9 +48,9 @@ class bot_autoroles(ListData, RoleList, GuildSetting):
 async def give_autoroles(client: cmdClient, member: discord.Member):
     # Get the autoroles from storage
     if member.bot:
-        autoroles = client.guild_config.bot_autoroles(client, member.guild.id).value
+        autoroles = client.guild_config.bot_autoroles.get(client, member.guild.id).value
     else:
-        autoroles = client.guild_config.autoroles(client, member.guild.id).value
+        autoroles = client.guild_config.autoroles.get(client, member.guild.id).value
 
     # Add the autoroles, if we can
     if autoroles and member.guild.me.guild_permissions.manage_roles:
