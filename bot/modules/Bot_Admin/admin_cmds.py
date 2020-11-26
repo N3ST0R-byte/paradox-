@@ -134,6 +134,10 @@ async def cmd_dm(ctx: Context):
         except discord.NotFound:
             return await ctx.error_reply("This user does not exist!")
 
+    # We can't send messages to ourself
+    if user == ctx.client.user:
+        return await ctx.error_reply("I cannot send a message to myself!")
+
     # Send the message
     try:
         await user.send(message)

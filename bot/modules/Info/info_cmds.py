@@ -403,6 +403,7 @@ async def cmd_channelinfo(ctx: Context, flags):
 @module.cmd("avatar",
             desc="Obtains the mentioned user's avatar, or your own.",
             aliases=["av"])
+@in_guild()
 async def cmd_avatar(ctx: Context):
     """
     Usage``:
