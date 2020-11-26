@@ -5,7 +5,7 @@ from utils.ctx_addons import best_prefix  # noqa
 
 from settings import BadUserInput
 
-from wards import guild_manager
+from wards import guild_manager, in_guild
 
 from .module import guild_admin_module as module
 
@@ -74,6 +74,7 @@ async def _build_config_pages(ctx, show_help=True):
 
 @module.cmd("config",
             desc="View and set the guild configuration.")
+@in_guild()
 async def cmd_config(ctx):
     """
     Usage``:
