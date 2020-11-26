@@ -17,7 +17,7 @@ from .module import guild_moderation_module as module
 async def cmd_prune(ctx, flags):
     """
     Usage``:
-        {prefix} prune [number] [flags] [--after <msgid>] [--from <user>] [-r <reason>]
+        {prefix}prune [number] [flags] [--after <msgid>] [--from <user>] [-r <reason>]
     Description:
         Deletes your command message and messages from the given number of messages before that.
         If neither the number nor `after` is given, deletes from the last 100 messages.
@@ -31,14 +31,14 @@ async def cmd_prune(ctx, flags):
         **Note:** The modlog feature is currently temporarily disabled, so purges will not appear\
             in the modlog until it is reactivated (in the next release).
     Behavioural flags::
-        ​r: Reason for the message purge.
-        force: Force a prune without asking for confirmation.
+        r: Reason for the message purge.
+        force: Force a prune without asking for a reason or confirmation.
     Restriction flags::
         bot: Only messages from bots.
         user:  Only messages from non-bots.
         embed:  Only messages with embeds (including link previews).
         file: Only messages with uploaded attachements (e.g. images).
-        me: Only my messages.
+        me: Only messages from me ({ctx.client.user.mention}).
         from: Only messages from the given user (interactive lookup).
         after: Only messages after (not including) the given message id (must be in the last `1000` messages).
     Examples``:
@@ -127,7 +127,7 @@ async def cmd_prune(ctx, flags):
         to_delete = to_delete and (not flags["embed"] or message.embeds)
         to_delete = to_delete and (not flags["file"] or message.attachments)
         to_delete = to_delete and (not flags["from"] or message.author == user)
-        to_delete = to_delete and (not flags["me"] or message.author == ctx.me)
+        to_delete = to_delete and (not flags["me"] or message.author == ctx.client.user)
 
         if to_delete:
             message_list.append(message)
