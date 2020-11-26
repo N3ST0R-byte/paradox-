@@ -83,7 +83,8 @@ class LatexContext:
     )
 
     # Compiled regex for the `$` latex content checker
-    dollars_pattern = re.compile(r"\$(?=\S).*(?<=\S)\$")
+    single_dollars_pattern = re.compile(r"\$(?=\S)[^$]+(?<=\S)\$")
+    double_dollars_pattern = re.compile(r"\$\$[^$]+\$\$")
 
     # Locks to avoid simultaneous compilation for each user
     user_locks = {}  # userid: Lock
@@ -426,7 +427,7 @@ class LatexContext:
 
         if '$' in content and content.strip('$'):
             # Regex match for the $ pattern
-            return (cls.dollars_pattern.search(content) is not None)
+            return (cls.single_dollars_pattern.search(content) is not None)
         else:
             return False
 
@@ -445,7 +446,9 @@ class LatexContext:
         has_tex = False
 
         # Check for `$$`
-        has_tex = has_tex or (content.count('$$') > 1 and content.strip('$'))
+        has_tex = has_tex or (content.count('$$') > 1
+                              and content.strip('$')
+                              and cls.double_dollars_pattern.search(content) is not None)
 
         # Check for environments
         has_tex = has_tex or ((r"\begin{" in content) and (r"\end{" in content))
