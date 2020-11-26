@@ -485,7 +485,7 @@ async def reaction_listener(client, reaction, user):
                 await reaction.message.delete()
         elif reaction.emoji in [LatexContext.emoji_show_source, LatexContext.emoji_show_errors]:
             # Check the user is the author or if they allow other people to view the source
-            if user.id == luser.id or lctx.allow_other:
+            if user.id == luser.id or reaction.message.channel.permissions_for(user).manage_messages:
                 # Toggle the shown state
                 lctx._source_shown = 1 - lctx._source_shown
 
