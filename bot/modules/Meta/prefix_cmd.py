@@ -1,5 +1,6 @@
-from logger import log
 from .module import meta_module as module
+
+from . import userprefix_data  # noqa
 
 """
 Provides a prefix command.
@@ -51,10 +52,19 @@ async def cmd_prefix(ctx, flags):
         {prefix}prefix
         {prefix}prefix --set !!
     """
+    # Get the user's prefix and update the cache
+    rows = ctx.client.data.user_prefixes.select_where(userid=ctx.author.id)
+    prefix = rows[0]['prefix'] if rows else None
+    if prefix:
+        ctx.client.objects["user_prefix_cache"][ctx.author.id] = prefix
+    else:
+        ctx.client.objects["user_prefix_cache"].pop(ctx.author.id, None)
+
+    # Handle the flags and arguments
     if flags["reset"]:
         # Removes the previously-stored prefix
         ctx.client.objects["user_prefix_cache"].pop(ctx.author.id, None)
-        ctx.client.data.users.unset(ctx.author.id, "custom_prefix")
+        ctx.client.data.user_prefixes.delete_where(userid=ctx.author.id)
 
         # Inform the user
         await ctx.reply("Your personal command prefix has successfully been removed!\n"
@@ -70,7 +80,11 @@ async def cmd_prefix(ctx, flags):
             return await ctx.error_reply("No prefix was provided! Please try again.")
 
         # Set the prefix user property
-        ctx.client.data.users.set(ctx.author.id, "custom_prefix", prefix)
+        ctx.client.data.user_prefixes.insert(
+            allow_replace=True,
+            userid=ctx.author.id,
+            prefix=prefix
+        )
 
         # Update the user prefix cache
         ctx.client.objects["user_prefix_cache"][ctx.author.id] = prefix
@@ -82,7 +96,7 @@ async def cmd_prefix(ctx, flags):
     else:
         # Retrieve the current bot prefixes and build the response lines
         # User's personal prefix
-        personal_prefix = ctx.client.data.users.get(ctx.author.id, "custom_prefix")
+        personal_prefix = prefix
         if personal_prefix:
             personal_str = "Your personal prefix is `{}`.\n".format(personal_prefix)
         else:
@@ -108,23 +122,3 @@ async def cmd_prefix(ctx, flags):
                 personal_str, guild_str, global_str, ctx.client.user.mention
             )
         )
-
-
-@module.init_task
-def ensure_prefix_properties(client):
-    client.data.users.ensure_exists("custom_prefix", shared=False)
-
-
-@module.init_task
-def load_user_prefixes(client):
-    """
-    Retrieve the user prefixes from the database and fill the cache
-    """
-    user_prefix_cache = {}
-    for row in client.data.users.get_all_with("custom_prefix"):
-        user_prefix_cache[int(row['userid'])] = row['value']
-
-    client.objects["user_prefix_cache"] = user_prefix_cache
-
-    log("Loaded {} custom user prefixes.".format(len(user_prefix_cache)),
-        context="LOAD_USER_PREFIXES")
