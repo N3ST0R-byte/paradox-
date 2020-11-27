@@ -57,7 +57,7 @@ async def cmd_roleinfo(ctx: Context):
     colour = role.colour if role.colour.value else discord.Colour.light_grey()
     num_users = len(role.members)
     created = role.created_at.strftime("%I:%M %p, %d/%m/%Y")
-    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - role.created_at, minutes=False))
+    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - role.created_at, minutes=True))
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
 
