@@ -32,9 +32,9 @@ async def cmd_tex(ctx, flags):
             messages containing LaTeX will automatically be compiled and this command \
             is generally not required.
     Aliases::
-        tex: The default mode, compile the code given inside a LaTeX `document` environment.
-        , or mtex: Render the code in maths mode. Specifically, in a `gather*` environment.
-        align: Render the code in an align block. Specifically, in an `align*` environment.
+        tex: Code is compiled in the default `document` environment.
+        , or mtex: Code is rendered in math mode, in a `gather*` environment.
+        align: Code is rendered in math mode, aligned in an `align*` environment.
         texsp: Same as `tex`, but ||spoiler|| the output image.
         texw: Don't pad the output (with transparent pixels) after compilation.
     Related:
