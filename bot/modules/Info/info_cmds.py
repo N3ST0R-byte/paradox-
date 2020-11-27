@@ -327,19 +327,23 @@ async def cmd_channelinfo(ctx: Context, flags):
         "store": "Store channel"
     }
 
-    # Disallow selecting channels that the user cannot see. Channels the bot can't see still work.
-    valid_channels = [ch for ch in ctx.guild.channels if ch.permissions_for(ctx.author).read_messages]
+    # Definitions to shorten the character count
+    gch = ctx.guild.channels
+    me = ctx.guild.me
+    user = ctx.author
+    # Disallow selecting channels that the user and bot cannot see.
+    valid = [ch for ch in gch if (ch.permissions_for(user).read_messages) and (ch.permissions_for(me).read_messages)]
     ch = ctx.ch
     if ctx.args:
-        ch = await ctx.find_channel(ctx.args, interactive=True, collection=valid_channels)
+        ch = await ctx.find_channel(ctx.args, interactive=True, collection=valid)
         if not ch:
             return
 
     if flags['topic']:
         if isinstance(ch, discord.TextChannel):
             return await ctx.reply(
-                "**Channel topic for {}**:\n{}".format(ch.mention, ch.topic)
-                if ch.topic else "{} does not have a topic!".format(ch.mention))
+                f"**Channel topic for {ch.mention}**:\n{ch.topic}"
+                if ch.topic else f"{ch.mention} doesn't have a topic.", allowed_mentions=discord.AllowedMentions.none())
         else:
             return await ctx.reply("Only text channels have topics!")
 

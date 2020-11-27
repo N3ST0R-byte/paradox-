@@ -205,7 +205,7 @@ async def find_channel(ctx, userstr, interactive=False, collection=None, chan_ty
         # We have multiple matching channels!
         if interactive:
             # Interactive prompt with the list of channels
-            chan_names = [chan.name for chan in channels]
+            chan_names = [f"{chan.name:<24} {str(chan.type):<12}" for chan in channels]
 
             try:
                 selected = await ctx.selector(
