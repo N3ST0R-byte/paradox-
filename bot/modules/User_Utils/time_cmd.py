@@ -182,7 +182,7 @@ async def time_diff(ctx, tz, auth_tz, brief=False):
 
 @module.cmd("time",
             desc="Displays the current time for a user",
-            flags=['set', 'at', 'list', 'brief', '24h'],
+            flags=['set', 'at', 'list', 'brief', '24h', 'reset'],
             aliases=['ti'])
 async def cmd_time(ctx, flags):
     """
@@ -298,6 +298,19 @@ async def cmd_time(ctx, flags):
             brief_display=bool(brief)
         )
         await ctx.reply("Your clock is now more compact." if brief else "Your clock is now more verbose.")
+    elif flags['reset']:
+        # Add a confirmation before resetting the timezone
+        if await ctx.ask("Are you sure you want to reset your timezone?"):
+            # Reset the timezone of the author
+            time_data.upsert(
+                constraint='userid',
+                userid=ctx.author.id,
+                timezone=None
+            )
+            await ctx.reply("Your timezone has been reset.")
+        else:
+            await ctx.reply("Question cancelled. Your timezone has not been reset.")
+
     else:
         # All flags have been handled, all that remains is time reporting for targeted user or author.
 
