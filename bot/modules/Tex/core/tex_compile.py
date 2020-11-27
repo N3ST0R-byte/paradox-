@@ -54,7 +54,7 @@ extra=$((minwidth-width))
 if [ $extra -gt 0 ]; then
     convert {image} \
         -gravity East +antialias -splice ${{extra}}x\
-        -alpha set -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image}
+        -alpha set -background transparent -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image}
 fi
 """
 
