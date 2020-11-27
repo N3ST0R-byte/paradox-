@@ -19,7 +19,8 @@ version_mysql, version_sqlite, version_columns = schema_generator(
     "VERSION",
     Column("version", ColumnType.INT, required=True, primary=True),
     Column("updated_at", ColumnType.TIMESTAMP, default="CURRENT_TIMESTAMP", required=True),
-    Column("updated_by", ColumnType.SHORTSTRING)
+    Column("updated_by", ColumnType.SHORTSTRING),
+    add_timestamp=False
 )
 version_mysql += (
     "\n"

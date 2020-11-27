@@ -90,7 +90,7 @@ def timestamp_column(name, required=False):
     )
 
 
-def schema_generator(table_name, *columns):
+def schema_generator(table_name, *columns, add_timestamp=True, add_app=False):
     """
     Helper to generate a mysql and sqlite schema for a simple table design.
 
@@ -99,11 +99,22 @@ def schema_generator(table_name, *columns):
     table_name: str
         Name of the table to generate the schema for.
     columns: List[Column]
+        List of Columns to add to the schema.
+    add_timestamp: bool
+        Whether to automatically add a `_timestamp` column with the insert timestamp.
+        On mysql this column also updates on update.
+    add_app: bool
+        Whether to automatically add an `app` column for the current app.
 
     Returns: Tuple[str, str, Tuple[Tuple[str, type]]]
         Represents `(mysql_schema, sqlite_schema, column_data)`
         where `column_data` is that accepted by `tableManipulator`.
     """
+    if add_timestamp:
+        columns = (*columns, timestamp_column('_timestamp'))
+    if add_app:
+        columns = (*columns, Column('app', ColumnType.SHORTSTRING, primary=True, required=True))
+
     table_formatstr = "CREATE TABLE {table}(\n\t{col_strs}{primary_str}\n);"
 
     primary_keys = ','.join(column.name for column in columns if column.primary)
