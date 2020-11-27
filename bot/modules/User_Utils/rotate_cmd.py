@@ -70,7 +70,10 @@ async def cmd_rotate(ctx):
 
     async with aiohttp.ClientSession() as session:
         async with session.get(image_url) as r:
-            response = await r.read()
+            if r.status == 200:
+                response = await r.read()
+            else:
+                await ctx.error_reply("Retrieving the previous image failed.")
 
     with Image.open(BytesIO(response)) as im:
         await _rotate(ctx, im, amount, ctx.author.id)
