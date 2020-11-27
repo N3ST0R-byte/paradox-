@@ -230,6 +230,8 @@ async def cmd_serverinfo(ctx: Context, flags):
     guild = ctx.guild
 
     if flags["icon"]:
+        if not ctx.guild.icon:
+            return await ctx.reply("The current guild has no custom icon set.")
         embed = discord.Embed(color=discord.Colour.light_grey())
         embed.set_image(url=guild.icon_url)
         return await ctx.reply(embed=embed)
@@ -276,19 +278,17 @@ async def cmd_serverinfo(ctx: Context, flags):
 
     owner = "{0} ({0.id})".format(guild.owner)
     icon = "[Icon Link]({})".format(guild.icon_url)
-    is_large = ("More" if guild.large else "Less") + " than 250 members"
     mfa = "Enabled" if guild.mfa_level else "Disabled"
     channels = "{} text, {} voice, {} categories | {} total".format(text, voice, category, total)
     boosts = "Level {} | {} boosts total".format(guild.premium_tier, guild.premium_subscription_count)
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - guild.created_at, minutes=False))
 
-    prop_list = ["Owner", "Region", "Icon", "Large server?", "Verification",
+    prop_list = ["Owner", "Region", "Icon", "Verification",
                  "2FA", "Roles", "Members", "Channels", "Server Boosts", "Created at", ""]
     value_list = [owner,
                   region,
                   icon,
-                  is_large,
                   ver,
                   mfa,
                   len(guild.roles),
