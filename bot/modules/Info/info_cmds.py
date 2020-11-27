@@ -218,10 +218,10 @@ async def cmd_userinfo(ctx: Context):
             aliases=["serverinfo", "sinfo", "si", "gi"],
             flags=["icon"])
 @in_guild()
-async def cmd_serverinfo(ctx: Context, flags):
+async def cmd_guildinfo(ctx: Context, flags):
     """
     Usage``:
-        {prefix}guilinfo [--icon]
+        {prefix}guildinfo [--icon]
     Description:
         Shows information about the guild you are in.
     Flags::
@@ -277,7 +277,10 @@ async def cmd_serverinfo(ctx: Context, flags):
                                                      bots, guild.member_count)
 
     owner = "{0} ({0.id})".format(guild.owner)
-    icon = "[Icon Link]({})".format(guild.icon_url)
+    if guild.icon:
+        icon = "[Icon Link]({})".format(guild.icon_url)
+    else:
+        icon = "No guild icon set"
     mfa = "Enabled" if guild.mfa_level else "Disabled"
     channels = "{} text, {} voice, {} categories | {} total".format(text, voice, category, total)
     boosts = "Level {} | {} boosts total".format(guild.premium_tier, guild.premium_subscription_count)
