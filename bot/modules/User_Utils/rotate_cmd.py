@@ -73,7 +73,7 @@ async def cmd_rotate(ctx):
             if r.status == 200:
                 response = await r.read()
             else:
-                await ctx.error_reply("Retrieving the previous image failed.")
+                return await ctx.error_reply("Retrieving the previous image failed.")
 
     with Image.open(BytesIO(response)) as im:
         await _rotate(ctx, im, amount, ctx.author.id)
