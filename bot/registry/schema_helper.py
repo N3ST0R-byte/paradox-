@@ -12,6 +12,7 @@ class ColumnType(Enum):
     MSGSTRING = (str, 'VARCHAR(2048)', 'TEXT')
     TEXT = (str, 'TEXT', 'TEXT')
     BOOL = (bool, 'BOOLEAN', 'BOOL')
+    TIMESTAMP = (int, 'TIMESTAMP', 'TIMESTAMP')
 
     @property
     def pytype(self):
@@ -40,21 +41,30 @@ class Column:
         Whether this column is a primary key.
     required: Bool
         Whether this column is required not to be NULL.
+    default: Any
+        The default value for the column.
+    mysql_update_timestamp: Bool
+        Whether to add `ON UPDATE CURRENT_TIMESTAMP` to the column.
+        Only applies to mysql.
     """
-    def __init__(self, column_name, column_type, primary=False, required=False, default=None):
+    def __init__(self, column_name, column_type,
+                 primary=False, required=False, default=None,
+                 mysql_update_timestamp=False):
         self.name = column_name
         self.col_type = column_type
         self.primary = primary
         self.required = required
         self.default = default
+        self.update_timestamp = mysql_update_timestamp
 
     @property
     def for_mysql(self):
-        return "{} {}{}{}".format(
+        return "{} {}{}{}{}".format(
             self.name,
             self.col_type.in_mysql,
             " NOT NULL" if self.required else "",
-            " DEFAULT {}".format(self.default) if self.default is not None else ""
+            " DEFAULT {}".format(self.default) if self.default is not None else "",
+            " ON UPDATE CURRENT_TIMESTAMP" if self.update_timestamp else ""
         )
 
     @property
@@ -65,6 +75,19 @@ class Column:
             " NOT NULL" if self.required else "",
             " DEFAULT {}".format(self.default) if self.default is not None else ""
         )
+
+
+def timestamp_column(name, required=False):
+    """
+    Quick helper to generate an automatic timestamp column.
+    """
+    return Column(
+        name,
+        ColumnType.TIMESTAMP,
+        required=required,
+        default="CURRENT_TIMESTAMP",
+        mysql_update_timestamp=True
+    )
 
 
 def schema_generator(table_name, *columns):
