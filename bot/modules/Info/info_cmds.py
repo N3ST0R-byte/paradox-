@@ -403,7 +403,6 @@ async def cmd_channelinfo(ctx: Context, flags):
 @module.cmd("avatar",
             desc="Obtains the mentioned user's avatar, or your own.",
             aliases=["av"])
-@in_guild()
 async def cmd_avatar(ctx: Context):
     """
     Usage``:
@@ -413,14 +412,17 @@ async def cmd_avatar(ctx: Context):
         Hyperlinks the user's avatar so it can be viewed online.
     """
     user = ctx.author
-    if ctx.args:
-        user = await ctx.find_member(ctx.args, interactive=True)
-        if not user:
-            return
-    if str(user.colour) == "#000000":
-        colour = ParaCC["blue"]
+    if ctx.guild:
+        if ctx.args:
+            user = await ctx.find_member(ctx.args, interactive=True)
+            if not user:
+                return
+        if str(user.colour) == "#000000":
+            colour = ParaCC["blue"]
+        else:
+            colour = user.colour
     else:
-        colour = user.colour
+        colour = ParaCC["blue"]
 
     desc = f"Click [here]({user.avatar_url}) to view the {'GIF' if user.is_avatar_animated() else 'image'}."
     embed = discord.Embed(colour=colour, description=desc)
