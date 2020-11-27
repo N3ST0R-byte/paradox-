@@ -107,9 +107,9 @@ async def cmd_roleinfo(ctx: Context):
 async def cmd_rolemembers(ctx: Context):
     """
     Usage``:
-        {prefix}rolemembers [<role-name> | <role-mention> | <role-id>]
+        {prefix}rolemembers [<role-name> | <role-mention> | <role-id> | <partial lookup>]
     Description:
-    Lists the users with this role.
+        Lists all of the users in the specified role.
      """
     if not ctx.args:
         return await ctx.error_reply("Please provide a role to list the members of.")
@@ -224,7 +224,8 @@ async def cmd_serverinfo(ctx: Context, flags):
         {prefix}guilinfo [--icon]
     Description:
         Shows information about the guild you are in.
-        With --icon, just displays the guild icon.
+    Flags::
+        icon: Sends the guild icon in an embed.
     """
     guild = ctx.guild
 
