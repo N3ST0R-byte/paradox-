@@ -407,10 +407,10 @@ async def cmd_channelinfo(ctx: Context, flags):
 async def cmd_avatar(ctx: Context):
     """
     Usage``:
-        {prefix}avatar [user]
+        {prefix}avatar [<username> | <user ID> | <user mention> | <partial lookup>]
     Description:
-        Replies with the avatar of the provided user,
-        or your own avatar if none was given.
+        Displays the avatar of the provided user. If no user is provided, the author will be used.
+        Hyperlinks the user's avatar so it can be viewed online.
     """
     user = ctx.author
     if ctx.args:
