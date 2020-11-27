@@ -40,6 +40,7 @@ async def cmd_roleinfo(ctx: Context):
         {prefix}roleinfo [<role-name> | <role-mention> | <role-id>]
     Description:
         Provides information about the given role.
+        If no role is provided, all of the roles in the guild will be listed.
     """
     # Get a sorted list of guild roles by position
     guild_roles = sorted(ctx.guild.roles, key=lambda role: role.position)
@@ -133,7 +134,8 @@ async def cmd_userinfo(ctx: Context):
     Usage``:
         {prefix}userinfo [user]
     Description:
-        Sends information on the provided user, or yourself.
+        Sends information on the provided user.
+        If no user is provided, the author will be used.
     """
     user = ctx.author
     if ctx.args:
@@ -316,6 +318,7 @@ async def cmd_channelinfo(ctx: Context, flags):
         {prefix}channelinfo [<channel-name> | <channel-mention> | <channel-id] [--topic]
     Description:
         Gives information on a text channel, voice channel, or category.
+        If no channel is provided, the current channel will be used.
     Flags::
         topic: Reply with only the channel topic.
     """
