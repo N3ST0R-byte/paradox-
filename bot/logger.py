@@ -2,6 +2,7 @@ import sys
 import json
 import logging
 import asyncio
+from discord import AllowedMentions
 
 from cmdClient.logger import cmd_log_handler
 
@@ -50,12 +51,17 @@ async def live_log(message, context, level):
 
         # Post the log messages
         if log_chid:
-            [await mail(_client, log_chid, content=block) for block in blocks]
+            [await mail(_client, log_chid, content=block, allowed_mentions=AllowedMentions.none()) for block in blocks]
 
         if level >= logging.ERROR:
             error_chid = _client.conf.get("error_channel")
             if error_chid:
-                [await mail(_client, error_chid, content=block) for block in blocks]
+                [
+                    await mail(_client,
+                               error_chid,
+                               content=block,
+                               allowed_mentions=AllowedMentions.none()) for block in blocks
+                ]
 
 
 def attach_log_client(client):
