@@ -329,7 +329,7 @@ tables = {
             parsers.TEX_SHOWNAME,
             'user_latex_config',
             InsertType.UPSERT,
-            {'userid': ColumnKeys.USERID, 'alwaysmath': ColumnKeys.VALUE, 'app': 'paradox'},
+            {'userid': ColumnKeys.USERID, 'namestyle': ColumnKeys.VALUE, 'app': 'paradox'},
             constraint=('userid', 'app')
         ),
         'texit_latex_showname': PropAction(
@@ -337,7 +337,7 @@ tables = {
             parsers.TEX_SHOWNAME,
             'user_latex_config',
             InsertType.UPSERT,
-            {'userid': ColumnKeys.USERID, 'alwaysmath': ColumnKeys.VALUE, 'app': 'texit'},
+            {'userid': ColumnKeys.USERID, 'namestyle': ColumnKeys.VALUE, 'app': 'texit'},
             constraint=('userid', 'app')
         ),
     },
