@@ -128,7 +128,7 @@ elif DB_TYPE.lower() == "mysql":
         'username': conf.get('db_username'),
         'password': conf.get('db_password'),
         'host': conf.get('db_host'),
-        'database': conf.get('db_name')
+        'database': conf.get('db_database')
     }
     client.data = mysqlConnector(**dbopts)
 else:
