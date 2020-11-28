@@ -10,7 +10,6 @@ from logger import log, log_fmt, attach_log_client
 from apps import load_app
 
 from registry.connectors import mysqlConnector, sqliteConnector
-from paraData import propertyModule  # noqa
 from settings import guild_config
 
 # Always load command modules last
