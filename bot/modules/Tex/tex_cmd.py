@@ -56,7 +56,7 @@ async def cmd_tex(ctx, flags):
         return await ctx.error_reply(
             "LaTeX configuration has moved to the `texconfig` command.\n"
             "Please see `{}help texconfig` for usage.".format(ctx.best_prefix())
-        ).format(ctx.best_prefix)
+        )
 
     # Handle empty input
     if not ctx.args:
