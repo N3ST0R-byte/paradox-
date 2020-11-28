@@ -197,10 +197,9 @@ role_persistence_ignores_schema = schema_generator(
 
 member_stored_roles_schema = schema_generator(
     "member_stored_roles",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column("roleid", ColumnType.SNOWFLAKE, primary=False, required=True)
+    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True)
 )
 
 
@@ -236,7 +235,7 @@ def attach_rolepersistence_data(client):
         "member_stored_roles",
         app=client.app,
         column_data=columns,
-        shared=False,
+        shared=True,
         sqlite_schema=sqlite_schema,
         mysql_schema=mysql_schema,
     )
