@@ -167,22 +167,21 @@ async def confirm(ctx, question, preamble, **kwargs):
         return True
 
 
-async def preamblelog(ctx, title, user=None, author=None, header=None, source=None):
+async def preamblelog(ctx, title, user=None, userid=None, author=None, header=None, source=None):
     """
     Log a message to the preamble log channel
     """
     logchid = int(ctx.client.conf.get("preamble_logch"))
 
     user = user or ctx.author
-    if author is None:
-        author = "{} ({})".format(user, user.id)
+    author = author or "{} ({})".format(user, user.id)
 
     content = "{}\n{}\n{}".format(title or "", header or "", author or "")
     if source:
         with BytesIO() as temp_file:
             temp_file.write(source.encode())
             temp_file.seek(0)
-            dfile = discord.File(temp_file, filename="{}.tex".format(user.id))
+            dfile = discord.File(temp_file, filename="{}.tex".format(userid or user.id))
             await mail(
                 ctx.client,
                 logchid,
@@ -457,6 +456,8 @@ async def approve_submission(ctx, userid, manager, reason=None):
     await preamblelog(
         ctx,
         "Preamble request approved by {} ({})".format(manager, manager.id),
+        author="{} ({})".format(pending_info[0]['username'], userid),
+        userid=userid,
         source=pending_info[0]['pending_preamble']
     )
 
@@ -550,6 +551,8 @@ async def deny_submission(ctx, userid, manager, reason=None):
     await preamblelog(
         ctx,
         "Preamble request denied by {} ({})".format(manager, manager.id),
+        author="{} ({})".format(pending_info[0]['username'], userid),
+        userid=userid,
         source=pending_info[0]['pending_preamble']
     )
 
