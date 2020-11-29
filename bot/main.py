@@ -1,6 +1,7 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import argparse
+
+from concurrent_log_handler import ConcurrentRotatingFileHandler
 
 import discord
 from cmdClient import cmdClient
@@ -82,7 +83,7 @@ logger = logging.getLogger()
 logger.setLevel(LOGLEVEL)
 logging.getLogger('discord').setLevel(DISCORD_LOGLEVEL)
 
-file_handler = RotatingFileHandler(
+file_handler = ConcurrentRotatingFileHandler(
     filename=LOGFILE,
     maxBytes=5000000,
     backupCount=10,
