@@ -60,13 +60,17 @@ async def cmd_tex(ctx, flags):
 
     # Handle empty input
     if not ctx.args:
-        return await ctx.error_reply(
-            "Please give me something to compile, for example "
-            "```tex\n"
-            "{0}tex The solutions to \\(x^2 = 1\\) are \\(x = \\pm 1\\)."
-            "```"
-            "See `{0}help` and `{0}help tex` for detailed usage and further examples!".format(ctx.best_prefix())
-        )
+        if ctx.alias == ',':
+            # `,,` on its own might easily not be referring to us.
+            return
+        else:
+            return await ctx.error_reply(
+                "Please give me something to compile, for example "
+                "```tex\n"
+                "{0}tex The solutions to \\(x^2 = 1\\) are \\(x = \\pm 1\\)."
+                "```"
+                "See `{0}help` and `{0}help tex` for detailed usage and further examples!".format(ctx.best_prefix())
+            )
 
     # Handle `tex help`
     if ctx.args.lower() in ['help', '--help']:
