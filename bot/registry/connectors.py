@@ -21,6 +21,7 @@ class mysqlConnector(Connector):
             raise ImportError("No MySQL connector available in your system, please install MySQL.")
 
         self.conn = mysql.connector.connect(**dbopts)
+        self.conn.autocommit = True
 
     def upsert(self, table, constraint, cursor=None, **values):
         """
