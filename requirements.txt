@@ -6,5 +6,5 @@ pyparsing
 cachetools
 BeautifulSoup4
 pillow
-concurrent-file-handler
+concurrent-log-handler
 requests
