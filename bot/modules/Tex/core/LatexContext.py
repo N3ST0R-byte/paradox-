@@ -357,7 +357,7 @@ class LatexContext:
             if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                 await msg.clear_reaction(self.emoji_delete)
                 await msg.clear_reaction(self._show_emoji)
-                if self.emoji_delete_source in (r.emoji for r in msg.reactions):
+                if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                     await msg.clear_reaction(self.emoji_delete_source)
         except asyncio.CancelledError:
             log("LatexContext lifetime cancelled, probably due to an edit.",
@@ -367,6 +367,8 @@ class LatexContext:
         except discord.Forbidden:
             pass
         except discord.NotFound:
+            pass
+        except discord.HTTPException:
             pass
         finally:
             # Unregister the context
