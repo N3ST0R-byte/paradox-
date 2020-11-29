@@ -62,13 +62,13 @@ async def cmd_help(ctx: Context):
         command = ctx.client.cmd_names.get(ctx.args.strip(), None)
         if command is None:
             if ctx.args == "cmd":
-                return await ctx.reply("~~You really shouldn't take it literally.~~ "
-                                       "Please type `{0}help ping` for example. "
-                                       "The full command list may be found using `{0}list`.".format(ctx.best_prefix()))
+                return await ctx.reply("~~You really shouldn't take it literally :upside_down:.~~ "
+                                       "Please type `{prefix}help ping`, for example!\n"
+                                       "The full command list may be found using `{prefix}list`.".format(ctx.best_prefix()))
             else:
                 return await ctx.error_reply(
-                    "Command `{}` not found!\n"
-                    "Use the `help` command without arguments to see a list of commands.".format(ctx.arg_str)
+                    "Command `{command}` not found!\n"
+                    "Use the `{prefix}list` command without arguments to see a list of commands.".format(command=ctx.arg_str, prefix=ctx.best_prefix())
                 )
 
         help_fields = command.long_help.copy()
