@@ -66,6 +66,12 @@ async def cmd_help(ctx: Context):
                                        "Please type `{0}help ping` for example. "
                                        "The full command list may be found using `{0}list`.".format(ctx.best_prefix()))
             else:
+                # If this was triggered by the `h` alias, don't respond unless there's a space afterwards
+                if ctx.alias == 'h':
+                    true_args = ctx.msg.content.strip()[len(ctx.prefix):].strip()[1:]
+                    if not true_args or true_args[0] not in (' ', '\n'):
+                        return
+
                 return await ctx.error_reply(
                     "Command `{}` not found!\n"
                     "Use the `help` command without arguments to see a list of commands.".format(ctx.arg_str)
