@@ -64,7 +64,7 @@ async def cmd_help(ctx: Context):
             if ctx.args == "cmd":
                 return await ctx.reply("~~You really shouldn't take it literally :upside_down:.~~ "
                                        "Please type `{prefix}help ping`, for example!\n"
-                                       "The full command list may be found using `{prefix}list`.".format(ctx.best_prefix()))
+                                       "The full command list may be found using `{prefix}list`.".format(prefix=ctx.best_prefix()))
             else:
                 return await ctx.error_reply(
                     "Command `{command}` not found!\n"
