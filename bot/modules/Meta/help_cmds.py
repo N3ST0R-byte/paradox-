@@ -2,6 +2,7 @@ import asyncio
 import discord
 from cmdClient import Context
 
+from utils import ctx_addons  # noqa
 from utils.lib import prop_tabulate
 from constants import sorted_cats
 from wards import is_manager
@@ -47,8 +48,7 @@ async def cmd_help(ctx: Context):
         help_file = discord.File(help_filename) if help_filename else None
         help_embed = ctx.client.app_info.get("help_embed", None)
 
-        # TODO: replace with ctx.dm_reply for error handling
-        await ctx.author.send(help_msg, file=help_file, embed=help_embed)
+        await ctx.dm_reply(help_msg, file=help_file, embed=help_embed)
         if not ctx.ch.type == discord.ChannelType.private:
             await ctx.reply("A brief description and guide on how to use me was sent to your DMs!\n"
                             "Please use `{prefix}list` to see a list of all my commands, "
