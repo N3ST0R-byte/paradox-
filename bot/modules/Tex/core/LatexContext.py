@@ -76,7 +76,7 @@ class Bucket:
 class LatexContext:
     __slots__ = (
         'ctx', 'source', 'lguild', 'luser',
-        '_force_wide', 'wide', 'keepsourcefor', 'preamble',
+        '_force_wide', 'wide', 'keepsourcefor', 'preamble', '_errors',
         '_source_message', '_dm_source', '_header_name', '_spoiler_output',
         '_output_message', '_source_shown', '_header_collapsed', '_header_shown',
         '_show_emoji', '_source_deletion_task', '_lifetime_task', '_last_reaction'
@@ -125,6 +125,7 @@ class LatexContext:
         self._spoiler_output = spoiler
 
         # Running latex state
+        self._errors = None
         self._output_message = None
         self._source_shown = False
         self._header_collapsed = None
@@ -173,10 +174,19 @@ class LatexContext:
                               description="```tex\n{}\n```".format(self.source),
                               timestamp=self._source_message.created_at)
         embed.set_footer(text="Sent at")
-        embed.set_author(self._header_name)
+        embed.set_author(name=self._header_name)
+
+        if self._errors:
+            embed.add_field(
+                name="Compile Errors",
+                value="```{}```".format(self._errors),
+                inline=False
+            )
+
         embed.add_field(
-            "Jump link",
-            "[Click here to jump back to the message]({})".format(self._output_message.jump_url)
+            name="Jump link",
+            value="[Click here to jump back to the message]({})".format(self._output_message.jump_url),
+            inline=False
         )
         try:
             await target.send(embed=embed)
@@ -256,6 +266,7 @@ class LatexContext:
 
             # Compile the source
             error = await self.compile()
+            self._errors = error
 
             # Build header messages, presented above LaTeX output image
             if self._dm_source:
@@ -346,7 +357,7 @@ class LatexContext:
             if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                 await msg.clear_reaction(self.emoji_delete)
                 await msg.clear_reaction(self._show_emoji)
-                if self.emoji_delete_source in (r.emoji for r in msg.reactions):
+                if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                     await msg.clear_reaction(self.emoji_delete_source)
         except asyncio.CancelledError:
             log("LatexContext lifetime cancelled, probably due to an edit.",
@@ -356,6 +367,8 @@ class LatexContext:
         except discord.Forbidden:
             pass
         except discord.NotFound:
+            pass
+        except discord.HTTPException:
             pass
         finally:
             # Unregister the context

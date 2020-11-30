@@ -56,6 +56,9 @@ async def cmd_giveme(ctx: Context, flags):
     select_from = selfroles if not flags['add'] else ctx.guild.roles
     rolestrs = [chars.strip() for chars in ctx.args.split(',')]
 
+    # Remove empty strings
+    rolestrs = [rolestr for rolestr in rolestrs if rolestr]
+
     # My top role with manage_roles
     my_max_role = max(
         (role for role in ctx.guild.me.roles if role.permissions.manage_roles or role.permissions.administrator),
@@ -198,7 +201,8 @@ async def cmd_giveme(ctx: Context, flags):
                     "(Tip: use `{}iamnot` to remove roles without this prompt.)".format(
                         "`, `".join(r.name for r in remove_roles),
                         ctx.best_prefix()
-                    )
+                    ),
+                    add_hints=False
                 )
                 if not resp:
                     roles = [role for role in roles if role not in remove_roles]
@@ -210,7 +214,8 @@ async def cmd_giveme(ctx: Context, flags):
                     "(Tip: use `{}iam` to add roles without this prompt.)".format(
                         "`, `".join(r.name for r in add_roles),
                         ctx.best_prefix()
-                    )
+                    ),
+                    add_hints=False
                 )
                 if not resp:
                     roles = [role for role in roles if role not in add_roles]

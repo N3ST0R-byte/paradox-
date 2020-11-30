@@ -1,6 +1,7 @@
 import logging
 import traceback
 import asyncio
+import discord
 
 from logger import log
 from cmdClient import cmdClient
@@ -110,6 +111,12 @@ async def latex_message_parser(client, message):
 
             # Wait for the context to deactivate
             await lctx.lifetime()
+    except discord.Forbidden:
+        full_traceback = traceback.format_exc()
+        log("Caught the following exception while rendering LaTeX.\n{}".format(full_traceback),
+            context="mid:{}".format(message.id),
+            level=logging.WARNING)
+        pass
     except Exception as e:
         full_traceback = traceback.format_exc()
         log("Caught the following exception while rendering LaTeX.\n{}".format(full_traceback),

@@ -3,6 +3,7 @@ import logging
 
 import discord
 from cmdClient import Context
+from cmdClient.lib import SafeCancellation
 
 import logger
 from . import lib
@@ -290,7 +291,7 @@ async def dm_reply(ctx: Context, *args, **kwargs):
     try:
         await ctx.author.send(*args, **kwargs)
     except discord.Forbidden:
-        return await ctx.error_reply("I can't DM you! Do you have DMs disabled?")
+        raise SafeCancellation("I can't DM you! Do you have DMs disabled?")
 
 
 @Context.util

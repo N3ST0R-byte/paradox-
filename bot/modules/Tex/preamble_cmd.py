@@ -119,6 +119,8 @@ async def cmd_preamble(ctx, flags):
         if not pending_preamble:
             return await ctx.error_reply("You don't have a pending preamble request to retract!")
 
+        pending_preamble_data.delete_where(userid=ctx.author.id)
+
         await resolve_pending_preamble(ctx, ctx.author.id, "Request retracted", colour=discord.Colour.red())
         await preamblelog(ctx, "Preamble request was retracted")
 

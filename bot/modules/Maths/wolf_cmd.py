@@ -228,13 +228,19 @@ def triage_pods(pod_list):
 async def cmd_query(ctx, flags):
     """
     Usage``:
-        {prefix}w [query] [--text]
+        {prefix}ask [query] [--text]
     Description:
         Sends the query to the Wolfram Alpha computational engine and returns the result.
         Use the reactions to show more output or delete the output.
     Flags::
         text: Respond with a copyable text version of the output rather than an image (if possible).
     """
+    # Hack to disallow `w` being used with no space
+    if ctx.alias == 'w':
+        true_args = ctx.msg.content.strip()[len(ctx.prefix):].strip()[1:]
+        if not true_args or true_args[0] not in (' ', '\n'):
+            return
+
     # Preload the required emojis
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
     more_emoji = ctx.client.conf.emojis.getemoji("more")
