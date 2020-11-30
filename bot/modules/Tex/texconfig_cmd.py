@@ -151,7 +151,8 @@ async def cmd_texconfig(ctx):
 
 
 @module.cmd("autotex",
-            desc="Toggle whether your LaTeX is automatically rendered.")
+            desc="Toggle whether your LaTeX is automatically rendered.",
+            aliases=['texlisten'])
 async def cmd_autotex(ctx):
     """
     Usage``:
