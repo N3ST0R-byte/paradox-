@@ -98,17 +98,17 @@ async def cmd_prefix(ctx, flags):
         # User's personal prefix
         personal_prefix = prefix
         if personal_prefix:
-            personal_str = "Your personal prefix is `{}`.\n".format(personal_prefix)
+            personal_str = "Your personal prefix is `{}`.".format(personal_prefix)
         else:
-            personal_str = "You have not set a personal prefix.\n"
+            personal_str = "You have not set a personal prefix."
 
         # Guild prefix, if applicable
         guild_str = ""
         guild_prefix = None
         if ctx.guild:
             guild_prefix = ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, None)
-            guild_str = ("The guild prefix is `{}`.\n".format(guild_prefix)
-                         if guild_prefix else "No custom guild prefix set.\n")
+            guild_str = ("The guild prefix is `{}`.".format(guild_prefix)
+                         if guild_prefix else "No custom guild prefix set.")
 
         # Global prefix
         global_str = "The default prefix is `{}`{}.".format(
@@ -118,7 +118,7 @@ async def cmd_prefix(ctx, flags):
 
         # Create the response and reply
         await ctx.reply(
-            "{}{}{}\nMentioning me will always work as a prefix: {}".format(
+            "{}\n{}\n{}\nMentioning me will always work as a prefix: {}".format(
                 personal_str, guild_str, global_str, ctx.client.user.mention
             )
         )
