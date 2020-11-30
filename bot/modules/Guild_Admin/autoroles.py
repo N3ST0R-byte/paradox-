@@ -61,7 +61,7 @@ async def give_autoroles(client: cmdClient, member: discord.Member):
         # Filter autoroles based on what I have permission to add
         if my_mr_roles:
             max_mr_role = max(my_mr_roles)
-            autoroles = [role for role in autoroles if role < max_mr_role]
+            autoroles = [role for role in autoroles if role is not None and role < max_mr_role]
         else:
             autoroles = None
 
