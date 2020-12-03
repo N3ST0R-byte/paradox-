@@ -7,6 +7,7 @@ from discord import AllowedMentions
 from cmdClient.logger import cmd_log_handler
 
 from utils.lib import mail, split_text
+from paraArgs import args
 
 # Setup the logger
 logger = logging.getLogger()
@@ -23,7 +24,11 @@ _client = None
 @cmd_log_handler
 def log(message, context="GLOBAL", level=logging.INFO, post=True):
     # Use a single line logging format so the files are more parseable
-    logger.log(level, '[{}] {}'.format(str(context).center(22, '='), json.dumps(message)))
+    logger.log(level, '\b[SHARD {}][{}] {}'.format(
+        args.shard or 0,
+        str(context).center(22, '='),
+        json.dumps(message))
+    )
 
     # Fire and forget to the channel logger, if it is set up
     if post and _client is not None:

@@ -1,5 +1,4 @@
 import logging
-import argparse
 
 from concurrent_log_handler import ConcurrentRotatingFileHandler
 
@@ -9,6 +8,7 @@ from cmdClient import cmdClient
 from config import Conf
 from logger import log, log_fmt, attach_log_client
 from apps import load_app
+from paraArgs import args
 
 from registry.connectors import mysqlConnector, sqliteConnector
 from settings import guild_config
@@ -17,30 +17,7 @@ from settings import guild_config
 import modules  # noqa
 
 
-# ------------------------------
-# Parse commandline arguments
-# ------------------------------
-parser = argparse.ArgumentParser()
-parser.add_argument('--conf',
-                    dest='config',
-                    default='config/paradox.conf',
-                    help="Path to configuration file.")
-parser.add_argument('--shard',
-                    dest='shard',
-                    default=None,
-                    type=int,
-                    help="Shard number to run, if applicable.")
-parser.add_argument('--writeschema',
-                    dest='schemafile',
-                    default=None,
-                    type=str,
-                    help="If provided, writes the db schema to the provided file and exits.")
-parser.add_argument('--createdb',
-                    action='store_true',
-                    dest='createdb',
-                    help="Attmpt to create the database. This only works for `sqlite`, and should only be run once.")
-
-args = parser.parse_args()
+# Extract command line arguments
 config_file = args.config
 shard_num = args.shard or 0
 schema_file = args.schemafile
@@ -85,7 +62,7 @@ logging.getLogger('discord').setLevel(DISCORD_LOGLEVEL)
 
 file_handler = ConcurrentRotatingFileHandler(
     filename=LOGFILE,
-    maxBytes=5000000,
+    maxBytes=50000000,
     backupCount=10,
     encoding='utf-8',
     mode='a'
