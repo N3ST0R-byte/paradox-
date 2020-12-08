@@ -58,8 +58,12 @@ async def cmd_tex(ctx, flags):
             "Please see `{}help texconfig` for usage.".format(ctx.best_prefix())
         )
 
-    # Handle empty input
-    if not ctx.args:
+    # Handle empty and erroneous input
+    if ctx.alias == ',':
+        if not ctx.args.strip(','):
+            # We shouldn't respond to any number of ',' characters on their own.
+            return
+    elif not ctx.args:
         if ctx.alias == ',':
             # `,,` on its own might easily not be referring to us.
             return
