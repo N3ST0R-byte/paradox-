@@ -104,6 +104,8 @@ async def _rotate(ctx, im, amount, name):
                 await out_msg.add_reaction(emoji_rotate_cw)
             except discord.Forbidden:
                 return
+            except discord.NotFound:
+                return
 
             while True:
                 try:
