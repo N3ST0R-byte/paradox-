@@ -119,7 +119,7 @@ async def store_roles(client, member):
     # Insert the new roles if there are any
     if role_list:
         client.data.member_stored_roles.insert_many(
-            *((member.guild.id, member.id, role.id) for role in role_list),
+            *((member.guild.id, member.id, role) for role in role_list),
             insert_keys=('guildid', 'userid', 'roleid')
         )
 
@@ -177,8 +177,8 @@ async def restore_roles(client, member):
 
 @module.init_task
 def attach_restore_roles(client):
-    client.add_after_event('member_join', store_roles)
-    client.add_after_event('member_leave', restore_roles)
+    client.add_after_event('member_leave', store_roles)
+    client.add_after_event('member_join', restore_roles)
 
 
 # Define data interfaces
