@@ -249,7 +249,7 @@ async def cmd_giveme(ctx: Context, flags):
             results = await ctx.multi_selector(
                 offer_str,
                 select_from,
-                allow_single=False
+                allow_single=True
             )
         except ResponseTimedOut:
             raise ResponseTimedOut("Selfrole selector timed out, your roles were not updated.") from None
