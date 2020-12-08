@@ -227,6 +227,11 @@ async def on_message(message: discord.Message):
         if message.author.id in conf.getintlist("blacklisted_guilds", []):
             return
 
+        # Hack to make sure `ctx.guild.me` is not None
+        if message.guild.me is None:
+            me = await message.guild.fetch_member(client.user.id)
+            message.guild._members[client.user.id] = me
+
     await client.parse_message(message)
 
 
