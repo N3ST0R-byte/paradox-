@@ -51,8 +51,7 @@ async def cmd_async(ctx: Context):
 
 
 @module.cmd("exec",
-            desc="Executes python code using exec and displays the output.",
-            aliases=["ex"])
+            desc="Executes python code using exec and displays the output.")
 @is_master()
 async def cmd_exec(ctx: Context):
     """
@@ -77,7 +76,6 @@ async def cmd_exec(ctx: Context):
 
 @module.cmd("eval",
             desc="Executes python code using eval and displays the output.",
-            aliases=["ev"],
             flags=['s'])
 @is_master()
 async def cmd_eval(ctx: Context, flags):
