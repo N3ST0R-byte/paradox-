@@ -51,8 +51,16 @@ class LatexGuild:
 
     def load(self):
         """
-        Retrieve the guild data from the database
+        Retrieve the guild data from the database, handling the DM context (id 0) separately
         """
+        if self.id == 0:
+            self.autotex = True
+            self.autotex_level = AutoTexLevel.WEAK
+            self.require_codeblocks = False
+            self.latex_channels = None
+            self.preamble = None
+            return
+
         # Set defaults
         for attr, value in self.defaults.items():
             setattr(self, attr, value)
