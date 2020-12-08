@@ -51,8 +51,12 @@ async def latex_message_parser(client, message):
     # Build the potential latex source
     source = LatexContext.parse_content(message.clean_content, ParseMode.DOCUMENT)
 
+    # If there's no source (e.g. everything is in a foreign codeblock) return immediately
+    if not source:
+        return
+
     # Check what latex level we have, if any
-    if ("```tex" in message.content) or ("```latex" in message.content):
+    if ("```tex\n" in message.content) or ("```latex\n" in message.content):
         level = AutoTexLevel.CODEBLOCK
     elif LatexContext.strict_hastex(source):
         level = AutoTexLevel.STRICT
