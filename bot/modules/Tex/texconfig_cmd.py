@@ -14,7 +14,7 @@ from constants import ParaCC
 
 @module.cmd("texconfig",
             desc="View or modify your personal LaTeX rendering options.",
-            aliases=['texflags'])
+            aliases=['texflags', 'tc'])
 async def cmd_texconfig(ctx):
     """
     Usage``:
