@@ -582,6 +582,9 @@ class SettingList(SettingType):
     # Base setting type to make the list from
     _setting = None  # type: Union[SettingType, GuildSetting]
 
+    # Whether 'None' values are filtered out of the data when creating values
+    _allow_null_values = False  # type: Bool
+
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, values: Optional[List[Any]], **kwargs):
         """
@@ -601,7 +604,12 @@ class SettingList(SettingType):
         if data is None:
             return []
         else:
-            return [cls._setting._data_to_value(client, guildid, entry) for entry in data]
+            values = [cls._setting._data_to_value(client, guildid, entry) for entry in data]
+
+            # Filter out null values if required
+            if not cls._allow_null_values:
+                values = [value for value in values if value is not None]
+            return values
 
     @classmethod
     async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
