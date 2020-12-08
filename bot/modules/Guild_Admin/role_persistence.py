@@ -128,7 +128,7 @@ async def restore_roles(client, member):
     """
     Restore member roles when a member rejoins.
     """
-    if not client.guild_conf.role_persistence.get(client, member.guild.id).value:
+    if not client.guild_config.role_persistence.get(client, member.guild.id).value:
         # Return if role persistence is not enabled
         return
 
@@ -140,7 +140,7 @@ async def restore_roles(client, member):
 
     if roleids:
         # Get the ignored roles
-        ignored = set(client.guild_conf.role_persistence_ignores.get(client, member.guild.id).value)
+        ignored = set(client.guild_config.role_persistence_ignores.get(client, member.guild.id).value)
         # Filter the roles
         roleids = [roleid for roleid in roleids if roleid not in ignored]
 
