@@ -1,3 +1,11 @@
+CREATE TABLE VERSION(
+	version INT NOT NULL,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_by VARCHAR(64),
+	PRIMARY KEY (version)
+);
+INSERT INTO VERSION (version, updated_by) VALUES (1, 'Initial Creation');
+
 CREATE TABLE admin_snippets(
 	name VARCHAR(64) NOT NULL,
 	author BIGINT NOT NULL,
