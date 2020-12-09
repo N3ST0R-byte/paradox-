@@ -15,7 +15,7 @@ def load_into(client):
                          "and `{prefix}list` to see all my commands!"),
             "invite_link": "http://invite.paradoxical.pw",
             "donate_link": "https://www.patreon.com/texit",
-            "support_guild": "https://discord.gg/YNQzcvH",
+            "support_guild": "https://discord.gg/FY9jH7M",
             "brief": False,
             "app": "",
             "help_str": help_str}

@@ -15,7 +15,7 @@ info = {
                  "and `{prefix}list` to see all my commands!"),
     "invite_link": "http://texit.paradoxical.pw",
     "donate_link": "https://www.patreon.com/texit",
-    "support_guild": "https://discord.gg/YNQzcvH",
+    "support_guild": "https://discord.gg/FY9jH7M",
     "brief": True,
     "app": "texit",
     "help_str": help_str,
