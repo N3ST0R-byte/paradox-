@@ -1,11 +1,3 @@
-CREATE TABLE VERSION(
-	version INT NOT NULL,
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_by VARCHAR(64),
-	PRIMARY KEY (version)
-);
-INSERT INTO VERSION (version, updated_by) VALUES (1, 'Initial Creation');
-
 CREATE TABLE admin_snippets(
 	name VARCHAR(64) NOT NULL,
 	author BIGINT NOT NULL,
@@ -228,4 +220,30 @@ CREATE TABLE guild_disabled_commands(
 	command_name VARCHAR(64) NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid,command_name)
+);
+
+CREATE TABLE guild_starboards(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid BIGINT,
+	emoji VARCHAR(64),
+	threshold INT NOT NULL DEFAULT 1,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_starboard_roles(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	roleid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE message_stars(
+	app VARCHAR(64) NOT NULL,
+	msgid BIGINT NOT NULL,
+	starmsgid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,msgid)
 );

@@ -65,6 +65,10 @@ class tableInterface(Interface):
         self.add_app(conditions)
         return self.conn.select_where(self.table, select_columns=select_columns, **conditions)
 
+    def select_one_where(self, *args, **kwargs):
+        rows = self.select_where(*args, **kwargs)
+        return rows[0] if rows else None
+
     def update_where(self, valuedict, **conditions):
         self.check_keys(conditions)
         self.add_app(conditions)
