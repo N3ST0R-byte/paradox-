@@ -9,6 +9,8 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 from .module import maths_module as module
 from .resources import font_path
 
+from utils.lib import emb_add_fields
+
 from . import wolf_data  # noqa
 # Provides Wolf
 
@@ -320,7 +322,7 @@ async def cmd_query(ctx, flags):
         embed = discord.Embed(description=link)
         embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
         embed.set_thumbnail(url=WOLF_ICON)
-        await ctx.emb_add_fields(embed, fields)
+        emb_add_fields(embed, fields)
         await ctx.safe_delete_msgs(temp_msg)
         out_msg = await ctx.reply(embed=embed)
         await ctx.offer_delete(out_msg)
