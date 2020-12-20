@@ -4,7 +4,7 @@ CREATE TABLE VERSION(
 	updated_by TEXT,
 	PRIMARY KEY (version)
 );
-INSERT INTO VERSION (version, updated_by) VALUES (1, 'Initial Creation');
+INSERT INTO VERSION (version, updated_by) VALUES (2, 'Initial Creation');
 
 CREATE TABLE admin_snippets(
 	name TEXT NOT NULL,
