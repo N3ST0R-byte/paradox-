@@ -249,3 +249,27 @@ CREATE TABLE guild_logging_departures(
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid)
 );
+
+CREATE TABLE guild_userupdate_channel(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid BIGINT,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_userupdate_events(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	event INT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid,event)
+);
+
+CREATE TABLE guild_userupdate_ignores(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	userid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid,userid)
+);

@@ -36,3 +36,61 @@ Unless explicitly stated, value data is encoded by `json.dumps()` and may be rel
         * Target tables: `[guild_logging_joins, guild_logging_departures]`
         * Insert type: `insert`
         * Insert keymap: `{'guildid': 'row.serverid', 'channelid': 'row.value', 'app': 'texit'}`
+
+* `userlog_ch`
+    * Property name: `userlog_ch`
+    * Application: `paradox`
+    * Type: `str` or literal `null`
+    * Description: The id of the user event log
+    * Parse as: `id`
+    * Action
+        * Target table: `guild_userupdate_channel`
+        * Insert type: `insert`
+        * Insert keymap: `{'guildid': 'row.serverid', 'channelid': 'row.value', 'app': 'paradox'}`
+
+* `texit_userlog_ch`
+    * Property name: `userlog_ch`
+    * Application: `texit`
+    * Type: `str` or literal `null`
+    * Description: The id of the user event log
+    * Parse as: `id`
+    * Action
+        * Target table: `guild_userupdate_channel`
+        * Insert type: `insert`
+        * Insert keymap: `{'guildid': 'row.serverid', 'channelid': 'row.value', 'app': 'texit'}`
+
+* `userlog_events`
+    * Property name: `userlog_events`
+    * Application: `paradox`
+    * Type: `List[str]`
+    * Description: The list of events to log in the user event log
+    * Parse as: `string list`
+    * Action
+        * Not to be migrated
+
+* `texit_userlog_events`
+    * Property name: `userlog_events`
+    * Application: `texit`
+    * Type: `List[str]`
+    * Description: The list of events to log in the user event log
+    * Parse as: `string list`
+    * Action
+        * Not to be migrated
+
+* `userlog_ignore`
+    * Property name: `userlog_ignore`
+    * Application: `paradox`
+    * Type: `List[str]` or literal `null`
+    * Description: The list of user ids to ignore in the user event log
+    * Parse as: `id list`
+    * Action
+        * Not to be migrated
+
+* `texit_userlog_ignore`
+    * Property name: `userlog_ignore`
+    * Application: `texit`
+    * Type: `List[str]` or literal `null`
+    * Description: The list of user ids to ignore in the user event log
+    * Parse as: `id list`
+    * Action
+        * Not to be migrated
