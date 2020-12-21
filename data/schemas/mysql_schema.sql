@@ -237,7 +237,7 @@ CREATE TABLE member_traffic(
 CREATE TABLE guild_join_logging(
 	app VARCHAR(64) NOT NULL,
 	guildid BIGINT NOT NULL,
-	channelid INT NOT NULL,
+	channelid BIGINT NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid)
 );
@@ -245,7 +245,7 @@ CREATE TABLE guild_join_logging(
 CREATE TABLE guild_departure_logging(
 	app VARCHAR(64) NOT NULL,
 	guildid BIGINT NOT NULL,
-	channelid INT NOT NULL,
+	channelid BIGINT NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid)
 );

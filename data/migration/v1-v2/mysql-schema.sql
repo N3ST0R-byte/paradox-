@@ -16,7 +16,7 @@ CREATE TABLE member_traffic(
 CREATE TABLE guild_join_logging(
 	app VARCHAR(64) NOT NULL,
 	guildid BIGINT NOT NULL,
-	channelid INT NOT NULL,
+	channelid BIGINT NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid)
 );
@@ -24,7 +24,52 @@ CREATE TABLE guild_join_logging(
 CREATE TABLE guild_departure_logging(
 	app VARCHAR(64) NOT NULL,
 	guildid BIGINT NOT NULL,
-	channelid INT NOT NULL,
+	channelid BIGINT NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid)
 );
+
+
+INSERT INTO guild_join_logging
+    (app, guildid, channelid)
+SELECT
+    'paradox' AS app,
+    servers.serverid as guildid,
+    CONVERT(JSON_UNQUOTE(servers.value), UNSIGNED INTEGER) AS channelid
+FROM servers
+WHERE
+    servers.property = 'joinlog_ch'
+    AND servers.value != 'null';
+
+INSERT INTO guild_join_logging
+    (app, guildid, channelid)
+SELECT
+    'texit' AS app,
+    servers.serverid as guildid,
+    CONVERT(JSON_UNQUOTE(servers.value), UNSIGNED INTEGER) AS channelid
+FROM servers
+WHERE
+    servers.property = 'texit_joinlog_ch'
+    AND servers.value != 'null';
+
+INSERT INTO guild_departure_logging
+    (app, guildid, channelid)
+SELECT
+    'paradox' AS app,
+    servers.serverid as guildid,
+    CONVERT(JSON_UNQUOTE(servers.value), UNSIGNED INTEGER) AS channelid
+FROM servers
+WHERE
+    servers.property = 'joinlog_ch'
+    AND servers.value != 'null';
+
+INSERT INTO guild_departure_logging
+    (app, guildid, channelid)
+SELECT
+    'texit' AS app,
+    servers.serverid as guildid,
+    CONVERT(JSON_UNQUOTE(servers.value), UNSIGNED INTEGER) AS channelid
+FROM servers
+WHERE
+    servers.property = 'texit_joinlog_ch'
+    AND servers.value != 'null';
