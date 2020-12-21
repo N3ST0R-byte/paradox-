@@ -57,7 +57,8 @@ class ListData(_tableData):
             cls._guildid_column: guildid
         }
         rows = table.select_where(**params)
-        return [row[cls._data_column] for row in rows]
+        data_rows = [row[cls._data_column] for row in rows]
+        return data_rows if data_rows else None
 
     @classmethod
     def _writer(cls, client: cmdClient, guildid: int, data: List[Any], **kwargs):

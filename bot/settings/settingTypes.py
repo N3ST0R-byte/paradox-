@@ -253,7 +253,7 @@ class IntegerEnum(SettingType):
     # Enum to use for mapping values
     _enum: Enum = None
 
-    # Custom map to format the data. If None, uses the enum.
+    # Custom map to format the value. If None, uses the enum names.
     _output_map = None
 
     @classmethod
@@ -296,10 +296,11 @@ class IntegerEnum(SettingType):
         Format the data using either the `_enum` or the provided output map.
         """
         if data is not None:
+            value = cls._enum(data)
             if cls._output_map:
-                return cls._output_map(data)
+                return cls._output_map[value]
             else:
-                return cls._enum(data).name
+                return value.name
 
 
 class Member(SettingType):
@@ -585,6 +586,9 @@ class SettingList(SettingType):
     # Whether 'None' values are filtered out of the data when creating values
     _allow_null_values = False  # type: Bool
 
+    # Whether duplicate data values should be filtered out
+    _force_unique = False
+
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, values: Optional[List[Any]], **kwargs):
         """
@@ -623,6 +627,9 @@ class SettingList(SettingType):
             data = []
             for item in userstr.split(','):
                 data.append(await cls._setting._parse_userstr(ctx, guildid, item.strip()))
+
+            if cls._force_unique:
+                data = list(set(data))
             return data
 
     @classmethod
