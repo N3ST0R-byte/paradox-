@@ -13,7 +13,7 @@ CREATE TABLE member_traffic(
 	PRIMARY KEY (guildid,userid)
 );
 
-CREATE TABLE guild_join_logging(
+CREATE TABLE guild_logging_joins(
 	app VARCHAR(64) NOT NULL,
 	guildid BIGINT NOT NULL,
 	channelid BIGINT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE guild_join_logging(
 	PRIMARY KEY (app,guildid)
 );
 
-CREATE TABLE guild_departure_logging(
+CREATE TABLE guild_logging_departures(
 	app VARCHAR(64) NOT NULL,
 	guildid BIGINT NOT NULL,
 	channelid BIGINT NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE guild_departure_logging(
 );
 
 
-INSERT INTO guild_join_logging
+INSERT INTO guild_logging_joins
     (app, guildid, channelid)
 SELECT
     'paradox' AS app,
@@ -41,7 +41,7 @@ WHERE
     servers.property = 'joinlog_ch'
     AND servers.value != 'null';
 
-INSERT INTO guild_join_logging
+INSERT INTO guild_logging_joins
     (app, guildid, channelid)
 SELECT
     'texit' AS app,
@@ -52,7 +52,7 @@ WHERE
     servers.property = 'texit_joinlog_ch'
     AND servers.value != 'null';
 
-INSERT INTO guild_departure_logging
+INSERT INTO guild_logging_departures
     (app, guildid, channelid)
 SELECT
     'paradox' AS app,
@@ -63,7 +63,7 @@ WHERE
     servers.property = 'joinlog_ch'
     AND servers.value != 'null';
 
-INSERT INTO guild_departure_logging
+INSERT INTO guild_logging_departures
     (app, guildid, channelid)
 SELECT
     'texit' AS app,

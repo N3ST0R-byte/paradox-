@@ -174,12 +174,12 @@ class guild_joinlog(ColumnData, Channel, GuildSetting):
     read_check = None
     write_check = guild_manager
 
-    name = "join_log"
-    desc = "Channel where new member information is posted."
+    name = "joinlog"
+    desc = "Channel to log information about new members."
 
     long_desc = ("Channel where information about new members is posted.")
 
-    _table_interface_name = "guild_join_logging"
+    _table_interface_name = "guild_logging_joins"
     _data_column = "channelid"
     _delete_on_none = True
 
@@ -191,12 +191,12 @@ class guild_departurelog(ColumnData, Channel, GuildSetting):
     read_check = None
     write_check = guild_manager
 
-    name = "departure_log"
-    desc = "Channel where information about departing members is posted."
+    name = "departurelog"
+    desc = "Channel to log information about departing members."
 
     long_desc = "Channel where information about departing members is posted."
 
-    _table_interface_name = "guild_departure_logging"
+    _table_interface_name = "guild_logging_departures"
     _data_column = "channelid"
     _delete_on_none = True
 
@@ -214,17 +214,17 @@ member_traffic_schema_info = schema_generator(
 )
 
 join_log_schema_info = schema_generator(
-    "guild_join_logging",
+    "guild_logging_joins",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('channelid', ColumnType.INT, required=True),
+    Column('channelid', ColumnType.SNOWFLAKE, required=True),
 )
 
 departure_log_schema_info = schema_generator(
-    "guild_departure_logging",
+    "guild_logging_departures",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('channelid', ColumnType.INT, required=True),
+    Column('channelid', ColumnType.SNOWFLAKE, required=True),
 )
 
 
@@ -246,23 +246,23 @@ def attach_traffic_data(client):
     mysql_schema, sqlite_schema, columns = join_log_schema_info
     prefix_interface = tableInterface(
         client.data,
-        "guild_join_logging",
+        "guild_logging_joins",
         app=client.app,
         column_data=columns,
         shared=False,
         sqlite_schema=sqlite_schema,
         mysql_schema=mysql_schema
     )
-    client.data.attach_interface(prefix_interface, "guild_join_logging")
+    client.data.attach_interface(prefix_interface, "guild_logging_joins")
 
     mysql_schema, sqlite_schema, columns = departure_log_schema_info
     prefix_interface = tableInterface(
         client.data,
-        "guild_departure_logging",
+        "guild_logging_departures",
         app=client.app,
         column_data=columns,
         shared=False,
         sqlite_schema=sqlite_schema,
         mysql_schema=mysql_schema
     )
-    client.data.attach_interface(prefix_interface, "guild_departure_logging")
+    client.data.attach_interface(prefix_interface, "guild_logging_departures")

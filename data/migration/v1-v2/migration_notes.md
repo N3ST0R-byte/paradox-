@@ -21,7 +21,7 @@ Unless explicitly stated, value data is encoded by `json.dumps()` and may be rel
     * Migration note: The `joinlog` setting is splitting into two, `joinlog` and `departurelog`.
     * Parse as: `id`
     * Action
-        * Target tables: `[guild_join_logging, guild_departure_logging]`
+        * Target tables: `[guild_logging_joins, guild_logging_departures]`
         * Insert type: `insert`
         * Insert keymap: `{'guildid': 'row.serverid', 'channelid': 'row.value', 'app': 'paradox'}`
 
@@ -33,6 +33,6 @@ Unless explicitly stated, value data is encoded by `json.dumps()` and may be rel
     * Migration note: The `joinlog` setting is splitting into two, `joinlog` and `departurelog`.
     * Parse as: `id`
     * Action
-        * Target tables: `[guild_join_logging, guild_departure_logging]`
+        * Target tables: `[guild_logging_joins, guild_logging_departures]`
         * Insert type: `insert`
         * Insert keymap: `{'guildid': 'row.serverid', 'channelid': 'row.value', 'app': 'texit'}`

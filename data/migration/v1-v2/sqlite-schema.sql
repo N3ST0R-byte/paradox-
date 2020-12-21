@@ -13,7 +13,7 @@ CREATE TABLE member_traffic(
 	PRIMARY KEY (guildid,userid)
 );
 
-CREATE TABLE guild_join_logging(
+CREATE TABLE guild_logging_joins(
 	app TEXT NOT NULL,
 	guildid INTEGER NOT NULL,
 	channelid INTEGER NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE guild_join_logging(
 	PRIMARY KEY (app,guildid)
 );
 
-CREATE TABLE guild_departure_logging(
+CREATE TABLE guild_logging_departures(
 	app TEXT NOT NULL,
 	guildid INTEGER NOT NULL,
 	channelid INTEGER NOT NULL,
