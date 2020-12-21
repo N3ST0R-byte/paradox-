@@ -230,6 +230,58 @@ CREATE TABLE guild_disabled_commands(
 	PRIMARY KEY (app,guildid,command_name)
 );
 
+CREATE TABLE member_traffic(
+	guildid INTEGER NOT NULL,
+	userid INTEGER NOT NULL,
+	first_joined INTEGER,
+	last_joined INTEGER,
+	last_departure INTEGER,
+	departure_name TEXT,
+	departure_nickname TEXT,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (guildid,userid)
+);
+
+CREATE TABLE guild_logging_joins(
+	app TEXT NOT NULL,
+	guildid INTEGER NOT NULL,
+	channelid INTEGER NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_logging_departures(
+	app TEXT NOT NULL,
+	guildid INTEGER NOT NULL,
+	channelid INTEGER NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_userupdate_channel(
+	app TEXT NOT NULL,
+	guildid INTEGER NOT NULL,
+	channelid INTEGER,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_userupdate_events(
+	app TEXT NOT NULL,
+	guildid INTEGER NOT NULL,
+	event INTEGER NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid,event)
+);
+
+CREATE TABLE guild_userupdate_ignores(
+	app TEXT NOT NULL,
+	guildid INTEGER NOT NULL,
+	userid INTEGER NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid,userid)
+);
+
 CREATE TABLE guild_starboards(
 	app TEXT NOT NULL,
 	guildid INTEGER NOT NULL,

@@ -409,13 +409,13 @@ def format_activity(user):
 
     if str(AT) == "ActivityType.listening":
         try:
-            string = "Listening to {}".format(a.title)
+            string = "Listening to `{}`".format(a.title)
             if len(a.artists) > 1:
                 string += " by {}".format(join_list(string=a.artists))
             else:
-                string += " by {}".format(a.artist)
+                string += " by **{}**".format(a.artist)
         except Exception:
-            string = "Listening to {}".format(a.name)
+            string = "Listening to `{}`".format(a.name)
         return string
 
     if str(AT) == "ActivityType.watching":
