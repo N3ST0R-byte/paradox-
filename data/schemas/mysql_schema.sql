@@ -1,11 +1,3 @@
-CREATE TABLE VERSION(
-	version INT NOT NULL,
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_by VARCHAR(64),
-	PRIMARY KEY (version)
-);
-INSERT INTO VERSION (version, updated_by) VALUES (1, 'Initial Creation');
-
 CREATE TABLE admin_snippets(
 	name VARCHAR(64) NOT NULL,
 	author BIGINT NOT NULL,
@@ -228,4 +220,32 @@ CREATE TABLE guild_disabled_commands(
 	command_name VARCHAR(64) NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid,command_name)
+);
+
+CREATE TABLE member_traffic(
+	guildid BIGINT NOT NULL,
+	userid BIGINT NOT NULL,
+	first_joined INT,
+	last_joined INT,
+	last_departure INT,
+	departure_name VARCHAR(64),
+	departure_nickname VARCHAR(64),
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (guildid,userid)
+);
+
+CREATE TABLE guild_join_logging(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid INT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_departure_logging(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid INT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
 );
