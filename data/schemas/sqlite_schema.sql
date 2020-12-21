@@ -4,53 +4,7 @@ CREATE TABLE VERSION(
 	updated_by TEXT,
 	PRIMARY KEY (version)
 );
-INSERT INTO VERSION (version, updated_by) VALUES (1, 'Initial Creation');
-
-CREATE TABLE users_props(
-	property TEXT NOT NULL,
-	shared BOOLEAN NOT NULL,
-	PRIMARY KEY (property)
-);
-
-CREATE TABLE users(
-	userid INTEGER NOT NULL,
-	property TEXT NOT NULL,
-	value TEXT,
-	PRIMARY KEY (userid, property),
-	FOREIGN KEY (property)
-		REFERENCES users_props (property)
-);
-
-CREATE TABLE guilds_props(
-	property TEXT NOT NULL,
-	shared BOOLEAN NOT NULL,
-	PRIMARY KEY (property)
-);
-
-CREATE TABLE guilds(
-	guildid INTEGER NOT NULL,
-	property TEXT NOT NULL,
-	value TEXT,
-	PRIMARY KEY (guildid, property),
-	FOREIGN KEY (property)
-		REFERENCES guilds_props (property)
-);
-
-CREATE TABLE members_props(
-	property TEXT NOT NULL,
-	shared BOOLEAN NOT NULL,
-	PRIMARY KEY (property)
-);
-
-CREATE TABLE members(
-	guildid INTEGER NOT NULL,
-	userid INTEGER NOT NULL,
-	property TEXT NOT NULL,
-	value TEXT,
-	PRIMARY KEY (guildid, userid, property),
-	FOREIGN KEY (property)
-		REFERENCES members_props (property)
-);
+INSERT INTO VERSION (version, updated_by) VALUES (2, 'Initial Creation');
 
 CREATE TABLE admin_snippets(
 	name TEXT NOT NULL,
@@ -253,12 +207,11 @@ CREATE TABLE guild_role_persistence_ignores(
 );
 
 CREATE TABLE member_stored_roles(
-	app TEXT NOT NULL,
 	guildid INTEGER NOT NULL,
 	userid INTEGER NOT NULL,
 	roleid INTEGER NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY (app,guildid,userid)
+	PRIMARY KEY (guildid,userid,roleid)
 );
 
 CREATE TABLE guild_prefixes(
@@ -275,4 +228,30 @@ CREATE TABLE guild_disabled_commands(
 	command_name TEXT NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid,command_name)
+);
+
+CREATE TABLE guild_starboards(
+	app TEXT NOT NULL,
+	guildid INTEGER NOT NULL,
+	channelid INTEGER,
+	emoji TEXT,
+	threshold INTEGER NOT NULL DEFAULT 1,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_starboard_roles(
+	app TEXT NOT NULL,
+	guildid INTEGER NOT NULL,
+	roleid INTEGER NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE message_stars(
+	app TEXT NOT NULL,
+	msgid INTEGER NOT NULL,
+	starmsgid INTEGER NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,msgid)
 );

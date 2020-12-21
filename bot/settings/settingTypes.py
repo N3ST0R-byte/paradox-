@@ -196,6 +196,9 @@ class String(SettingType):
     # Set of input options to accept
     _options: set = None
 
+    # Whether to quote the string as code
+    _quote: bool = True
+
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: Optional[str], **kwargs):
         """
@@ -233,7 +236,7 @@ class String(SettingType):
         Handle the special case where the string is empty.
         """
         if data:
-            return "`{}`".format(data)
+            return "`{}`".format(data) if cls._quote else str(data)
         else:
             return None
 
