@@ -127,7 +127,7 @@ async def cmd_rolemembers(ctx: Context):
 
 @module.cmd("userinfo",
             desc="Shows various information about a user.",
-            aliases=["uinfo", "ui", "user"])
+            aliases=["uinfo", "ui", "user", "profile"])
 @in_guild()
 async def cmd_userinfo(ctx: Context):
     """
