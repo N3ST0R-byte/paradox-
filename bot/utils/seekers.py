@@ -363,20 +363,28 @@ async def find_message(ctx, msgid, chlist=None, ignore=[]):
     # Remove any channels we are ignoring
     chlist = [ch for ch in chlist if ch.id not in ignore]
 
-    # Create the channel seeker tasks
-    tasks = [asyncio.create_task(_search_in_channel(ch, msgid)) for ch in chlist]
+    tasks = set()
 
-    pending = set(tasks)
-    while pending:
-        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+    i = 0
+    while True:
+        done = set((task for task in tasks if task.done()))
+        tasks = tasks.difference(done)
+
         results = [task.result() for task in done]
-        results = [result for result in results if result is not None]
 
-        if results:
-            [task.cancel() for task in pending]
-            return results[0]
+        result = next((result for result in results if result is not None), None)
+        if result:
+            [task.cancel() for task in tasks]
+            return result
 
-    return None
+        if i < len(chlist):
+            task = asyncio.create_task(_search_in_channel(chlist[i], msgid))
+            tasks.add(task)
+            i += 1
+        elif len(tasks) == 0:
+            return None
+
+        await asyncio.sleep(0.25)
 
 
 async def _search_in_channel(channel: discord.TextChannel, msgid: int):
