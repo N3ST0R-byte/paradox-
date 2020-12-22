@@ -13,7 +13,8 @@ from paraArgs import args
 from registry.connectors import mysqlConnector, sqliteConnector
 from settings import guild_config
 
-# Always load command modules last
+# Always load modules last
+from paraData import versionModule  # noqa
 import modules  # noqa
 
 

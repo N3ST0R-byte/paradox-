@@ -4,7 +4,7 @@ CREATE TABLE VERSION(
 	updated_by VARCHAR(64),
 	PRIMARY KEY (version)
 );
-INSERT INTO VERSION (version, updated_by) VALUES (1, 'Initial Creation');
+INSERT INTO VERSION (version, updated_by) VALUES (2, 'Initial Creation');
 
 CREATE TABLE admin_snippets(
 	name VARCHAR(64) NOT NULL,
@@ -228,4 +228,82 @@ CREATE TABLE guild_disabled_commands(
 	command_name VARCHAR(64) NOT NULL,
 	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (app,guildid,command_name)
+);
+
+CREATE TABLE member_traffic(
+	guildid BIGINT NOT NULL,
+	userid BIGINT NOT NULL,
+	first_joined INT,
+	last_joined INT,
+	last_departure INT,
+	departure_name VARCHAR(64),
+	departure_nickname VARCHAR(64),
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (guildid,userid)
+);
+
+CREATE TABLE guild_logging_joins(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_logging_departures(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_userupdate_channel(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid BIGINT,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_userupdate_events(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	event INT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid,event)
+);
+
+CREATE TABLE guild_userupdate_ignores(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	userid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid,userid)
+);
+
+CREATE TABLE guild_starboards(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	channelid BIGINT,
+	emoji VARCHAR(64),
+	threshold INT NOT NULL DEFAULT 1,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE guild_starboard_roles(
+	app VARCHAR(64) NOT NULL,
+	guildid BIGINT NOT NULL,
+	roleid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,guildid)
+);
+
+CREATE TABLE message_stars(
+	app VARCHAR(64) NOT NULL,
+	msgid BIGINT NOT NULL,
+	starmsgid BIGINT NOT NULL,
+	_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (app,msgid)
 );
