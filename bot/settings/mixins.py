@@ -80,8 +80,12 @@ class ListData(_tableData):
             return
 
         current = cls._reader(client, guildid, **kwargs)
-        to_insert = [item for item in data if item not in current]
-        to_remove = [item for item in current if item not in data]
+        if current is not None:
+            to_insert = [item for item in data if item not in current]
+            to_remove = [item for item in current if item not in data]
+        else:
+            to_insert = data
+            to_remove = None
 
         # Handle required deletions
         if to_remove:
