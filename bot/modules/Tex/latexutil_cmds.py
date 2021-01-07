@@ -173,8 +173,15 @@ class MarkdownConverter(object):
 
 def search_n_parse(soup: BeautifulSoup):
     title = soup.find("h1")
+
     if "Not Found" in title.contents[0]:
         return ("", "", [], [])
+
+    if "is Gone" in title.contents[2]:
+        div = soup.find("div", attrs={"class": "left"})
+        desc = div.text
+        return (title.text, desc, [], [])
+
     title = title.text
     converter = MarkdownConverter()
     package_desc = soup.find("p")
@@ -191,8 +198,10 @@ def search_n_parse(soup: BeautifulSoup):
                 tds[1].br.replace_with(", ")
 
         links = tds[1].find_all("a")
-        if links is not None:
+        if links:
             for link in links:
+                if tds[0].text == "Documentation":
+                    link.insert_after(", ")
                 md_link = "[{}]({})".format(
                     link.text,
                     urllib.parse.urljoin(ctan_url,link.attrs["href"])
@@ -255,8 +264,20 @@ async def cmd_ctan(ctx):
         return await out_msg.edit(
             content=f"I couldn't find the package named `{ctx.args}`"
         )
-    desc = desc + '\n' + prop_tabulate(prop_list, value_list)
-    embed = discord.Embed(title=title, description=desc)
+
+    if prop_list:
+        table = prop_tabulate(prop_list, value_list)
+    else:
+        table = ""
+
+    emb_desc = desc + '\n' + table
+    if len(emb_desc) > 2000:
+        read_more = "Read more at [ctan page]({})".format(url)
+        idx = len(emb_desc) - 2000 + len("... " + read_more)
+        short_desc = emb_desc[:-idx]
+        rightmost_newline = short_desc.rfind("\n")
+        emb_desc = short_desc[:rightmost_newline] + "... " + read_more
+    embed = discord.Embed(title=title, url=url, description=emb_desc)
     return await out_msg.edit(
         content="",
         embed=embed
