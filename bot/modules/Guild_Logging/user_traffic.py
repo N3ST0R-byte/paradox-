@@ -117,7 +117,8 @@ async def departure_logger(client, member):
     joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.joined_at, minutes=False))
     joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
 
-    roles = reversed([r.mention for r in member.roles if not r.is_default()])
+    roles = [r.mention for r in member.roles if not r.is_default()]
+    roles.reverse()
     rolestr = ", ".join(roles) if len(roles) > 0 else "None"
 
     member_count = "{} Users, {} Bots | {} total".format(

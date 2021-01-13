@@ -58,11 +58,6 @@ async def cmd_secho(ctx):
 @in_guild()
 async def cmd_jumpto(ctx):
     """
-    Sorry!:
-        This command has been disabled until further notice.
-    """
-
-    """
     Usage``:
         {prefix}jumpto <msgid>
     Description:
@@ -71,9 +66,6 @@ async def cmd_jumpto(ctx):
         {prefix}jumpto {ctx.msg.id}
     """
 
-    return await ctx.error_reply("Sorry, the command `jumpto` has been disabled until further notice.")
-
-    """
     msgid = ctx.args
     if not msgid or not msgid.isdigit():
         await ctx.error_reply("Please provide a valid message ID.")
@@ -110,7 +102,6 @@ async def cmd_jumpto(ctx):
         await out_msg.edit(embed=embed)
     except discord.NotFound:
         await ctx.reply(embed=embed)
-    """
 
 
 @module.cmd("quote",
@@ -118,11 +109,6 @@ async def cmd_jumpto(ctx):
             flags=['a', 'r'])
 @in_guild()
 async def cmd_quote(ctx, flags):
-    """
-    Sorry!:
-        This command has been disabled until further notice.
-    """
-
     """
     Usage``:
         {prefix}quote <messageid> [-a] [-r]
@@ -134,10 +120,6 @@ async def cmd_quote(ctx, flags):
         -r: (raw) Put the message content in a codeblock.
     Examples``:
         {prefix}quote {ctx.msg.id}
-    """
-
-    return await ctx.error_reply("Sorry, the command `quote` has been disabled until further notice.")
-
     """
     msgid = ctx.args
     if not msgid or not msgid.isdigit():
@@ -201,8 +183,6 @@ async def cmd_quote(ctx, flags):
                 await ctx.pager(embeds, locked=False)
         except discord.NotFound:
             await ctx.pager(embeds, locked=False)
-
-    """
 
 
 @module.cmd("invitebot",

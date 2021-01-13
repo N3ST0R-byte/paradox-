@@ -74,15 +74,13 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
 
     if not from_user and before.roles != after.roles and UserLogEvent.ROLES in userlog_events:
         # Handle role changes
-        before_roles = [role.name for role in before.roles]
-        after_roles = [role.name for role in after.roles]
-        added_roles = [role for role in after_roles if role not in before_roles]
-        removed_roles = [role for role in before_roles if role not in after_roles]
+        added_roles = [role for role in after.roles if role not in before.roles]
+        removed_roles = [role for role in before.roles if role not in after.roles]
         desc_lines.append("**Roles updated!**")
         if added_roles:
-            desc_lines.append("Added roles `{}`".format("`, `".join(added_roles)))
+            desc_lines.append("Added roles {}".format(", ".join(r.mention for r in added_roles)))
         if removed_roles:
-            desc_lines.append("Removed roles `{}`".format("`, `".join(removed_roles)))
+            desc_lines.append("Removed roles {}".format(", ".join(r.mention for r in removed_roles)))
 
     # Return if we have somehow ended up with an empty description
     if not desc_lines:
