@@ -129,8 +129,9 @@ async def user_update_handler(client, before, after):
 
 @module.init_task
 def attach_userlog_handler(client):
-    client.add_after_event("member_update", member_update_handler)
-    client.add_after_event("user_update", user_update_handler)
+    # client.add_after_event("member_update", member_update_handler)
+    # client.add_after_event("user_update", user_update_handler)
+    pass
 
 
 # Define guild configuration settings

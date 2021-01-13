@@ -4,6 +4,8 @@ from datetime import datetime
 from cmdClient import cmdClient
 import constants
 
+from utils.lib import mail
+
 from .module import bot_admin_module as module
 
 
@@ -32,9 +34,9 @@ async def log_left_guild(client: cmdClient, guild: discord.Guild):
     embed.add_field(name="Now chatting in", value="{} guilds".format(len(client.guilds)), inline=False)
 
     # Retrieve the guild log channel and log the event
-    log_ch = client.objects["guild_log_channel"]
-    if log_ch:
-        await log_ch.send(embed=embed)
+    log_chid = client.conf.get("guild_log_ch")
+    if log_chid:
+        await mail(client, log_chid, embed=embed)
 
 
 async def log_joined_guild(client, guild):
@@ -90,9 +92,9 @@ async def log_joined_guild(client, guild):
     embed.add_field(name="Now chatting in", value="{} guilds".format(len(client.guilds)), inline=False)
 
     # Retrieve the guild log channel and log the event
-    log_ch = client.objects["guild_log_channel"]
-    if log_ch:
-        await log_ch.send(embed=embed)
+    log_chid = client.conf.get("guild_log_ch")
+    if log_chid:
+        await mail(client, log_chid, embed=embed)
 
 
 @module.init_task
