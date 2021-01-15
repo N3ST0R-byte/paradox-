@@ -1,4 +1,4 @@
-from registry import schema_generator, Column, ColumnType, tableInterface
+from registry import tableSchema, Column, ColumnType, tableInterface
 
 from ..module import latex_module as module
 
@@ -6,7 +6,7 @@ from . import preamble_data  # noqa
 
 
 # Define data schema
-config_schemas = schema_generator(
+config_schema = tableSchema(
     "user_latex_config",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('userid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -23,14 +23,7 @@ config_schemas = schema_generator(
 # Attach data interfaces
 @module.data_init_task
 def attach_latexguild_data(client):
-    mysql_schema, sqlite_schema, columns = config_schemas
-    interface = tableInterface(
-        client.data,
-        "user_latex_config",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, config_schema, shared=False),
+        "user_latex_config"
     )
-    client.data.attach_interface(interface, "user_latex_config")

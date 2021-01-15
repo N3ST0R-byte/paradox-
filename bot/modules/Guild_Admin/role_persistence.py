@@ -4,7 +4,7 @@ import datetime as dt
 from cmdClient.lib import UserCancelled
 
 from settings import GuildSetting, Boolean, RoleList, ListData, BoolData
-from registry import tableInterface, schema_generator, Column, ColumnType
+from registry import tableInterface, tableSchema, Column, ColumnType
 from logging import log
 
 from utils.interactive import ask  # noqa
@@ -182,20 +182,20 @@ def attach_restore_roles(client):
 
 
 # Define data interfaces
-role_persistence_schema = schema_generator(
+role_persistence_schema = tableSchema(
     "guild_role_persistence",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True)
 )
 
-role_persistence_ignores_schema = schema_generator(
+role_persistence_ignores_schema = tableSchema(
     "guild_role_persistence_ignores",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True)
 )
 
-member_stored_roles_schema = schema_generator(
+member_stored_roles_schema = tableSchema(
     "member_stored_roles",
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -205,38 +205,17 @@ member_stored_roles_schema = schema_generator(
 
 @module.data_init_task
 def attach_rolepersistence_data(client):
-    mysql_schema, sqlite_schema, columns = role_persistence_schema
-    interface = tableInterface(
-        client.data,
-        "guild_role_persistence",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, role_persistence_schema, shared=False),
+        "guild_role_persistence"
     )
-    client.data.attach_interface(interface, "guild_role_persistence")
 
-    mysql_schema, sqlite_schema, columns = role_persistence_ignores_schema
-    interface = tableInterface(
-        client.data,
-        "guild_role_persistence_ignores",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, role_persistence_ignores_schema, shared=False),
+        "guild_role_persistence_ignores"
     )
-    client.data.attach_interface(interface, "guild_role_persistence_ignores")
 
-    mysql_schema, sqlite_schema, columns = member_stored_roles_schema
-    interface = tableInterface(
-        client.data,
-        "member_stored_roles",
-        app=client.app,
-        column_data=columns,
-        shared=True,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, member_stored_roles_schema, shared=True),
+        "member_stored_roles"
     )
-    client.data.attach_interface(interface, "member_stored_roles")

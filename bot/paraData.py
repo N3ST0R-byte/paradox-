@@ -1,6 +1,6 @@
 import logging
 from paraModule import paraModule
-from registry import tableInterface, schema_generator, Column, ColumnType
+from registry import tableInterface, tableSchema, Column, ColumnType, RawElement
 
 """
 Define core shared data for paradoxical instances.
@@ -14,21 +14,18 @@ REQUIRED_DATA_VERSION = 2
 # ------------------------------
 # Version table and checker
 # ------------------------------
-version_mysql, version_sqlite, version_columns = schema_generator(
+raw_insert_line = "INSERT INTO VERSION (version, updated_by) VALUES ({}, 'Initial Creation');".format(
+    REQUIRED_DATA_VERSION
+)
+
+version_schema = tableSchema(
     "VERSION",
     Column("version", ColumnType.INT, required=True, primary=True),
     Column("updated_at", ColumnType.TIMESTAMP, default="CURRENT_TIMESTAMP", required=True),
     Column("updated_by", ColumnType.SHORTSTRING),
+    RawElement(raw_insert_line, raw_insert_line),
     add_timestamp=False
 )
-version_mysql += (
-    "\n"
-    "INSERT INTO VERSION (version, updated_by) VALUES ({}, 'Initial Creation');"
-).format(REQUIRED_DATA_VERSION)
-version_sqlite += (
-    "\n"
-    "INSERT INTO VERSION (version, updated_by) VALUES ({}, 'Initial Creation');"
-).format(REQUIRED_DATA_VERSION)
 
 versionModule = paraModule(
     "version_table",
@@ -38,16 +35,10 @@ versionModule = paraModule(
 
 @versionModule.data_init_task
 def load_version_table(client):
-    interface = tableInterface(
-        client.data,
-        "VERSION",
-        app=client.app,
-        column_data=version_columns,
-        shared=True,
-        sqlite_schema=version_sqlite,
-        mysql_schema=version_mysql,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, version_schema, shared=True),
+        "version"
     )
-    client.data.attach_interface(interface, "version")
 
 
 class DataVersionMismatch(Exception):

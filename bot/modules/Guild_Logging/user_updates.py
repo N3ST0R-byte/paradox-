@@ -6,7 +6,7 @@ from enum import Enum
 import discord
 
 from settings import GuildSetting, SettingList, Channel, MemberList, IntegerEnum, ColumnData, ListData
-from registry import tableInterface, schema_generator, Column, ColumnType
+from registry import tableInterface, tableSchema, Column, ColumnType
 
 from wards import guild_manager
 from utils.lib import prop_tabulate
@@ -224,21 +224,21 @@ class guild_userlog_events(ListData, SettingList, GuildSetting):
 
 
 # Define data schemas
-channel_schema_info = schema_generator(
+channel_schema = tableSchema(
     "guild_userupdate_channel",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('channelid', ColumnType.SNOWFLAKE),  # Channel to log the userupdates to
 )
 
-event_schema_info = schema_generator(
+event_schema = tableSchema(
     "guild_userupdate_events",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('event', ColumnType.INT, primary=True, required=True),  # The event types to log
 )
 
-ignores_schema_info = schema_generator(
+ignores_schema = tableSchema(
     "guild_userupdate_ignores",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -249,38 +249,17 @@ ignores_schema_info = schema_generator(
 # Attach data interfaces
 @module.data_init_task
 def attach_userlog_data(client):
-    mysql_schema, sqlite_schema, columns = channel_schema_info
-    prefix_interface = tableInterface(
-        client.data,
-        "guild_userupdate_channel",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, channel_schema, shared=False),
+        "guild_userupdate_channel"
     )
-    client.data.attach_interface(prefix_interface, "guild_userupdate_channel")
 
-    mysql_schema, sqlite_schema, columns = event_schema_info
-    prefix_interface = tableInterface(
-        client.data,
-        "guild_userupdate_events",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, event_schema, shared=False),
+        "guild_userupdate_events"
     )
-    client.data.attach_interface(prefix_interface, "guild_userupdate_events")
 
-    mysql_schema, sqlite_schema, columns = ignores_schema_info
-    prefix_interface = tableInterface(
-        client.data,
-        "guild_userupdate_ignores",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, ignores_schema, shared=False),
+        "guild_userupdate_ignores"
     )
-    client.data.attach_interface(prefix_interface, "guild_userupdate_ignores")

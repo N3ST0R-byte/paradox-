@@ -4,7 +4,7 @@ import discord
 from cmdClient import Context
 
 from settings import ListData, ChannelList, GuildSetting
-from registry import tableInterface, Column, ColumnType, schema_generator
+from registry import tableInterface, Column, ColumnType, tableSchema
 
 from wards import guild_manager
 
@@ -158,7 +158,7 @@ def attach_channel_cleaner(client):
 
 
 # Define data schema
-mysql_schema, sqlite_schema, columns = schema_generator(
+schema = tableSchema(
     "guild_cleaned_channels",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -170,13 +170,7 @@ mysql_schema, sqlite_schema, columns = schema_generator(
 # Attach data interface
 @module.data_init_task
 def attach_cleanedchannel_data(client):
-    cleaned_channel_interface = tableInterface(
-        client.data,
-        "guild_cleaned_channels",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema, shared=False),
+        "guild_cleaned_channels"
     )
-    client.data.attach_interface(cleaned_channel_interface, "guild_cleaned_channels")

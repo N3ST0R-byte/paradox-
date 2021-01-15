@@ -2,7 +2,7 @@ import sys
 from io import StringIO
 import traceback
 
-from registry import schema_generator, Column, ColumnType, tableInterface
+from registry import tableSchema, Column, ColumnType, tableInterface
 from wards import is_master
 
 from .module import bot_admin_module as module
@@ -124,7 +124,7 @@ async def _snip_async(ctx, snip, snipargs):
     return result
 
 
-schemas = schema_generator(
+schema = tableSchema(
     "admin_snippets",
     Column('name', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('author', ColumnType.SNOWFLAKE, required=True),
@@ -136,14 +136,7 @@ schemas = schema_generator(
 # Attach data interface
 @module.data_init_task
 def attach_snippet_data(client):
-    mysql_schema, sqlite_schema, columns = schemas
-    interface = tableInterface(
-        client.data,
-        "admin_snippets",
-        app=client.app,
-        column_data=columns,
-        shared=True,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema),
+        "admin_snippet"
     )
-    client.data.attach_interface(interface, "admin_snippets")
