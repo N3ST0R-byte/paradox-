@@ -98,27 +98,36 @@ class Column(tableElement):
         )
 
 
+class ReferenceAction(Enum):
+    RESTRICT = "RESTRICT"
+    CASCADE = "CASCADE"
+    SETNULL = "SET NULL"
+
+
 class ForeignKey(tableElement):
-    def __init__(self, local_keys, foreign_table, foreign_keys):
+    def __init__(self, local_keys, foreign_table, foreign_keys, on_delete=None):
         super().__init__()
         self.local_keys = local_keys
         self.foreign_table = foreign_table
-        self.foregin_keys = foreign_keys
+        self.foreign_keys = foreign_keys
+        self.on_delete = on_delete
 
     @property
     def for_mysql(self):
-        return "FOREIGN KEY ({}) REFERENCES {}({})".format(
+        return "FOREIGN KEY ({}) REFERENCES {}({}){}".format(
             self.local_keys,
             self.foreign_table,
-            self.foregin_keys
+            self.foreign_keys,
+            " ON DELETE {}".format(self.on_delete.value()) if self.on_delete is not None else ""
         )
 
     @property
     def for_sqlite(self):
-        return "FOREIGN KEY ({}) REFERENCES {}({})".format(
+        return "FOREIGN KEY ({}) REFERENCES {}({}){}".format(
             self.local_keys,
             self.foreign_table,
-            self.foregin_keys
+            self.foreign_keys,
+            " ON DELETE {}".format(self.on_delete.value()) if self.on_delete is not None else ""
         )
 
 
@@ -130,7 +139,7 @@ class Index(tableElement):
 
     @property
     def for_mysql(self):
-        return "CREATE INDEX {} ON {}({})".format(
+        return "CREATE INDEX {} ON {}({});".format(
             self.name,
             self.table,
             ','.join(self.keys)
@@ -138,7 +147,7 @@ class Index(tableElement):
 
     @property
     def for_sqlite(self):
-        return "CREATE INDEX {} ON {}({})".format(
+        return "CREATE INDEX {} ON {}({});".format(
             self.name,
             self.table,
             ','.join(self.keys)
