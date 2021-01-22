@@ -118,7 +118,7 @@ class ForeignKey(tableElement):
             self.local_keys,
             self.foreign_table,
             self.foreign_keys,
-            " ON DELETE {}".format(self.on_delete.value()) if self.on_delete is not None else ""
+            " ON DELETE {}".format(self.on_delete.value) if self.on_delete is not None else ""
         )
 
     @property
@@ -127,7 +127,7 @@ class ForeignKey(tableElement):
             self.local_keys,
             self.foreign_table,
             self.foreign_keys,
-            " ON DELETE {}".format(self.on_delete.value()) if self.on_delete is not None else ""
+            " ON DELETE {}".format(self.on_delete.value) if self.on_delete is not None else ""
         )
 
 

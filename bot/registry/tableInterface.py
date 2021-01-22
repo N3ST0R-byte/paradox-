@@ -59,11 +59,14 @@ class tableInterface(Interface):
             if param not in self.columns:
                 raise ValueError("Invalid column '{}' passed to table interface '{}'".format(param, self.table))
             elif self.columns[param] is not None:
-                if (not isinstance(value, self.columns[param]) and not isinstance(value, list) and value is not None):
+                if (not isinstance(value, self.columns[param]) and
+                        not isinstance(value, (list, tuple)) and
+                        value is not None):
                     raise TypeError("Incorrect type '{}' passed for key '{}' in table interface '{}'".format(
                         type(value), param, self.table
                     ))
-                elif isinstance(value, list) and not all(isinstance(item, self.columns[param]) for item in value):
+                elif (isinstance(value, (list, tuple)) and
+                        not all(isinstance(item, self.columns[param]) for item in value)):
                     raise TypeError("Incorrect type in list passed for key '{}' in table interface '{}'".format(
                         param, self.table
                     ))

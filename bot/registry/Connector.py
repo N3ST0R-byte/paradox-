@@ -59,7 +59,7 @@ class Connector:
         values = []
         conditional_strings = []
         for key, item in conditions.items():
-            if isinstance(item, list):
+            if isinstance(item, (list, tuple)):
                 conditional_strings.append("{} IN ({})".format(key, ", ".join([self.replace_char] * len(item))))
                 values.extend(item)
             else:
