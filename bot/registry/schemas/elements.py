@@ -93,7 +93,7 @@ class Column(tableElement):
             self.name,
             self.col_type.in_sqlite,
             " NOT NULL" if self.required else "",
-            " AUTOINCREMENT " if self.autoincrement else "",
+            " PRIMARY KEY AUTOINCREMENT " if self.autoincrement else "",
             " DEFAULT {}".format(self.default) if self.default is not None else ""
         )
 
