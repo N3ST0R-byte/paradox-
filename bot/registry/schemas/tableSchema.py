@@ -65,7 +65,10 @@ class tableSchema:
 
     @property
     def for_sqlite(self):
-        primary_keys = ','.join(column.name for column in self.columns if column.primary)
+        if not any(column.autoincrement for column in self.columns):
+            primary_keys = ','.join(column.name for column in self.columns if column.primary)
+        else:
+            primary_keys = ""
         foreign_keys = ',\n\t'.join(foreign_key.for_sqlite for foreign_key in self.foreign_keys)
         indexes = '\n'.join(index.for_sqlite for index in self.indexes)
         raws = ',\n\t'.join(raw.for_sqlite for raw in self.raws)
