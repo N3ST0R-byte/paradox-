@@ -43,6 +43,7 @@ class mysqlConnector(Connector):
             tuple((*values, *update_key_values))
         )
         self.conn.commit()
+        return cursor
 
 
 class sqliteConnector(Connector):
@@ -79,6 +80,7 @@ class sqliteConnector(Connector):
             tuple((*values, *update_key_values))
         )
         self.conn.commit()
+        return cursor
 
     def create_database(self):
         """

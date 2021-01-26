@@ -142,6 +142,7 @@ class Connector:
             tuple((*key_values, *criteria_values))
         )
         self.conn.commit()
+        return cursor
 
     def delete_where(self, table, cursor=None, **conditions):
         """
@@ -155,6 +156,7 @@ class Connector:
             criteria_values
         )
         self.conn.commit()
+        return cursor
 
     def insert(self, table, cursor=None, allow_replace=False, **values):
         """
@@ -173,6 +175,7 @@ class Connector:
             values
         )
         self.conn.commit()
+        return cursor
 
     def insert_many(self, table, *value_tuples, insert_keys=None, cursor=None):
         """
@@ -190,6 +193,7 @@ class Connector:
             values
         )
         self.conn.commit()
+        return cursor
 
     def upsert(self, table, constraint, cursor=None, **values):
         """
