@@ -43,7 +43,7 @@ async def cmd_autoclean(ctx: Context):
     # Retrieve cleaned channel setting for this guild
     cleaned_channels = ctx.get_guild_setting.cleaned_channels
 
-    if ctx.ch.id in cleaned_channels.data:
+    if cleaned_channels.data and ctx.ch.id in cleaned_channels.data:
         # Remove the channel
         cleaned_channels.remove_channel(ctx.ch.id)
         await ctx.reply("This channel will no longer be automatically cleaned.")
