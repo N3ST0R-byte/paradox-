@@ -10,6 +10,8 @@ import discord
 from cmdClient.cmdClient import cmdClient
 from registry import tableInterface
 
+from utils.lib import jumpto
+
 from ..module import guild_moderation_module as module
 
 from .TicketTypes import TicketType
@@ -123,13 +125,31 @@ class Ticket:
         if len(self.memberids) == 1:
             embed.description = "`Target`: {}".format(targets)
         else:
-            embed.add_field(name="Targets", value=targets)
+            embed.add_field(name="Targets", value=targets, inline=False)
 
         # Reason
         if self.reason:
-            embed.add_field(name='Reason', value=self.reason)
+            embed.add_field(name='Reason', value=self.reason, inline=False)
 
         return embed
+
+    @property
+    def summary(self):
+        """
+        Brief one-line summary of the ticket.
+        """
+        raise NotImplementedError
+
+    @property
+    def jumpto(self):
+        """
+        Link to jump to the ticket message in the modlog.
+        """
+        # Get the modlog
+        modlogid = self._client.guild_config.modlog.get(self._client, self.guildid).data
+
+        if modlogid and self.msgid:
+            return jumpto(self.guildid, modlogid, self.msgid)
 
     @classmethod
     def setup(cls, client):

@@ -8,10 +8,13 @@ class TicketType(Enum):
     Identifier for the different types of tickets
     """
     NOTE = 0
-    MUTE = 1
-    BAN = 2
-    HACKBAN = 3
-    KICK = 4
+    TIMED_MUTE = 1
+    MUTE = 2
+    UNMUTE = 3
+    BAN = 4
+    UNBAN = 5
+    HACKBAN = 6
+    KICK = 7
 
     @property
     def Ticket(self):

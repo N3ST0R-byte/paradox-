@@ -8,6 +8,8 @@ from .module import guild_moderation_module as module
 
 from . import mute_config  # noqa
 
+from .TimedMuteGroup import TimedMuteGroup
+
 
 # TODO: Muterole creation
 @module.cmd("mute",
@@ -75,6 +77,14 @@ async def cmd_mute(ctx, flags):
             return
         users.append(user)
 
+    results = await TimedMuteGroup.create(
+        ctx.guild, muterole, users, 60, ctx.author.id, reason
+    )
+    print(results)
+
+
+
+"""
     failed = []
     muted = []
     for user in users:
@@ -100,6 +110,7 @@ async def cmd_mute(ctx, flags):
             reports.append("Failed to mute: `{}`.".format('`, `'.join(str(u) for u in failed)))
 
     await ctx.reply('\n'.join(reports))
+"""
 """
 # Check we have a muterole
 # Check we can apply the muterole

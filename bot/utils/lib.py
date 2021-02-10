@@ -430,3 +430,14 @@ def shard_of(shard_count: int, guildid: int):
     Calculate the shard number of a given guild.
     """
     return (guildid >> 22) % shard_count if shard_count and shard_count > 0 else 0
+
+
+def jumpto(guildid: int, channeldid: int, messageid: int):
+    """
+    Build a jump link for a message given its location.
+    """
+    return 'https://discord.com/channels/{}/{}/{}'.format(
+        guildid,
+        channeldid,
+        messageid
+    )
