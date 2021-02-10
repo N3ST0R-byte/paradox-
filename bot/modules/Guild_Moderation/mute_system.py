@@ -2,21 +2,25 @@ import traceback
 import logging
 import asyncio
 import datetime as dt
+import discord
 
 from registry import tableInterface, Column, ColumnType, ForeignKey, ReferenceAction, tableSchema
+from utils.lib import strfdelta
 
 from .module import guild_moderation_module as module
 from .mute_utils import mute_member, unmute_member, ActionState
+from .ModActionTicket import ModActionTicket
 
 
 # TODO: Remute on user join? Optionally?
 class TimedMuteGroup:
     # Client, attached during initialisation
-    _client = None  # type: cmdClient
+    _client = None  # type: cmdClie nt
 
     # Data interfaces, attached during initialisation
     _group_data = None
     _member_data = None
+    _ticket_data = None
 
     # Guild TimedMuteGroup cache, keyed on `guildid` then `memberid`.
     _guild_caches = {}  # type: Dict[int, Dict[int, TimedMuteGroup]]
@@ -25,34 +29,44 @@ class TimedMuteGroup:
     _mutegroup_cache = {}  # type: Dict[int, TimedMuteGroup]
 
     def __init__(self,
-                 guild, role,
-                 groupid, memberids,
-                 unmute_timestamp,
-                 muted_timestamp=None, modid=0, duration=0, reason=None, reference=None):
-        if groupid in self. _mutegroup_cache:
+                 groupid, ticketid,
+                 role, memberids,
+                 unmute_timestamp, duration,
+                 ticket=None):
+        if groupid in self._mutegroup_cache:
             raise ValueError("Duplicate groupid for TimedMute.")
 
         # Discord objects
-        self.guild = guild
         self.role = role
+        self._guild = None
 
-        # Mute group
+        # Mute group data
         self.groupid = groupid
+        self.ticketid = ticketid
         self.memberids = memberids
         self.unmute_timestamp = unmute_timestamp
-
-        # Extra optional mute action data
-        self.muted_timestamp = muted_timestamp
-        self.modid = modid
         self.duration = duration
-        self.reason = reason
-        self.reference = reference
+
+        # The mute action ticket
+        self._ticket = ticket
 
         # Task controlling the scheduled group unmute
         self._task = None
 
         # Whether the unmute is to be cancelled
         self._cancelled = False
+
+    @property
+    def ticket(self):
+        if self._ticket is None:
+            self._ticket = TimedMuteTicket.fetch_tickets_where(ticketid=self.ticketid)
+        return self._ticket
+
+    @property
+    def guild(self):
+        if self._guild is None:
+            self._guild = self._client.get_guild(self.ticket.guildid)
+        return self._guild
 
     @property
     def guild_cache(self):
@@ -82,25 +96,33 @@ class TimedMuteGroup:
         member_results = list(zip(members, results))
 
         if any(result == ActionState.SUCCESS for result in results):
+            # Muted members
+            memberids = [member.id for member, result in member_results if result == ActionState.SUCCESS]
+
             # Calculate unmute timestamp
             muted_at = dt.datetime.utcnow()
             unmute_at = muted_at + dt.timedelta(seconds=duration)
 
-            # Post to modlog
-            # TODO: Post in modlog
-            # Set reference
+            # Create ticket, delay posting
+            ticket = TimedMuteTicket.create_ticket(
+                guild.id, modid, memberids,
+                reason=reason, groupid=groupid,
+                post=False
+            )
 
             # Create mute group, save, and activate it
             tgroup = cls(
-                guild, role,
-                groupid, [member.id for member, result in member_results if result == ActionState.SUCCESS],
-                int(unmute_at.timestamp()),
-                muted_timestamp=int(muted_at.timestamp()),
-                duration=duration,
+                groupid, ticketid,
+                role, memberids,
+                int(unmute_at.timestamp()), duration=duration,
+                ticket=ticket,
                 **kwargs
             )
             tgroup.write()
             tgroup.load()
+
+            # Post to the modlog
+            await ticket.post()
 
         return member_results
 
@@ -117,7 +139,8 @@ class TimedMuteGroup:
 
         # Attach the data interfaces to the class
         cls._group_data = client.data.guild_timed_mute_groups
-        cls._member_data = client.data.guild_timed_mutes_members
+        cls._member_data = client.data.guild_timed_mute_members
+        cls._ticket_data = client.data.guild_timed_mute_tickets
 
         # Attach the guild caches to the client
         client.objects['timed_unmutes'] = cls._mutegroup_cache
@@ -142,7 +165,7 @@ class TimedMuteGroup:
         # Construct the groups
         group_counter = 0
         cleanup = []  # List of groupids that are "stale" (e.g. non-existent guild or role), and should be removed
-        for row in cls._group_data.select_where():
+        for row in cls._ticket_data.select_where():
             _cleanup = False
 
             # Extract the guild
@@ -153,16 +176,10 @@ class TimedMuteGroup:
                 if role is not None and row['groupid'] in group_members:
                     # Create the TimedMute, load it, and schedule it
                     cls(
-                        guild,
-                        role,
-                        row['groupid'],
-                        group_members[row['groupid']],
-                        row['unmute_timestamp'],
-                        row['muted_timestamp'],
-                        row['modid'],
-                        row['duration'],
-                        row['reason'],
-                        row['reference']
+                        row['groupid'], row['ticketid'],
+                        role, group_members[row['groupid']],
+                        row['unmute_timestamp'], row['duration'],
+                        ticket=TimedMuteTicket.ticket_from_data(row, group_members[row['groupid']])
                     ).load()
 
                     group_counter += 1
@@ -205,14 +222,10 @@ class TimedMuteGroup:
         # Save group information
         self._group_data.insert(
             groupid=self.groupid,
-            guildid=self.guild.id,
+            ticketid=self.ticketid,
             roleid=self.role.id,
             unmute_timestamp=self.unmute_timestamp,
-            muted_timestamp=self.muted_timestamp,
-            modid=self.modid,
             duration=self.duration,
-            reason=self.reason,
-            reference=self.reference
         )
 
         # Save member information
@@ -338,6 +351,28 @@ class TimedMuteGroup:
         print(results)
         self.unload()
 
+class TimedMuteTicket(ModActionTicket):
+    __slots__ = ('groupid', '_mute_group')
+
+    def __init__(self, *args, groupid=None, **kwargs):
+        super().__init__()
+        self.groupid = groupid
+
+    @property
+    def mute_group(self):
+        if self._mute_group is None:
+            self._mute_group = TimedMuteGroup._mutegroup_cache[self.groupid]
+
+    @classmethod
+    def setup(cls, client):
+        cls._ticketview_data = client.guild_timed_mute_tickets
+
+    @property
+    def embed(self):
+        embed = super().embed
+        embed.title = "Temporary Mute"
+        embed.insert_field_at(0, name="Duration", value="test")
+
 
 # Attach the initialisation tasks
 module.init_task(TimedMuteGroup.setup)
@@ -349,14 +384,13 @@ group_schema = tableSchema(
     "guild_timed_mute_groups",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('groupid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, required=True),
+    Column('ticketid', ColumnType.INT, required=True),
     Column('roleid', ColumnType.SNOWFLAKE, required=True),
     Column('unmute_timestamp', ColumnType.INT, required=True),
-    Column('muted_timestamp', ColumnType.INT, required=False),
     Column('modid', ColumnType.SNOWFLAKE, required=True),
     Column('duration', ColumnType.INT, required=True),
-    Column('reason', ColumnType.MSGSTRING, required=False),
-    Column('reference', ColumnType.MSGSTRING, required=False),
+    ForeignKey('ticketid', 'guild_mod_tickets', 'ticketid')
+
 )
 
 member_schema = tableSchema(
@@ -365,6 +399,47 @@ member_schema = tableSchema(
     Column('groupid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('memberid', ColumnType.SNOWFLAKE, primary=True, required=True),
     ForeignKey("app, groupid", group_schema.name, "app, groupid", on_delete=ReferenceAction.CASCADE)
+)
+
+mutetickets_raw_schema = """\
+    CREATE VIEW
+        guild_timed_mute_tickets
+    AS
+        SELECT
+            tickets.ticketid as ticketid,
+            tickets.guildid as guildid,
+            tickets.modid as modid,
+            tickets.msgid as msgid,
+            tickets.auditid as auditid,
+            tickets.reason as reason,
+            tickets.created_at as created_at,
+            tickets.guild_ticketid as guild_ticketid,
+            groups.app as app,
+            groups.groupid as groupid,
+            groups.roleid as roleid,
+            groups.unmute_timestamp as unmute_timestamp,
+            groups.duration as duration
+        FROM
+            guild_timed_mute_groups AS groups
+        JOIN
+            guild_moderation_tickets_gtid AS tickets
+        USING
+            ticketid;
+"""
+mutetickets_columns = (
+    ('ticketid', int),
+    ('guildid', int),
+    ('modid', int),
+    ('msgid', int),
+    ('auditid', int),
+    ('reason', str),
+    ('created_at', datetime.datetime),
+    ('guild_ticketid', int),
+    ('app', str),
+    ('groupid', int),
+    ('roleid', int),
+    ('unmute_timestamp', int),
+    ('duration', int)
 )
 
 
@@ -378,5 +453,17 @@ def attach_timed_mute_data(client):
 
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, member_schema, shared=False),
-        "guild_timed_mutes_members"
+        "guild_timed_mute_members"
+    )
+
+    client.data.attach_interface(
+        tableInterface(
+            client.data,
+            "guild_moderation_tickets_gtid",
+            client.app,
+            mutetickets_columns,
+            mysql_schema=mutetickets_raw_schema,
+            sqlite_schema=mutetickets_raw_schema
+        ),
+        "guild_timed_mute_tickets"
     )

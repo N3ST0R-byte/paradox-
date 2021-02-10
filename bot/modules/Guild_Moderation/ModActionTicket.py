@@ -1,6 +1,7 @@
 """
 ABC and data definitions for manual moderation tickets.
 """
+import datetime
 import discord
 
 from registry import tableInterface, Column, ColumnType, tableSchema, ForeignKey, ReferenceAction
@@ -46,7 +47,31 @@ class ModActionTicket:
         """
         Returns the ticket embed to be posted in the modlog.
         """
-        raise NotImplementedError
+        embed = discord.Embed()
+
+        # Standard metadata
+        embed.set_author(name="Ticket #{}".format(self.guild_ticketid))
+        embed.timestamp = self.created_at
+        embed.description = self.reason or "No reason given."
+
+        # Add the targets as a new field
+        embed.add_field(
+            name="Target" if len(self.memberids) == 1 else "Targets",
+            value='\n'.join("<@{0}> (id:{0})".format(memberid) for memberid in self.memberids) or "None"
+        )
+
+        # Add the acting moderator as the footer
+        # Weakly attempt to get the acting moderator user for more information
+        mod = self._client.get_user(self.modid)
+        if mod:
+            embed.set_footer(
+                text="Acting moderator: {}".format(mod),
+                icon_url=mod.avatar_url
+            )
+        else:
+            embed.set_footer(
+                text="Acting moderator: {}".format(self.modid)
+            )
 
     @property
     def guild_ticketid(self):
@@ -80,6 +105,9 @@ class ModActionTicket:
         Returns the created ticket.
         """
         # Create the ticket
+        if 'created_at' not in kwargs:
+            kwargs['created_at'] = datetime.datetime.utcnow()
+
         ticket = cls(guildid, modid, memberids, *args, **kwargs)
 
         # Save the ticket data
@@ -207,6 +235,15 @@ class ModActionTicket:
                     return None
                 except discord.HTTPException:
                     return None
+
+                # If another app posted the ticket
+                if message is not None and message.author != self._client.user:
+                    # Attempt to delete the message
+                    try:
+                        await message.delete()
+                    except discord.Forbidden:
+                        pass
+                    message = None
 
             if message is not None:
                 # Edit the message
