@@ -134,11 +134,25 @@ class Ticket:
         return embed
 
     @property
-    def summary(self):
+    def short_summary(self):
         """
         Brief one-line summary of the ticket.
         """
-        raise NotImplementedError
+        return "**{}**".format(self._ticket_type.name)
+
+    @property
+    def field_summary(self):
+        """
+        Ticket summary as a tuple `(name, value)` suitable for an embed field.
+        """
+        name = "(#{}) **{}** on {} by {}".format(
+            self.ticketgid,
+            self._ticket_type.name,
+            dt.fromtimestamp(self.created_at),
+            self._client.get_user(self.modid) or self.modid
+        )
+        value = self.reason or "No reason given"
+        return (name, value)
 
     @property
     def jumpto(self):

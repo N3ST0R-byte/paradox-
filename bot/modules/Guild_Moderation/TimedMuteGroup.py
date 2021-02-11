@@ -85,7 +85,7 @@ class TimedMuteGroup:
         Also adds the mute cache as a client object for external use.
         """
         cls._client = client  # type: cmdClient
-        cls._member_data = client.data.guild_mod_ticket_members  # type: tableInterface
+        cls._member_data = client.data.guild_timed_mute_members  # type: tableInterface
 
     @classmethod
     async def launch(cls, client):
