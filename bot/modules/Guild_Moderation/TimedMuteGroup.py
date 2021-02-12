@@ -14,7 +14,7 @@ from utils.lib import strfdelta
 from .module import guild_moderation_module as module
 
 from .tickets import TicketType
-from .mute_utils import mute_member, unmute_member, ActionState
+from .mute_utils import unmute_member
 
 
 class TimedMuteGroup:
@@ -39,42 +39,6 @@ class TimedMuteGroup:
         if cache is None:
             cache = self._member_map[self.ticket.guildid] = {}
         return cache
-
-    @classmethod
-    async def create(cls, guild, role, members, duration, modid, reason=None):
-        """
-        Mute a new group of users for the given duration.
-        """
-        mute_reason = "Muted by {}".format(modid if modid is not None else "?")
-        mute_reason += ": {}".format(reason) if reason else "."
-
-        # Mute users
-        results = await asyncio.gather(
-            *(mute_member(guild, role, member, audit_reason=mute_reason) for member in members)
-        )
-        member_results = list(zip(members, results))
-
-        if any(result == ActionState.SUCCESS for result in results):
-            # Muted members
-            memberids = [member.id for member, result in member_results if result == ActionState.SUCCESS]
-
-            # Calculate unmute timestamp
-            muted_at = dt.datetime.utcnow()
-            unmute_at = muted_at + dt.timedelta(seconds=duration)
-
-            # Create and post ticket
-            ticket = TicketType.TIMED_MUTE.Ticket.create(
-                guild.id, modid, cls._client.user.id,
-                [member.id for member in members], reason=reason,
-                duration=duration, roleid=role.id, unmute_timestamp=int(unmute_at.timestamp())
-            )
-            await ticket.post()
-
-            # Create and load mute group
-            cls(ticket, memberids).load()
-
-        # Return the mute results
-        return member_results
 
     # Client initialisation and launch methods
     @classmethod
