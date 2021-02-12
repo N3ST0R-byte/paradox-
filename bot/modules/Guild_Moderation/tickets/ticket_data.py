@@ -2,7 +2,7 @@ from registry import tableInterface, Column, ColumnType, tableSchema, ForeignKey
 
 from ..module import guild_moderation_module as module
 
-from . import TimedMuteTicket, UnmuteTicket  # noqa
+from . import TimedMuteTicket, FlatTickets  # noqa
 
 # Define data schemas
 ticket_schema = tableSchema(

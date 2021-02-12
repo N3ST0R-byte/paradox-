@@ -160,12 +160,14 @@ def strfdelta(delta, sec=False, minutes=True, short=False):
     reply_msg = []
     if output[0][0] != 0:
         reply_msg.append("{}{} ".format(output[0][0], output[0][1]))
-    for i in range(1, len(output) - 1):
+    if output[0][0] != 0 or output[1][0] != 0 or len(output) == 2:
+        reply_msg.append("{}{} ".format(output[1][0], output[1][1]))
+    for i in range(2, len(output) - 1):
         reply_msg.append("{}{} ".format(output[i][0], output[i][1]))
     if not short and reply_msg:
         reply_msg.append("and ")
-        reply_msg.append("{}{}".format(output[len(output) - 1][0], output[len(output) - 1][1]))
-        return "".join(reply_msg)
+    reply_msg.append("{}{}".format(output[-1][0], output[-1][1]))
+    return "".join(reply_msg)
 
 
 def parse_dur(time_str):
@@ -177,8 +179,8 @@ def parse_dur(time_str):
     time_str: str
         The time string to parse. String can include days, hours, minutes, and seconds.
 
-    Returns: str
-        A string with a formatted timedelta object.
+    Returns: int
+        The number of seconds the duration represents.
     """
     funcs = {'d': lambda x: x * 24 * 60 * 60,
              'h': lambda x: x * 60 * 60,
@@ -190,7 +192,7 @@ def parse_dur(time_str):
     for bit in found:
         if bit[1] in funcs:
             seconds += funcs[bit[1]](int(bit[0]))
-    return datetime.timedelta(seconds=seconds)
+    return seconds
 
 
 def substitute_ranges(ranges_str, max_match=20, max_range=1000, separator=','):

@@ -310,3 +310,26 @@ def clean_arg_str(ctx: Context):
         content = content[len(ctx.prefix):]
 
     return content.partition(ctx.alias)[2].strip()
+
+
+@Context.util
+def usage_embed(ctx: Context, custom_usage=None):
+    """
+    Creates an embed displaying the current command's usage field.
+    If `custom_usage` is provided, uses this instead of the help usage field.
+
+    Returns: discord.Embed
+        The usage embed for the current command.
+    """
+    if not ctx.cmd:
+        raise ValueError("Cannot extract usage from a non-command context.")
+    if not custom_usage:
+        fields = ctx.cmd.long_help
+        usage_field = next((pair for pair in fields if pair[0].startswith('Usage')), None)
+        if usage_field is None:
+            raise ValueError("Cannot extract usage from command with no usage field.")
+        if usage_field[0].endswith('``'):
+            value = "`{}`".format('`\n'.join(usage_field[1].splitlines()))
+    else:
+        value = custom_usage
+    return discord.Embed(title="Usage", colour=discord.Color.red(), description=value)

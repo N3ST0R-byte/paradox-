@@ -230,7 +230,7 @@ async def find_channel(ctx, userstr, interactive=False, collection=None, chan_ty
 
 
 @Context.util
-async def find_member(ctx, userstr, interactive=False, collection=None):
+async def find_member(ctx, userstr, interactive=False, collection=None, silent_notfound=False):
     """
     Find a guild member given a partial matching string,
     allowing custom member collections.
@@ -246,6 +246,9 @@ async def find_member(ctx, userstr, interactive=False, collection=None):
     collection: List(discord.Member)
         Collection of members to search amongst.
         If none, uses the full guild member list.
+    silent_notfound: bool
+        Whether to not reply with a not-found error when there are no matches.
+        Allows custom handling for this case.
 
     Returns
     -------
