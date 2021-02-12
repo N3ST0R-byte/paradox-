@@ -1,4 +1,5 @@
 import re
+import asyncio
 import datetime
 from enum import Enum
 
@@ -196,10 +197,23 @@ class ModAction:
         try:
             if isinstance(self.flags['r'], str):
                 reason = self.flags['r']
+                interactive = False
             else:
                 reason = await self.ctx.input(self.reason_prompt)
+                interactive = True
         except ResponseTimedOut:
             raise ResponseTimedOut(self.resp_reason_timed_out) from None
         if reason.lower() == 'c':
             raise UserCancelled(self.resp_reason_cancelled)
+        if len(reason) > 1000:
+            msg = "For display reasons, the reason must be under 1000 characters!"
+            if interactive:
+                msg = await self.ctx.reply(
+                    msg,
+                    embed=discord.Embed(title="Provided reason", description=reason, colour=discord.Color.orange())
+                )
+                asyncio.create_task(self.ctx.offer_delete(msg))
+            else:
+                await self.ctx.error_reply(msg)
+            raise SafeCancellation()
         return reason
