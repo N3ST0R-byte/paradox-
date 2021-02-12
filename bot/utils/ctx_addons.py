@@ -186,26 +186,18 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
     # The message to add the reaction to
     react_msg = to_delete[-1]
 
-    # !!! Needs updating for rewrite !!! #
-    # mod_role = await ctx.server_conf.mod_role.get(ctx) if ctx.server else None
-
     # Build the reaction check function
     if ctx.guild:
+        modrole = ctx.get_guild_setting.modrole.value if ctx.guild else None
+
         def check(reaction, user):
-            # !!! Needs updating for rewrite !!! #
-            """
-            if user == ctx.client.user:
-                return False
-            result = user == ctx.author
-            result = result or (mod_role and mod_role in [role.id for role in user.roles])
-            result = result or user.server_permissions.administrator
-            result = result or user.server_permissions.manage_messages
-            """
             if not (reaction.message.id == react_msg.id and reaction.emoji == emoji):
                 return False
             if user == ctx.guild.me:
                 return False
-            return (user == ctx.author) or (user.guild_permissions.manage_messages)
+            return ((user == ctx.author)
+                    or (user.permissions_in(ctx.ch).manage_messages)
+                    or (modrole and modrole in user.roles))
     else:
         def check(reaction, user):
             return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
