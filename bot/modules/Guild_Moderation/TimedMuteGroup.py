@@ -14,10 +14,16 @@ from utils.lib import strfdelta
 from .module import guild_moderation_module as module
 
 from .tickets import TicketType
-from .mute_utils import unmute_member
+from .mute_utils import unmute_memberid
 
 
 class TimedMuteGroup:
+    __slots__ = (
+        'ticket',
+        'memberids',
+        '_task',
+        '_cancelled'
+    )
     _client: cmdClient = None  # Attached during initialisation
 
     _member_data: tableInterface = None  # Attached during initialisation
@@ -28,6 +34,9 @@ class TimedMuteGroup:
     def __init__(self, timed_mute_ticket: TicketType.TIMED_MUTE.Ticket, memberids: List[int]):
         self.ticket = timed_mute_ticket
         self.memberids = memberids
+
+        self._task = None
+        self._cancelled = False
 
     @property
     def guild_mutes(self):
@@ -171,14 +180,14 @@ class TimedMuteGroup:
         """
         Cancel the unmute task, if it is running.
         """
-        self._cancelled = True
-        if not self._cancelled and (self._task and not self._task.done):
+        if not self._cancelled and self._task and not self._task.done():
             self._task.cancel()
+            self._cancelled = True
 
     # Internal unmute system
     async def _unmute_wrapper(self):
         """
-        Unmute wrapper which runs `apply_unmutes` at `self.unmute_timestamp`.
+        Unmute wrapper which runs `apply_unmutes` at `self.ticket.unmute_timestamp`.
         """
         try:
             # Sleep for the required time
@@ -186,7 +195,9 @@ class TimedMuteGroup:
 
             # Execute the unmutes
             await self._unmute_members()
-            await asyncio.sleep(0.1)
+            if self._cancelled:
+                # Wait a moment to catch the cancel, in case it was propogated from inside the unmute
+                await asyncio.sleep(0.1)
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -215,10 +226,9 @@ class TimedMuteGroup:
             role: discord.Role = guild.get_role(self.ticket.roleid)
             if role is not None:
                 await asyncio.gather(
-                    *(unmute_member(guild,
-                                    role,
-                                    memberid,
-                                    audit_reason="Automatic unmute (#{}).".format(self.ticket.ticketgid))
+                    *(unmute_memberid(memberid,
+                                      role,
+                                      audit_reason="Automatic unmute (#{}).".format(self.ticket.ticketgid))
                       for memberid in self.memberids)
                 )
                 reason = (
