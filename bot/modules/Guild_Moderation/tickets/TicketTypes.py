@@ -13,7 +13,7 @@ class TicketType(Enum):
     UNMUTE = 3
     BAN = 4
     UNBAN = 5
-    HACKBAN = 6
+    PREBAN = 6
     KICK = 7
 
     @property

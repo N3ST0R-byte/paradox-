@@ -4,6 +4,7 @@ from enum import Enum
 
 import discord
 
+from cmdClient import Context
 from cmdClient.lib import ResponseTimedOut, UserCancelled, SafeCancellation
 
 from utils.lib import strfdelta, parse_dur
@@ -28,6 +29,8 @@ class ModAction:
     resp_reason_cancelled = "Reason prompt cancelled."
     reason_prompt = "Please enter a reason, or `c` to cancel."
 
+    target_not_found_error = "Couldn't find a member matching `{targetstr}`!"
+
     state_response_map = {
         ActionState.INTERNAL_UNKNOWN: "An unknown error occurred!",
         ActionState.SUCCESS: "Acted",
@@ -41,8 +44,8 @@ class ModAction:
     summary_success_report = "Acted on {count} members."
     summary_failure_report = "Failed to act on {count} members."
 
-    def __init__(self, ctx, flags):
-        self.ctx = ctx
+    def __init__(self, ctx: Context, flags):
+        self.ctx: Context = ctx
         self.flags = flags
 
         self.reason = None
@@ -55,6 +58,13 @@ class ModAction:
         if self.duration is None:
             raise ValueError("No duration to stringify!")
         return strfdelta(datetime.timedelta(seconds=self.duration))
+
+    async def get_collection(self):
+        """
+        Collection of users to lookup targets in.
+        Override to specify a custom collection.
+        """
+        return None
 
     async def run(self, **kwargs):
         """
@@ -150,20 +160,26 @@ class ModAction:
             ]
             await self.ctx.pager(embeds)
 
-    async def identify_targets(self, collection=None):
+    async def identify_targets(self):
         targets = []
         user_strs = re.split(',|\n', self.ctx.args)
         for user_str in user_strs:
             try:
-                member = await self.ctx.find_member(user_str.strip(), interactive=True, collection=collection)
+                member = await self.ctx.find_member(
+                    user_str.strip(),
+                    interactive=True,
+                    collection=await self.get_collection(),
+                    silent_notfound=True
+                )
             except ResponseTimedOut:
                 raise ResponseTimedOut(self.resp_seeker_timed_out) from None
             except UserCancelled:
                 raise UserCancelled(self.resp_seeker_cancelled) from None
             if member is None:
                 # No matches for this member
-                # The seeker already reported this, we can cancel quietly
-                raise SafeCancellation()
+                raise SafeCancellation(
+                    self.target_not_found_error.format(targetstr=user_str, self=self)
+                )
             targets.append(member)
         return targets
 

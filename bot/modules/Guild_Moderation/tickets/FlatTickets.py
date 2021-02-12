@@ -6,7 +6,7 @@ flat_tickets = [
     (TicketType.UNMUTE, 'Unmute'),
     (TicketType.BAN, 'Ban'),
     (TicketType.UNBAN, 'Unban'),
-    (TicketType.HACKBAN, 'Hackban'),
+    (TicketType.PREBAN, 'Preban'),
     (TicketType.KICK, 'Kick'),
 ]
 

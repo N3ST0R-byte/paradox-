@@ -327,7 +327,7 @@ async def find_member(ctx, userstr, interactive=False, collection=None, silent_n
             # Just select the first one
             member = members[0]
 
-    if member is None:
+    if member is None and not silent_notfound:
         await ctx.error_reply("Couldn't find a member matching `{}`!".format(userstr))
 
     return member
