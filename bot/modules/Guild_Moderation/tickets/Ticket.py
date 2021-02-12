@@ -173,7 +173,7 @@ class Ticket:
         cls._combined_ticket_data = client.data.guild_mod_tickets_combined  # type: tableInterface
 
     @classmethod
-    def create(cls: Type[T], guildid: int, modid: int, agentid: int, memberids: list[int],
+    def create(cls: Type[T], guildid: int, modid: int, agentid: int, memberids: List[int],
                auditid: Optional[int] = None, reason: Optional[str] = None, **kwargs) -> T:
         """
         Create a new ticket with the given parameters.
