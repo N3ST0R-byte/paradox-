@@ -104,13 +104,14 @@ class BanAction(HammerAction):
     Ticket = TicketType.BAN.Ticket
     required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to ban members here!"
+    audit_reason = "Banned by {self.mod.id}: {self.short_reason}"
 
     async def _single_target_action(self, target: discord.Member, days=0, **kwargs):
         if self.modrole is not None and self.modrole < target.top_role:
             return ActionState.YOUARE_FORBIDDEN
 
         try:
-            await target.ban(reason="Banned by {}".format(self.ctx.author.id), delete_message_days=days)
+            await target.ban(reason=self.audit_reason.format(self=self), delete_message_days=days)
         except discord.Forbidden:
             return ActionState.IAM_FORBIDDEN
         except discord.HTTPException:
@@ -163,13 +164,14 @@ class UnbanAction(HammerAction):
     Ticket = TicketType.UNBAN.Ticket
     required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to unban users here!"
+    audit_reason = "Unbanned by {self.mod.id}: {self.short_reason}"
 
     async def get_collection(self):
         return [entry.user for entry in (await self.ctx.guild.bans())]
 
     async def _single_target_action(self, target: discord.User, **kwargs):
         try:
-            await self.ctx.guild.unban(target, reason="Unbanned by {}".format(self.ctx.author.id))
+            await self.ctx.guild.unban(target, reason=self.audit_reason.format(self=self))
         except discord.Forbidden:
             return ActionState.IAM_FORBIDDEN
         except discord.HTTPException:
@@ -219,13 +221,14 @@ class KickAction(HammerAction):
     Ticket = TicketType.KICK.Ticket
     required_permissions: discord.Permissions = discord.Permissions(kick_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to kick members here!"
+    audit_reason = "Kicked by {self.mod.id}: {self.short_reason}"
 
     async def _single_target_action(self, target: discord.User, **kwargs):
         if self.modrole is not None and self.modrole < target.top_role:
             return ActionState.YOUARE_FORBIDDEN
 
         try:
-            await self.ctx.guild.kick(target, reason="Kicked by {}".format(self.ctx.author.id))
+            await self.ctx.guild.kick(target, reason=self.audit_reason.format(self=self))
         except discord.Forbidden:
             return ActionState.IAM_FORBIDDEN
         except discord.HTTPException:
@@ -272,6 +275,7 @@ class PreBanAction(HammerAction):
     Ticket = TicketType.PREBAN.Ticket
     required_permissions: discord.Permissions = discord.Permissions(kick_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to ban users here!"
+    audit_reason = "Pre-banned by {self.mod.id}: {self.short_reason}"
 
     async def identify_targets(self):
         targets = []
@@ -293,7 +297,7 @@ class PreBanAction(HammerAction):
 
     async def _single_target_action(self, target: discord.User, **kwargs):
         try:
-            await self.ctx.guild.ban(target, reason="Banned by {}".format(self.ctx.author.id))
+            await self.ctx.guild.ban(target, reason=self.audit_reason.format(self=self))
         except discord.Forbidden:
             return ActionState.IAM_FORBIDDEN
         except discord.HTTPException:

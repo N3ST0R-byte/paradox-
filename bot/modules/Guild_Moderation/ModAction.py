@@ -59,6 +59,14 @@ class ModAction:
             raise ValueError("No duration to stringify!")
         return strfdelta(datetime.timedelta(seconds=self.duration))
 
+    @property
+    def short_reason(self):
+        """
+        Shortened version of the reason, limited to 470 characters.
+        Useful for adding a reason to the audit log.
+        """
+        return self.reason if len(self.reason) < 470 else self.reason[:467] + '...'
+
     async def get_collection(self):
         """
         Collection of users to lookup targets in.

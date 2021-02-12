@@ -80,7 +80,7 @@ class MuteAction(_MuteTypeAction):
         ctx = self.ctx
 
         # Mute targets and gather results
-        audit_reason = "Muted by {}".format(self.ctx.author.id)
+        audit_reason = "Muted by {}: {}".format(self.ctx.author.id, self.short_reason)
         results = await asyncio.gather(
             *(mute_member(target, self.mute_role, audit_reason=audit_reason) for target in self.targets)
         )
@@ -135,7 +135,7 @@ class TimedMuteAction(_MuteTypeAction):
         ctx = self.ctx
 
         # Mute targets and gather results
-        audit_reason = "Muted by {}".format(self.ctx.author.id)
+        audit_reason = "Muted by {}: {}".format(self.ctx.author.id, self.short_reason)
         results = await asyncio.gather(
             *(mute_member(target, self.mute_role, audit_reason=audit_reason) for target in self.targets)
         )
@@ -191,7 +191,7 @@ class UnMuteAction(_MuteTypeAction):
         ctx = self.ctx
 
         # Mute targets and gather results
-        audit_reason = "Unmuted by {}".format(self.ctx.author.id)
+        audit_reason = "Unmuted by {}: {}".format(self.ctx.author.id, self.short_reason)
         results = await asyncio.gather(
             *(unmute_member(target, self.mute_role, audit_reason=audit_reason) for target in self.targets)
         )
