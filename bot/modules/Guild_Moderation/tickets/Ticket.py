@@ -1,7 +1,7 @@
 """
 ABC and data definitions for manual moderation tickets.
 """
-from collections.abc import Mapping
+from typing import Mapping
 from typing import Any, List, Optional, Type, TypeVar
 from datetime import datetime as dt
 
