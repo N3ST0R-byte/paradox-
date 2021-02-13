@@ -259,12 +259,12 @@ async def cmd_ctan(ctx):
         return await ctx.error_reply("Given string is too long!")
 
     if ctx.alias.lower() == "ctanlink":
-        return await ctx.reply(url if ctx.args else ctan_url)
+        return await ctx.reply(url if ctx.args else ctan_url.format(''))
 
     if not ctx.args:
         return await ctx.error_reply("Please give me something to search for!")
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
-    out_msg = await ctx.reply("Searching the ctan please wait. {}".format(loading_emoji))
+    out_msg = await ctx.reply("Searching the ctan please wait {}".format(loading_emoji))
 
     soup = soup_site(url)
     title, desc, prop_list, value_list = search_n_parse(soup)
@@ -280,8 +280,12 @@ async def cmd_ctan(ctx):
         embed = discord.Embed(title=search_title, description=desc)
         stats = soup.find("p").text
         if "no matching" in stats:
+            # shows up when you search for unexpected chars, i.e. `[]`
+            idx = stats.rfind("You have")
+            if idx != -1:
+                stats = stats[:idx].strip()
 
-            embed.add_field(name="Could not found", value=stats)
+            embed.add_field(name="No results found!", value=stats)
             return await out_msg.edit(
                     content="",
                     embed=embed
@@ -304,7 +308,7 @@ async def cmd_ctan(ctx):
 
     if not title:
         return await out_msg.edit(
-            content=f"I couldn't find the package named `{ctx.args}`"
+            content=f"I couldn't find a package named `{ctx.args}`!"
         )
 
     if prop_list:
