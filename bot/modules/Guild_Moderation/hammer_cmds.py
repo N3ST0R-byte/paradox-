@@ -40,7 +40,7 @@ class HammerAction(ModAction):
 
         # Fetch highest manager role
         manager_role = max(
-            (role for role in self.ctx.guild.me.roles
+            (role for role in self.mod.roles
              if role.permissions.administrator or self.required_permissions.is_subset(role.permissions)),
             default=None
         )
