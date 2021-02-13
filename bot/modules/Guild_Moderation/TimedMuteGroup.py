@@ -81,7 +81,7 @@ class TimedMuteGroup:
         tickets = TicketType.TEMPMUTE.Ticket.fetch_tickets_where(
             app=client.app,
             ticketid=list(group_members.keys())
-        )
+        ) if group_members else []
 
         # Build the groups
         group_counter = 0
@@ -254,7 +254,7 @@ member_schema = tableSchema(
     "guild_timed_mute_members",
     Column('ticketid', ColumnType.INT, primary=True, required=True),
     Column('memberid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    ForeignKey('ticketid', 'guild_mod_tickets', 'ticketid', on_delete=ReferenceAction.CASCADE)
+    ForeignKey('ticketid', 'guild_moderation_tickets', 'ticketid', on_delete=ReferenceAction.CASCADE)
 )
 
 
