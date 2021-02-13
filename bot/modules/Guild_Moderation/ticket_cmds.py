@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime as dt
 
 import discord
+from wards import guild_moderator
 
 from .module import guild_moderation_module as module
 from .tickets import Ticket
@@ -9,6 +10,7 @@ from .tickets import Ticket
 
 @module.cmd("tickets",
             desc="List a user's moderation tickets.")
+@guild_moderator()
 async def cmd_tickets(ctx):
     """
     Usage``:
@@ -18,6 +20,9 @@ async def cmd_tickets(ctx):
         If the user is not in the server, it must be provided by userid.
 
         While viewing the ticket list, type the number of the ticket or click the ticket number to view the full ticket.
+
+        To use this command, you need to be a **guild moderator**.\
+            That is, you need to have the `manage_guild` permission or the configured `modrole`.
     Related:
         ticket
         editticket

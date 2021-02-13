@@ -1,12 +1,15 @@
 from datetime import datetime as dt
 import discord
 
+from wards import guild_moderator
+
 from .module import guild_moderation_module as module
 from .tickets import Ticket, describes_ticket, TicketType
 
 
 @module.cmd("note",
             desc="Create a moderation note on a member.")
+@guild_moderator()
 async def cmd_note(ctx):
     """
     Usage``:
