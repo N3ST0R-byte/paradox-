@@ -280,6 +280,8 @@ class PreBanAction(HammerAction):
     async def identify_targets(self):
         targets = []
         user_strs = re.split(',|\n', self.ctx.args)
+        if len(user_strs) > 20:
+            raise SafeCancellation("Please provide less than 20 users at once!")
         if not all(user_str.isdigit() for user_str in user_strs):
             raise SafeCancellation(
                 "Please provide preban targets via user id."
