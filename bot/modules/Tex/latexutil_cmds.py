@@ -177,10 +177,13 @@ def search_n_parse(soup: BeautifulSoup):
     if "Not Found" in title.contents[0]:
         return ("", "", [], [])
 
-    if "is Gone" in title.contents[2]:
-        div = soup.find("div", attrs={"class": "left"})
-        desc = div.text
-        return (title.text, desc, [], [])
+    try:
+        if "is Gone" in title.contents[2]:
+            div = soup.find("div", attrs={"class": "left"})
+            desc = div.text
+            return (title.text, desc, [], [])
+    except IndexError:
+        pass
 
     title = title.text
     converter = MarkdownConverter()
@@ -226,27 +229,32 @@ async def cmd_texdoc(ctx):
     """
     await ctx.reply("Documentation for `{}`: {}".format(
         ctx.args,
-        urllib.parse.quote_plus(ctx.args)
+        texdoc_url.format(urllib.parse.quote_plus(ctx.args))
     ))
 
 @module.cmd("ctan",
             desc="Searches the [ctan](https://ctan.org)",
-            aliases=["ctanlink"])
+            aliases=["ctanlink", "ctans"])
 async def cmd_ctan(ctx):
     """
     Usage``:
         {prefix}ctan <package_name>
-        {prefix}ctanlink <package_name>
+        {prefix}ctans <query>
+        {prefix}ctanlink [package_name]
     Description:
         If used as ctan, finds the `package_name` from [ctan](https://ctan.org) and sends the parsed results.
+
+        If used as ctans, searches the ctan, and displays first 10 results.
 
         If used as ctanlink, provides the direct link to the ctan page with given name of package.
         This does not check whether the page exists.
     Examples``:
         {prefix}ctanlink keyval
         {prefix}ctan amsmath
+        {prefix}ctans tables
     """
     url = ctan_url.format("pkg/{}".format(urllib.parse.quote_plus(ctx.args)))
+    search_url = ctan_url.format("search?phrase={}&max=10")
     if len(url) > 1500:
         return await ctx.error_reply("Given string is too long!")
 
@@ -257,8 +265,42 @@ async def cmd_ctan(ctx):
         return await ctx.error_reply("Please give me something to search for!")
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
     out_msg = await ctx.reply("Searching the ctan please wait. {}".format(loading_emoji))
+
     soup = soup_site(url)
     title, desc, prop_list, value_list = search_n_parse(soup)
+
+    if ctx.alias.lower() == "ctans":
+        result_url = search_url.format(urllib.parse.quote_plus(ctx.args))
+        soup = soup_site(result_url)
+        desc = "From {}".format(result_url)
+        if title:
+            desc += "\nDirect page found at [{args}]({url})".format(args=ctx.args,
+                                                                url=url)
+        search_title = soup.find("h1").text
+        embed = discord.Embed(title=search_title, description=desc)
+        stats = soup.find("p").text
+        if "no matching" in stats:
+
+            embed.add_field(name="Could not found", value=stats)
+            return await out_msg.edit(
+                    content="",
+                    embed=embed
+                )
+
+        urls = soup.find_all("a", attrs={"class": "hit-type-pkg"})
+        md_links = []
+        for url in urls:
+            md_link = "[{}]({})".format(
+                url.text,
+                urllib.parse.urljoin(ctan_url,url.attrs["href"])
+            )
+            md_links.append(md_link)
+        field_value = "\n".join(md_links)
+        embed.add_field(name=stats, value=field_value)
+        return await out_msg.edit(
+                content="",
+                embed=embed
+            )
 
     if not title:
         return await out_msg.edit(
