@@ -34,7 +34,7 @@ async def cmd_tickets(ctx):
     user = await ctx.find_member(ctx.args, interactive=True, silent_notfound=True)
     if user is None:
         if not ctx.args.isdigit():
-            return ctx.error_reply("No members found matching `{}`!".format(ctx.args))
+            return await ctx.error_reply("No members found matching `{}`!".format(ctx.args))
         else:
             userid = int(ctx.args)
     else:
