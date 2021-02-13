@@ -6,6 +6,7 @@ from utils.lib import strfdelta
 
 from ..module import guild_moderation_module as module
 from . import Ticket, describes_ticket, TicketType
+from . import ticket_data  # noqa
 
 
 @describes_ticket(TicketType.TEMPMUTE)

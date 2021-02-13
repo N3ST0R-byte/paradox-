@@ -231,6 +231,9 @@ class Ticket:
 
         if memberid is not None:
             rows = cls._member_data.select_where(memberid=memberid)
+            if not rows:
+                return []
+
             ticketids = [row['ticketid'] for row in rows]
 
             given_ticketids = kwargs.pop('ticketid', None)
