@@ -107,7 +107,7 @@ class BanAction(HammerAction):
     audit_reason = "Banned by {self.mod.id}: {self.short_reason}"
 
     async def _single_target_action(self, target: discord.Member, days=0, **kwargs):
-        if self.modrole is not None and self.modrole < target.top_role:
+        if self.modrole is not None and self.modrole <= target.top_role:
             return ActionState.YOUARE_FORBIDDEN
 
         try:
@@ -224,7 +224,7 @@ class KickAction(HammerAction):
     audit_reason = "Kicked by {self.mod.id}: {self.short_reason}"
 
     async def _single_target_action(self, target: discord.User, **kwargs):
-        if self.modrole is not None and self.modrole < target.top_role:
+        if self.modrole is not None and self.modrole <= target.top_role:
             return ActionState.YOUARE_FORBIDDEN
 
         try:
@@ -273,7 +273,7 @@ class PreBanAction(HammerAction):
     summary_failure_report = "Failed to preban {count} users."
 
     Ticket = TicketType.PREBAN.Ticket
-    required_permissions: discord.Permissions = discord.Permissions(kick_members=True)
+    required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to ban users here!"
     audit_reason = "Pre-banned by {self.mod.id}: {self.short_reason}"
 
