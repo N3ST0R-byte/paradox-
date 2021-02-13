@@ -225,7 +225,7 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
                 asyncio.gather(*[message.delete() for message in to_delete], return_exceptions=True)
             except Exception:
                 pass
-    except asyncio.TimeoutError:
+    except (asyncio.TimeoutError, asyncio.CancelledError):
         # Timed out waiting for the reaction, attempt to remove the delete reaction
         try:
             await react_msg.remove_reaction(emoji, ctx.client.user)

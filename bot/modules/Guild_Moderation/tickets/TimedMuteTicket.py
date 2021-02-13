@@ -8,7 +8,7 @@ from ..module import guild_moderation_module as module
 from . import Ticket, describes_ticket, TicketType
 
 
-@describes_ticket(TicketType.TIMED_MUTE)
+@describes_ticket(TicketType.TEMPMUTE)
 class TimedMuteTicket(Ticket):
     __slots__ = (
         'duration',

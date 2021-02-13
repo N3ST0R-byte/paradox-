@@ -31,7 +31,7 @@ class TimedMuteGroup:
     # Cache associating muted members to timed mute groups
     _member_map = {}  # type: Dict[int, Dict[int, TimedMuteGroup]]
 
-    def __init__(self, timed_mute_ticket: TicketType.TIMED_MUTE.Ticket, memberids: List[int]):
+    def __init__(self, timed_mute_ticket: TicketType.TEMPMUTE.Ticket, memberids: List[int]):
         self.ticket = timed_mute_ticket
         self.memberids = memberids
 
@@ -78,7 +78,7 @@ class TimedMuteGroup:
             group_members[row['ticketid']].append(row['memberid'])
 
         # Build the tickets
-        tickets = TicketType.TIMED_MUTE.Ticket.fetch_tickets_where(
+        tickets = TicketType.TEMPMUTE.Ticket.fetch_tickets_where(
             app=client.app,
             ticketid=list(group_members.keys())
         )

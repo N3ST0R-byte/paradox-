@@ -8,7 +8,7 @@ class TicketType(Enum):
     Identifier for the different types of tickets
     """
     NOTE = 0
-    TIMED_MUTE = 1
+    TEMPMUTE = 1
     MUTE = 2
     UNMUTE = 3
     BAN = 4

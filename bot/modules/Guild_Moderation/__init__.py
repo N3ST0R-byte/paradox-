@@ -5,4 +5,6 @@ from . import mute_cmds
 from . import note_cmds
 from . import hammer_cmds
 
+from . import ticket_cmds
+
 # from . import blank_cmds

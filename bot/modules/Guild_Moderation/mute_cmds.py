@@ -149,7 +149,7 @@ class TimedMuteAction(_MuteTypeAction):
             unmute_at = int(dt.datetime.utcnow().timestamp() + self.duration)
 
             # Create and post ticket
-            ticket = TicketType.TIMED_MUTE.Ticket.create(
+            ticket = TicketType.TEMPMUTE.Ticket.create(
                 ctx.guild.id, ctx.author.id, ctx.client.user.id,
                 successful, reason=self.reason, duration=self.duration, roleid=self.mute_role.id,
                 unmute_timestamp=unmute_at
