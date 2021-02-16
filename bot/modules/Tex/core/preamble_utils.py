@@ -137,7 +137,7 @@ async def sendfile_reaction_handler(ctx, msg, contents, title, file_name="preamb
     temp_file.close()
 
 
-async def view_preamble(ctx, preamble, title,
+async def view_preamble(ctx, preamble, title, start_page=0,
                         file_react=False, file_message=None, **pagination_args):
 
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
