@@ -93,11 +93,6 @@ async def _offer_cancel(ctx, msg, *tasks, timeout=300):
             timeout=timeout
         )
 
-        # Cancel the tasks
-        for task in tasks:
-            if not task.done() or task.cancelled():
-                task.cancel()
-
         # Remove the reaction
         await msg.clear_reaction(emoji)
     except (asyncio.TimeoutError, asyncio.CancelledError):
@@ -110,6 +105,11 @@ async def _offer_cancel(ctx, msg, *tasks, timeout=300):
         pass
     except discord.NotFound:
         pass
+    finally:
+        # Cancel the tasks
+        for task in tasks:
+            if not task.done() or task.cancelled():
+                task.cancel()
 
 
 async def _ticket_display(ctx, tickets):
