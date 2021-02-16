@@ -4,7 +4,7 @@ from cmdClient import cmdClient
 
 from logger import log
 from settings import ListData, RoleList, GuildSetting
-from registry import tableInterface, Column, ColumnType, schema_generator
+from registry import tableInterface, Column, ColumnType, tableSchema
 
 from wards import guild_admin
 
@@ -87,14 +87,14 @@ def attach_autorole_handler(client: cmdClient):
 
 
 # Define data schemas
-ar_mysql_schema, ar_sqlite_schema, ar_columns = schema_generator(
+ar_schema = tableSchema(
     "guild_autoroles",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('roleid', ColumnType.SNOWFLAKE, primary=True, required=True)
 )
 
-bar_mysql_schema, bar_sqlite_schema, bar_columns = schema_generator(
+bar_schema = tableSchema(
     "guild_bot_autoroles",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -105,24 +105,12 @@ bar_mysql_schema, bar_sqlite_schema, bar_columns = schema_generator(
 # Attach data interfaces
 @module.data_init_task
 def attach_autorole_data(client):
-    autorole_interface = tableInterface(
-        client.data,
-        "guild_autoroles",
-        app=client.app,
-        column_data=ar_columns,
-        shared=False,
-        sqlite_schema=ar_sqlite_schema,
-        mysql_schema=ar_mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, ar_schema, shared=False),
+        "guild_autoroles"
     )
-    client.data.attach_interface(autorole_interface, "guild_autoroles")
 
-    bot_autorole_interface = tableInterface(
-        client.data,
-        "guild_bot_autoroles",
-        app=client.app,
-        column_data=bar_columns,
-        shared=False,
-        sqlite_schema=bar_sqlite_schema,
-        mysql_schema=bar_mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, bar_schema, shared=False),
+        "guild_bot_autoroles"
     )
-    client.data.attach_interface(bot_autorole_interface, "guild_bot_autoroles")

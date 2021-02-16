@@ -186,26 +186,18 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
     # The message to add the reaction to
     react_msg = to_delete[-1]
 
-    # !!! Needs updating for rewrite !!! #
-    # mod_role = await ctx.server_conf.mod_role.get(ctx) if ctx.server else None
-
     # Build the reaction check function
     if ctx.guild:
+        modrole = ctx.get_guild_setting.modrole.value if ctx.guild else None
+
         def check(reaction, user):
-            # !!! Needs updating for rewrite !!! #
-            """
-            if user == ctx.client.user:
-                return False
-            result = user == ctx.author
-            result = result or (mod_role and mod_role in [role.id for role in user.roles])
-            result = result or user.server_permissions.administrator
-            result = result or user.server_permissions.manage_messages
-            """
             if not (reaction.message.id == react_msg.id and reaction.emoji == emoji):
                 return False
             if user == ctx.guild.me:
                 return False
-            return (user == ctx.author) or (user.guild_permissions.manage_messages)
+            return ((user == ctx.author)
+                    or (user.permissions_in(ctx.ch).manage_messages)
+                    or (modrole and modrole in user.roles))
     else:
         def check(reaction, user):
             return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
@@ -233,7 +225,7 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
                 asyncio.gather(*[message.delete() for message in to_delete], return_exceptions=True)
             except Exception:
                 pass
-    except asyncio.TimeoutError:
+    except (asyncio.TimeoutError, asyncio.CancelledError):
         # Timed out waiting for the reaction, attempt to remove the delete reaction
         try:
             await react_msg.remove_reaction(emoji, ctx.client.user)
@@ -310,3 +302,26 @@ def clean_arg_str(ctx: Context):
         content = content[len(ctx.prefix):]
 
     return content.partition(ctx.alias)[2].strip()
+
+
+@Context.util
+def usage_embed(ctx: Context, custom_usage=None):
+    """
+    Creates an embed displaying the current command's usage field.
+    If `custom_usage` is provided, uses this instead of the help usage field.
+
+    Returns: discord.Embed
+        The usage embed for the current command.
+    """
+    if not ctx.cmd:
+        raise ValueError("Cannot extract usage from a non-command context.")
+    if not custom_usage:
+        fields = ctx.cmd.long_help
+        usage_field = next((pair for pair in fields if pair[0].startswith('Usage')), None)
+        if usage_field is None:
+            raise ValueError("Cannot extract usage from command with no usage field.")
+        if usage_field[0].endswith('``'):
+            value = "`{}`".format('`\n'.join(usage_field[1].splitlines()))
+    else:
+        value = custom_usage
+    return discord.Embed(title="Usage", colour=discord.Color.red(), description=value)

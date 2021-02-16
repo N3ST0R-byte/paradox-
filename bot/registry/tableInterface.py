@@ -1,5 +1,6 @@
 from .Connector import Connector
 from .Interface import Interface
+from .schemas import tableSchema
 
 
 class tableInterface(Interface):
@@ -30,6 +31,22 @@ class tableInterface(Interface):
         if not self.shared and (self.app_column not in self.columns):
             raise ValueError("App column not found in non-shared table specification.")
 
+    @classmethod
+    def from_schema(cls, conn: Connector, app: str, schema: tableSchema, **kwargs):
+        """
+        Generates a tableInterface from a tableSchema.
+        Trasparently passes remaining `kwargs` along to the constructor.
+        """
+        return cls(
+            conn,
+            schema.name,
+            app,
+            schema.interface_columns,
+            mysql_schema=schema.for_mysql,
+            sqlite_schema=schema.for_sqlite,
+            **kwargs
+        )
+
     @property
     def schema(self):
         if self.conn.db_type == "sqlite":
@@ -42,13 +59,14 @@ class tableInterface(Interface):
             if param not in self.columns:
                 raise ValueError("Invalid column '{}' passed to table interface '{}'".format(param, self.table))
             elif self.columns[param] is not None:
-                if (not isinstance(value, self.columns[param])
-                    and not isinstance(value, list)
-                    and value is not None):
+                if (not isinstance(value, self.columns[param]) and
+                        not isinstance(value, (list, tuple)) and
+                        value is not None):
                     raise TypeError("Incorrect type '{}' passed for key '{}' in table interface '{}'".format(
                         type(value), param, self.table
                     ))
-                elif isinstance(value, list) and not all(isinstance(item, self.columns[param]) for item in value):
+                elif (isinstance(value, (list, tuple)) and
+                        not all(isinstance(item, self.columns[param]) for item in value)):
                     raise TypeError("Incorrect type in list passed for key '{}' in table interface '{}'".format(
                         param, self.table
                     ))

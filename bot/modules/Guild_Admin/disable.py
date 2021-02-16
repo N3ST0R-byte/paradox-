@@ -1,7 +1,7 @@
 from cmdClient.lib import SafeCancellation
 
 from settings import ListData, StringList, GuildSetting
-from registry import tableInterface, Column, ColumnType, schema_generator
+from registry import tableInterface, Column, ColumnType, tableSchema
 
 from .module import guild_admin_module as module
 
@@ -172,7 +172,7 @@ class disabled_commands(ListData, StringList, GuildSetting):
 
 
 # Define data schema
-mysql_schema, sqlite_schema, columns = schema_generator(
+schema = tableSchema(
     "guild_disabled_commands",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -183,13 +183,7 @@ mysql_schema, sqlite_schema, columns = schema_generator(
 # Attach data interface
 @module.data_init_task
 def attach_disabled_command_data(client):
-    disabled_command_interface = tableInterface(
-        client.data,
-        "guild_disabled_commands",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema, shared=False),
+        "guild_disabled_commands"
     )
-    client.data.attach_interface(disabled_command_interface, "guild_disabled_commands")

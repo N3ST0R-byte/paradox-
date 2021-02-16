@@ -1,5 +1,5 @@
 from settings import GuildSetting, String, ColumnData
-from registry import tableInterface, schema_generator, Column, ColumnType
+from registry import tableInterface, tableSchema, Column, ColumnType
 
 from wards import guild_manager
 
@@ -54,7 +54,7 @@ class guild_prefix(ColumnData, String, GuildSetting):
 
 
 # Define data schema
-prefix_mysql_schema, prefix_sqlite_schema, prefix_columns = schema_generator(
+schema = tableSchema(
     "guild_prefixes",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -65,13 +65,7 @@ prefix_mysql_schema, prefix_sqlite_schema, prefix_columns = schema_generator(
 # Attach data interface
 @module.data_init_task
 def attach_prefix_data(client):
-    prefix_interface = tableInterface(
-        client.data,
-        "guild_prefixes",
-        app=client.app,
-        column_data=prefix_columns,
-        shared=False,
-        sqlite_schema=prefix_sqlite_schema,
-        mysql_schema=prefix_mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema, shared=False),
+        "guild_prefixes"
     )
-    client.data.attach_interface(prefix_interface, "guild_prefixes")

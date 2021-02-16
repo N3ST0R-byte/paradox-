@@ -4,7 +4,7 @@ from cmdClient import cmdClient
 
 from logger import log
 from settings import ColumnData, String, Channel, GuildSetting
-from registry import tableInterface, Column, ColumnType, schema_generator
+from registry import tableInterface, Column, ColumnType, tableSchema
 
 from wards import guild_manager
 
@@ -174,7 +174,7 @@ def attach_reception_handlers(client: cmdClient):
 
 
 # Define data schemas
-greeting_mysql_schema, greeting_sqlite_schema, greeting_columns = schema_generator(
+greeting_schema = tableSchema(
     "guild_greetings",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -182,7 +182,7 @@ greeting_mysql_schema, greeting_sqlite_schema, greeting_columns = schema_generat
     Column('message', ColumnType.TEXT)
 )
 
-farewell_mysql_schema, farewell_sqlite_schema, farewell_columns = schema_generator(
+farewell_schema = tableSchema(
     "guild_farewells",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -194,24 +194,12 @@ farewell_mysql_schema, farewell_sqlite_schema, farewell_columns = schema_generat
 # Attach data interfaces
 @module.data_init_task
 def attach_reception_data(client):
-    greeting_interface = tableInterface(
-        client.data,
-        "guild_greetings",
-        app=client.app,
-        column_data=greeting_columns,
-        shared=False,
-        sqlite_schema=greeting_sqlite_schema,
-        mysql_schema=greeting_mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, greeting_schema, shared=False),
+        "guild_greetings"
     )
-    client.data.attach_interface(greeting_interface, "guild_greetings")
 
-    farewell_interface = tableInterface(
-        client.data,
-        "guild_farewells",
-        app=client.app,
-        column_data=farewell_columns,
-        shared=False,
-        sqlite_schema=farewell_sqlite_schema,
-        mysql_schema=farewell_mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, farewell_schema, shared=False),
+        "guild_farewells"
     )
-    client.data.attach_interface(farewell_interface, "guild_farewells")

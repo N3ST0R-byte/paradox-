@@ -5,7 +5,7 @@ import discord
 from discord import Status
 
 from settings import GuildSetting, Channel, ColumnData
-from registry import tableInterface, schema_generator, Column, ColumnType
+from registry import tableInterface, tableSchema, Column, ColumnType
 
 from utils.lib import strfdelta, prop_tabulate, format_activity, join_list
 from wards import guild_manager
@@ -203,7 +203,7 @@ class guild_departurelog(ColumnData, Channel, GuildSetting):
 
 
 # Define data schemas
-member_traffic_schema_info = schema_generator(
+member_traffic_schema = tableSchema(
     "member_traffic",
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('userid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -214,14 +214,14 @@ member_traffic_schema_info = schema_generator(
     Column('departure_nickname', ColumnType.SHORTSTRING),  # Nickname of user at last departure
 )
 
-join_log_schema_info = schema_generator(
+join_log_schema = tableSchema(
     "guild_logging_joins",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('channelid', ColumnType.SNOWFLAKE, required=True),
 )
 
-departure_log_schema_info = schema_generator(
+departure_log_schema = tableSchema(
     "guild_logging_departures",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -232,38 +232,17 @@ departure_log_schema_info = schema_generator(
 # Attach data interfaces
 @module.data_init_task
 def attach_traffic_data(client):
-    mysql_schema, sqlite_schema, columns = member_traffic_schema_info
-    prefix_interface = tableInterface(
-        client.data,
-        "member_traffic",
-        app=client.app,
-        column_data=columns,
-        shared=True,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, member_traffic_schema, shared=True),
+        "member_traffic"
     )
-    client.data.attach_interface(prefix_interface, "member_traffic")
 
-    mysql_schema, sqlite_schema, columns = join_log_schema_info
-    prefix_interface = tableInterface(
-        client.data,
-        "guild_logging_joins",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, join_log_schema, shared=False),
+        "guild_logging_joins"
     )
-    client.data.attach_interface(prefix_interface, "guild_logging_joins")
 
-    mysql_schema, sqlite_schema, columns = departure_log_schema_info
-    prefix_interface = tableInterface(
-        client.data,
-        "guild_logging_departures",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, departure_log_schema, shared=False),
+        "guild_logging_departures"
     )
-    client.data.attach_interface(prefix_interface, "guild_logging_departures")

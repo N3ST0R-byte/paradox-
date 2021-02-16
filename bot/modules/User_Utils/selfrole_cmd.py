@@ -62,8 +62,11 @@ async def cmd_giveme(ctx: Context, flags):
     # My top role with manage_roles
     my_max_role = max(
         (role for role in ctx.guild.me.roles if role.permissions.manage_roles or role.permissions.administrator),
-        key=lambda r: r.position
+        key=lambda r: r.position,
+        default=None
     )
+    if my_max_role is None:
+        return await ctx.error_reply("I don't have enough permissions to manage your selfroles!")
 
     # Handle administration flags
     if flags['add'] or flags['remove']:

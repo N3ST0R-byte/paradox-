@@ -1,5 +1,5 @@
 from settings import ColumnData, Role, GuildSetting
-from registry import tableInterface, Column, ColumnType, schema_generator
+from registry import tableInterface, Column, ColumnType, tableSchema
 
 from wards import guild_admin
 
@@ -31,7 +31,7 @@ class modrole(ColumnData, Role, GuildSetting):
 
 
 # Define data schema
-mysql_schema, sqlite_schema, columns = schema_generator(
+schema = tableSchema(
     "guild_modroles",
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('roleid', ColumnType.SNOWFLAKE, primary=False, required=True),
@@ -41,13 +41,7 @@ mysql_schema, sqlite_schema, columns = schema_generator(
 # Attach data interface
 @module.data_init_task
 def attach_modrole_data(client):
-    modrole_interface = tableInterface(
-        client.data,
-        "guild_modroles",
-        app=client.app,
-        column_data=columns,
-        shared=True,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema, shared=True),
+        "guild_modroles"
     )
-    client.data.attach_interface(modrole_interface, "guild_modroles")

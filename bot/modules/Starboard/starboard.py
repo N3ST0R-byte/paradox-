@@ -4,7 +4,7 @@ import asyncio
 import discord
 
 from settings import ColumnData, ListData, String, Integer, Channel, RoleList, GuildSetting
-from registry import tableInterface, Column, ColumnType, schema_generator
+from registry import tableInterface, Column, ColumnType, tableSchema
 
 from wards import guild_manager
 
@@ -313,7 +313,7 @@ def attach_starboard_listener(client):
 
 # Data schemas
 # Guild starboard
-starboard_schema = schema_generator(
+starboard_schema = tableSchema(
     "guild_starboards",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -323,7 +323,7 @@ starboard_schema = schema_generator(
 )
 
 # Guild starboard roles
-starboard_role_schema = schema_generator(
+starboard_role_schema = tableSchema(
     "guild_starboard_roles",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -331,7 +331,7 @@ starboard_role_schema = schema_generator(
 )
 
 # Starboard messages: app, msgid, starmsgid, starcount
-starmsg_schema = schema_generator(
+starmsg_schema = tableSchema(
     "message_stars",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('msgid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -342,38 +342,17 @@ starmsg_schema = schema_generator(
 # Attach data interfaces
 @module.data_init_task
 def attach_starboard_data(client):
-    mysql_schema, sqlite_schema, columns = starboard_schema
-    interface = tableInterface(
-        client.data,
-        "guild_starboards",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, starboard_schema, shared=False),
+        "guild_starboards"
     )
-    client.data.attach_interface(interface, "guild_starboards")
 
-    mysql_schema, sqlite_schema, columns = starboard_role_schema
-    interface = tableInterface(
-        client.data,
-        "guild_starboard_roles",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, starboard_role_schema, shared=False),
+        "guild_starboard_roles"
     )
-    client.data.attach_interface(interface, "guild_starboard_roles")
 
-    mysql_schema, sqlite_schema, columns = starmsg_schema
-    interface = tableInterface(
-        client.data,
-        "message_stars",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, starmsg_schema, shared=False),
+        "message_stars"
     )
-    client.data.attach_interface(interface, "message_stars")

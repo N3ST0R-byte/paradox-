@@ -1,5 +1,5 @@
 from settings import GuildSetting, String, ColumnData
-from registry import tableInterface, schema_generator, Column, ColumnType
+from registry import tableInterface, tableSchema, Column, ColumnType
 
 from wards import guild_admin, fail_ward
 
@@ -35,7 +35,7 @@ class guild_wolfid(ColumnData, String, GuildSetting):
 
 
 # Define data schema
-mysql_schema, sqlite_schema, columns = schema_generator(
+schema = tableSchema(
     "guild_wolfram_appid",
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('appid', ColumnType.SHORTSTRING)
@@ -45,13 +45,7 @@ mysql_schema, sqlite_schema, columns = schema_generator(
 # Attach data interface
 @module.data_init_task
 def attach_wolf_data(client):
-    interface = tableInterface(
-        client.data,
-        "guild_wolfram_appid",
-        app=client.app,
-        column_data=columns,
-        shared=True,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema, shared=True),
+        "guild_wolfram_appid"
     )
-    client.data.attach_interface(interface, "guild_wolfram_appid")
