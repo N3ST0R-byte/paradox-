@@ -4,4 +4,6 @@ from .Interface import Interface
 from .propInterface import propInterface
 from .tableInterface import tableInterface
 
-from .schema_helper import *
+from . import schemas
+
+from .schemas import *

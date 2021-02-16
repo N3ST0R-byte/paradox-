@@ -19,46 +19,6 @@ def temp_disabled(func):
     return _func
 
 
-@module.cmd("hackban",
-            desc="Pre-bans users who aren't in the guild by user id.",
-            disabled=True)
-@temp_disabled
-async def cmd_hackban(ctx):
-    pass
-
-
-@module.cmd("ban",
-            desc="Bans members of the guild and optionally purges their history.",
-            disabled=True,)
-@temp_disabled
-async def cmd_ban(ctx):
-    pass
-
-
-@module.cmd("softban",
-            desc="Bans and unbans members to 'kick and purge history'.",
-            disabled=True)
-@temp_disabled
-async def cmd_softban(ctx):
-    pass
-
-
-@module.cmd("kick",
-            desc="Kick users out of the guild.",
-            disabled=True)
-@temp_disabled
-async def cmd_kick(ctx):
-    pass
-
-
-@module.cmd("unban",
-            desc="Remove an active ban on a user.",
-            disabled=True)
-@temp_disabled
-async def cmd_unban(ctx):
-    pass
-
-
 @module.cmd("giverole",
             desc="Give roles to a member.",
             disabled=True)

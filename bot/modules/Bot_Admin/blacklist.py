@@ -1,6 +1,6 @@
 import asyncio
 
-from registry import schema_generator, Column, ColumnType, tableInterface
+from registry import tableSchema, Column, ColumnType, tableInterface
 from wards import is_master
 from utils.lib import paginate_list
 from utils.interactive import pager  # noqa
@@ -82,7 +82,7 @@ async def launch_user_blacklist_monitor(client):
     asyncio.ensure_future(autorefresher(client))
 
 
-schemas = schema_generator(
+schema = tableSchema(
     "admin_user_blacklist",
     Column('userid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('added_by', ColumnType.SNOWFLAKE, required=True),
@@ -92,14 +92,7 @@ schemas = schema_generator(
 # Attach data interface
 @module.data_init_task
 def attach_user_blacklist_data(client):
-    mysql_schema, sqlite_schema, columns = schemas
-    interface = tableInterface(
-        client.data,
-        "admin_user_blacklist",
-        app=client.app,
-        column_data=columns,
-        shared=True,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema),
+        "admin_user_blacklist"
     )
-    client.data.attach_interface(interface, "admin_user_blacklist")

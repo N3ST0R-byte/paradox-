@@ -1,10 +1,10 @@
-from registry import schema_generator, Column, ColumnType, tableInterface
+from registry import tableSchema, Column, ColumnType, tableInterface
 
 from .module import meta_module as module
 
 
 # Define data schema
-schemas = schema_generator(
+schema = tableSchema(
     "user_prefixes",
     Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
     Column('userid', ColumnType.SNOWFLAKE, primary=True, required=True),
@@ -15,17 +15,10 @@ schemas = schema_generator(
 # Attach data interfaces
 @module.data_init_task
 def attach_prefix_data(client):
-    mysql_schema, sqlite_schema, columns = schemas
-    interface = tableInterface(
-        client.data,
-        "user_prefixes",
-        app=client.app,
-        column_data=columns,
-        shared=False,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema, shared=False),
+        "user_prefixes"
     )
-    client.data.attach_interface(interface, "user_prefixes")
 
 
 # Cache user prefixes

@@ -221,7 +221,7 @@ async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allo
 
 
 @Context.util
-async def pager(ctx, pages, locked=True, **kwargs):
+async def pager(ctx, pages, locked=True, blocking=False, **kwargs):
     """
     Shows the user each page from the provided list `pages` one at a time,
     providing reactions to page back and forth between pages.
@@ -233,6 +233,9 @@ async def pager(ctx, pages, locked=True, **kwargs):
         A list of either strings or embeds to display as the pages.
     locked: bool
         Whether only the `ctx.author` should be able to use the paging reactions.
+    blocking: bool
+        Whether to block until the pager has finished.
+        Useful for cancelling tasks when the pager completes.
     kwargs: ...
         Remaining keyword arguments are transparently passed to the reply context method.
 
@@ -245,13 +248,15 @@ async def pager(ctx, pages, locked=True, **kwargs):
 
     # Post first page. Method depends on whether the page is an embed or not.
     if isinstance(pages[0], discord.Embed):
-        out_msg = await ctx.reply(embed=pages[0])
+        out_msg = await ctx.reply(embed=pages[0], **kwargs)
     else:
-        out_msg = await ctx.reply(pages[0])
+        out_msg = await ctx.reply(pages[0], **kwargs)
 
     # Run the paging loop if required
     if len(pages) > 1:
-        asyncio.ensure_future(_pager(ctx, out_msg, pages, locked))
+        task = asyncio.ensure_future(_pager(ctx, out_msg, pages, locked))
+        if blocking:
+            await task
 
     # Return the output message
     return out_msg
@@ -291,6 +296,8 @@ async def _pager(ctx, out_msg, pages, locked):
         try:
             reaction, user = await ctx.client.wait_for('reaction_add', check=check, timeout=300)
         except asyncio.TimeoutError:
+            break
+        except asyncio.CancelledError:
             break
 
         # Attempt to remove the user's reaction, silently ignore errors

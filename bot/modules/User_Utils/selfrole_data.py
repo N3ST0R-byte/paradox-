@@ -1,5 +1,5 @@
 from settings import ListData, RoleList, GuildSetting
-from registry import tableInterface, Column, ColumnType, schema_generator
+from registry import tableInterface, Column, ColumnType, tableSchema
 
 from wards import guild_admin
 
@@ -28,7 +28,7 @@ class selfroles(ListData, RoleList, GuildSetting):
 
 
 # Define data schema
-mysql_schema, sqlite_schema, columns = schema_generator(
+schema = tableSchema(
     "guild_selfroles",
     Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
     Column('roleid', ColumnType.SNOWFLAKE, primary=True, required=True)
@@ -38,13 +38,7 @@ mysql_schema, sqlite_schema, columns = schema_generator(
 # Attach data interfaces
 @module.data_init_task
 def attach_selfrole_data(client):
-    selfrole_interface = tableInterface(
-        client.data,
-        "guild_selfroles",
-        app=client.app,
-        column_data=columns,
-        shared=True,
-        sqlite_schema=sqlite_schema,
-        mysql_schema=mysql_schema,
+    client.data.attach_interface(
+        tableInterface.from_schema(client.data, client.app, schema, shared=True),
+        "guild_selfroles"
     )
-    client.data.attach_interface(selfrole_interface, "guild_selfroles")
