@@ -227,6 +227,11 @@ async def cmd_texdoc(ctx):
     Examples``:
         {prefix}texdoc tikz
     """
+    if len(ctx.args) > 800:
+        return await ctx.error_reply("Given string is too long!")
+    elif not ctx.args:
+        return await ctx.error_reply("Please give me something to search for!")
+
     await ctx.reply("Documentation for `{}`: {}".format(
         ctx.args,
         texdoc_url.format(urllib.parse.quote_plus(ctx.args))
