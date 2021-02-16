@@ -23,9 +23,6 @@ async def cmd_tickets(ctx):
 
         To use this command, you need to be a **guild moderator**.\
             That is, you need to have the `manage_guild` permission or the configured `modrole`.
-    Related:
-        ticket
-        editticket
     """
     if not ctx.args:
         return await ctx.error_reply("Please provide a member or userid to show tickets for.")

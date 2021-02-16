@@ -17,8 +17,6 @@ async def cmd_note(ctx):
     Description:
         Prompts for a note to write on the given user.
         The note is visible in the `modlog`, if set, and in the user's tickets.
-    Related:
-        ticket, tickets, ticketset
     """
     if not ctx.args:
         return await ctx.error_reply("No arguments given, nothing to do.")
