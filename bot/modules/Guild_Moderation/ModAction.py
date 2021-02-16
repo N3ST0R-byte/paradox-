@@ -101,6 +101,8 @@ class ModAction:
         # Obtain duration, if required
         if 't' in self.flags and isinstance(self.flags['t'], str):
             self.duration = parse_dur(self.flags['t'])
+            if self.duration > 365 * 24 * 60 * 60:
+                raise SafeCancellation("Maximum duration is 1 year!")
 
     async def action(self, **kwargs):
         """
