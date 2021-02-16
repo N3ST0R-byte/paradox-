@@ -6,3 +6,4 @@ from . import latex_exthelp
 from . import preamble_cmd
 from . import guildpreamble_cmd
 from . import preambleadmin_cmds
+from . import latexutil_cmds
