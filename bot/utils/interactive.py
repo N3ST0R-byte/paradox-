@@ -221,7 +221,7 @@ async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allo
 
 
 @Context.util
-async def pager(ctx, pages, locked=True, blocking=False, **kwargs):
+async def pager(ctx, pages, locked=True, blocking=False, destination=None, start_page=0, **kwargs):
     """
     Shows the user each page from the provided list `pages` one at a time,
     providing reactions to page back and forth between pages.
@@ -236,8 +236,12 @@ async def pager(ctx, pages, locked=True, blocking=False, **kwargs):
     blocking: bool
         Whether to block until the pager has finished.
         Useful for cancelling tasks when the pager completes.
+    destination: Optional[discord.Messageable]
+        Optional custom destination to use instead of `ctx.ch`.
+    start_page: Optional[int]
+        Optional initial page to display.
     kwargs: ...
-        Remaining keyword arguments are transparently passed to the reply context method.
+        Remaining keyword arguments are transparently passed to the sender method.
 
     Returns: discord.Message
         This is the output message, returned for easy deletion.
@@ -246,15 +250,21 @@ async def pager(ctx, pages, locked=True, blocking=False, **kwargs):
     if len(pages) == 0:
         raise ValueError("Pager cannot page with no pages!")
 
+    # Identify sender method based on destination
+    if destination is None or destination == ctx.ch:
+        sender = ctx.reply
+    else:
+        sender = destination.send
+
     # Post first page. Method depends on whether the page is an embed or not.
     if isinstance(pages[0], discord.Embed):
-        out_msg = await ctx.reply(embed=pages[0], **kwargs)
+        out_msg = await sender(embed=pages[start_page], **kwargs)
     else:
-        out_msg = await ctx.reply(pages[0], **kwargs)
+        out_msg = await sender(pages[start_page], **kwargs)
 
     # Run the paging loop if required
     if len(pages) > 1:
-        task = asyncio.ensure_future(_pager(ctx, out_msg, pages, locked))
+        task = asyncio.ensure_future(_pager(ctx, out_msg, pages, locked, start_page=start_page))
         if blocking:
             await task
 
@@ -262,12 +272,12 @@ async def pager(ctx, pages, locked=True, blocking=False, **kwargs):
     return out_msg
 
 
-async def _pager(ctx, out_msg, pages, locked):
+async def _pager(ctx, out_msg, pages, locked, start_page=0):
     """
     Asynchronous initialiser and loop for the `pager` utility above.
     """
     # Page number
-    page = 0
+    page = start_page
 
     # Add reactions to the output message
     next_emoji = ctx.client.conf.emojis.getemoji("next", "▶")

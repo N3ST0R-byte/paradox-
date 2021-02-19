@@ -141,7 +141,7 @@ async def view_preamble(ctx, preamble, title, start_page=0,
                         file_react=False, file_message=None, **pagination_args):
 
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
-    out_msg = await ctx.pager(pages, locked=False)
+    out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
 
     if file_react and out_msg is not None:
         # Add the sendfile reaction if required

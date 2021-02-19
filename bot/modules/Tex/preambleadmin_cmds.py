@@ -57,7 +57,6 @@ async def approval_queue(ctx):
                 author=waiting_list[result],
                 time=datetime.fromtimestamp(judging['submission_time']),
                 header=judging['submission_summary'],
-                destination=ctx.ch
             )
             # Give a warning, if required, about not being able to see the user
             if judging['app'] != ctx.client.app and ctx.client.get_guild(judging['submission_source_id']) is None:
@@ -220,7 +219,6 @@ async def user_admin(ctx, userid):
             author="{} ({})".format(judging['username'], userid),
             time=datetime.fromtimestamp(judging['submission_time']),
             header=judging['submission_summary'],
-            destination=ctx.ch
         )
 
         # Give a warning, if required, about not being able to see the user

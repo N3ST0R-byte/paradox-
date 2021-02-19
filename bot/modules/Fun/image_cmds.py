@@ -60,7 +60,7 @@ async def cmd_image(ctx: Context):
                         continue
                     embed.set_footer(text="Images thanks to the free Pixabay API!")
                     hit_pages.append(embed)
-                await ctx.offer_delete(await ctx.pager(hit_pages, embed=True))
+                await ctx.offer_delete(await ctx.pager(hit_pages))
             else:
                 return await ctx.error_reply("An error occurred while fetching images. Please try again later.")
 
@@ -144,7 +144,7 @@ async def cmd_cat(ctx: Context, flags):
             FINAL_URL = BASE_URL + "api/cats"
 
         if flags["c"]:
-            flags["c"] = flags["c"].replace(" ", "%20") 
+            flags["c"] = flags["c"].replace(" ", "%20")
             caption = "/says/" + flags["c"]
         else:
             caption = False
