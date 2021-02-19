@@ -171,7 +171,7 @@ class LatexContext:
 
     async def dm_source(self, target):
         embed = discord.Embed(title="LaTeX source",
-                              description="```tex\n{}\n```".format(self.source),
+                              description="```latex\n{}\n```".format(self.source),
                               timestamp=self._source_message.created_at)
         embed.set_footer(text="Sent at")
         embed.set_author(name=self._header_name)
@@ -272,7 +272,7 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```tex\n{}\n```".format(self.source)
+                source_message = "```latex\n{}\n```".format(self.source)
 
             if error:
                 self._show_emoji = self.emoji_show_errors

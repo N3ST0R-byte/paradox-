@@ -70,7 +70,7 @@ async def cmd_tex(ctx, flags):
         else:
             return await ctx.error_reply(
                 "Please give me something to compile, for example "
-                "```tex\n"
+                "```latex\n"
                 "{0}tex The solutions to \\(x^2 = 1\\) are \\(x = \\pm 1\\)."
                 "```"
                 "See `{0}help` and `{0}help tex` for detailed usage and further examples!".format(ctx.best_prefix())
