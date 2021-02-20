@@ -39,17 +39,22 @@ class HammerAction(ModAction):
             return None
 
         # Fetch highest manager role
+        """
         manager_role = max(
             (role for role in self.mod.roles
              if role.permissions.administrator or self.required_permissions.is_subset(role.permissions)),
             default=None
         )
+        """
         modrole = self.ctx.get_guild_setting.modrole.value
+        if modrole not in self.mod.roles:
+            raise SafeCancellation("This may only be done by a moderator!")
+        """
         if manager_role and modrole:
             modrole = max((manager_role, modrole))
         else:
             modrole = manager_role or modrole
-
+        """
         if not modrole:
             raise SafeCancellation(
                 self.lack_permissions_resp.format(self=self)
