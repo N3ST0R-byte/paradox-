@@ -173,9 +173,9 @@ async def cmd_userinfo(ctx: Context):
     presence = "{} {}".format(ctx.client.conf.emojis.getemoji(user.status.name), statusnames[user.status])
     numshared = sum(g.get_member(user.id) is not None for g in ctx.client.guilds)
     shared = "{} guild{}".format(numshared, "s" if numshared > 1 else "")
-    joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - user.joined_at, minutes=False))
+    joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - user.joined_at, minutes=True))
     joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
-    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - user.created_at, minutes=False))
+    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - user.created_at, minutes=True))
     created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
     prop_list = ["Full name", "Nickname", "Presence", "Activity", "Device",
                  "Seen in", "Joined at", "", "Created at", ""]
@@ -285,7 +285,7 @@ async def cmd_guildinfo(ctx: Context, flags):
     channels = "{} text, {} voice, {} categories | {} total".format(text, voice, category, total)
     boosts = "Level {} | {} boosts total".format(guild.premium_tier, guild.premium_subscription_count)
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
-    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - guild.created_at, minutes=False))
+    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - guild.created_at, minutes=True))
 
     prop_list = ["Owner", "Region", "Icon", "Verification",
                  "2FA", "Roles", "Members", "Channels", "Server Boosts", "Created at", ""]

@@ -47,7 +47,7 @@ async def join_logger(client, member):
     )
     activity = format_activity(member)
     presence = "{} {}".format(client.conf.emojis.getemoji(member.status.name), statusnames[member.status])
-    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.created_at, minutes=False))
+    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.created_at, minutes=True))
     created = member.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
     devicestatus = {
@@ -114,7 +114,7 @@ async def departure_logger(client, member):
     colour = discord.Colour.red()
     avatar = member.avatar_url
 
-    joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.joined_at, minutes=False))
+    joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.joined_at, minutes=True))
     joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
 
     roles = [r.mention for r in member.roles if not r.is_default()]
