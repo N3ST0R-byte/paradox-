@@ -1,5 +1,6 @@
 import aiohttp
 import json
+import discord
 
 from .module import maths_module as module
 
@@ -45,6 +46,7 @@ async def cmd_calc(ctx):
             "An unknown error occurred during calculation!"
         )
     if answer["error"]:
-        await ctx.reply("The following error occured while calculating:\n`{}`".format(answer["error"]))
+        await ctx.reply("The following error occured while calculating:\n`{}`".format(
+            discord.utils.escape_mentions(answer["error"])))
         return
     await ctx.reply("Result{}:\n```\n{}\n```".format("s" if len(exprs) > 1 else "", "\n".join(answer["result"])))
