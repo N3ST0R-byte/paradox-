@@ -192,6 +192,7 @@ async def cmd_time(ctx, flags):
         {prefix}time --at <timezone>
         {prefix}time --brief
         {prefix}time --list
+        {prefix}time --reset
     Description:
         Shows the current time for yourself or the provided user.
         Use the `set` flag to interactively pick your timezone from the international tz database.
@@ -201,6 +202,7 @@ async def cmd_time(ctx, flags):
         at: Shows the current time in the timezone given. (Can be a partial timezone)
         brief: Toggles usage of a briefer time display.
         list: Displays a list of valid timezones in the tz database, as shown [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+        reset: Resets the currently set timezone. This cannot be undone. 
         set: Sets your timezone to the one provided, or shows an interactive timezone picker.
     Examples``:
         {prefix}time {ctx.msg.author.name}
