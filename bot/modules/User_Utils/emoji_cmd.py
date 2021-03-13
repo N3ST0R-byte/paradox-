@@ -220,6 +220,10 @@ async def cmd_emoji(ctx: cmdClient, flags):
         if not ctx.guild or not ctx.ch.permissions_for(ctx.author).add_reactions:
             return await ctx.error_reply("You do not have permissions to add reactions here!")
 
+        if ctx.guild:
+            if not ctx.ch.permissions_for(ctx.guild.me).add_reactions:
+                return await ctx.error_reply("I do not have permissions to add reactions here!")
+
         # If a messageid to react to was specified, get it. Otherwise get the previous message in the channel.
         if flags['to']:
             if not flags['to'].isdigit():
