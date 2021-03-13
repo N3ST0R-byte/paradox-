@@ -66,7 +66,7 @@ def read_emoji_link(emoji):
 
 @module.cmd("emoji",
             desc="Displays info about, searches for, and enlarges custom emojis",
-            aliases=["e", "ee", "ree", "sree"],
+            aliases=["e", "ee", "ree", "sree", "emote"],
             flags=['e', 'to==', 'up=='])
 async def cmd_emoji(ctx: cmdClient, flags):
     """
