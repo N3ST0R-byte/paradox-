@@ -15,6 +15,7 @@ Provides ctan and texdoc commands.
 
 texdoc_url = "http://texdoc.net/pkg/{}"
 ctan_url = "https://ctan.org/{}"
+lion_url = "https://ctan.org/lion/files/ctan_lion_350x350.png"
 
 def soup_site(url: str) -> BeautifulSoup:
     r = requests.get(url)
@@ -185,6 +186,10 @@ def search_n_parse(soup: BeautifulSoup):
     value_list = []
     for tr in table.find_all("tr"):
         tds = tr.find_all("td")
+        ignored = ["TDS archive", "Licenses", "Copyright", "Maintainer"]
+        if tds[0].text in ignored:
+            continue
+
         brs = tds[1].find_all("br")
         if brs is not None:
             for _ in brs:
@@ -200,6 +205,7 @@ def search_n_parse(soup: BeautifulSoup):
                     urllib.parse.urljoin(ctan_url,link.attrs["href"])
                 )
                 tds[1].a.replace_with(md_link)
+
         prop_list.append(tds[0].text)
         value_list.append(tds[1].text.rstrip(", "))
 
@@ -310,15 +316,21 @@ async def cmd_ctan(ctx):
         table = prop_tabulate(prop_list, value_list)
     else:
         table = ""
-
-    emb_desc = desc + '\n' + table
+    read_more = "Read more at [CTAN page]({}) of the package.".format(url)
+    emb_desc = desc + "\n" + table + read_more
     if len(emb_desc) > 2000:
-        read_more = "Read more at [ctan page]({})".format(url)
-        idx = len(emb_desc) - 2000 + len("... " + read_more)
-        short_desc = emb_desc[:-idx]
-        rightmost_newline = short_desc.rfind("\n")
-        emb_desc = short_desc[:rightmost_newline] + "... " + read_more
-    embed = discord.Embed(title=title, url=url, description=emb_desc)
+        idx = len(emb_desc) - 2000 + len("\n" + read_more)
+        short_table = table[:-idx]
+        rightmost_newline = short_table.rfind("\n")
+        emb_desc = desc + "\n" + table[:rightmost_newline] + "\n" + read_more
+    embed = discord.Embed(
+                title=title,
+                url=url,
+                description=emb_desc,
+                color=discord.Color.dark_purple()
+            )
+    embed.set_thumbnail(url=lion_url)
+
     return await out_msg.edit(
         content="",
         embed=embed
