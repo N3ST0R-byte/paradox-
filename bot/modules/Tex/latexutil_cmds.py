@@ -48,28 +48,26 @@ def chomp(text):
 class MarkdownConverter(object):
 
     def __init__(self):
-        self.bullets = "*+-"
+        self.bullets = "-+*"
 
     def convert(self, html):
         soup = BeautifulSoup(html, 'html.parser')
-        return self.process_tag(soup, convert_as_inline=False, children_only=True)
+        return self.process_tag(soup)
 
-    def process_tag(self, node, convert_as_inline, children_only=False):
+    def process_tag(self, node):
         text = ''
         # markdown headings can't include block elements (elements w/newlines)
-        convert_children_as_inline = convert_as_inline
 
         # Convert the children first
         for el in node.children:
             if isinstance(el, NavigableString):
                 text += self.process_text(str(el))
             else:
-                text += self.process_tag(el, convert_children_as_inline)
+                text += self.process_tag(el)
 
-        if not children_only:
-            convert_fn = getattr(self, 'convert_%s' % node.name, None)
-            if convert_fn:
-                text = convert_fn(node, text, convert_as_inline)
+        convert_fn = getattr(self, 'convert_%s' % node.name, None)
+        if convert_fn:
+            text = convert_fn(node, text)
 
         return text
 
@@ -86,44 +84,38 @@ class MarkdownConverter(object):
         text = (text or '').rstrip()
         return '%s\n%s\n\n' % (text, pad_char * len(text)) if text else ''
 
-    def convert_a(self, el, text, convert_as_inline):
+    def convert_a(self, el, text):
         prefix, suffix, text = chomp(text)
         if not text:
             return ''
-        if convert_as_inline:
-            return text
         href = urllib.parse.urljoin(ctan_url, el.get('href'))
         title = el.get('title')
         # For the replacement see #29: text nodes underscores are escaped
         title_part = ' "%s"' % title.replace('"', r'\"') if title else ''
         return '%s[%s](%s%s)%s' % (prefix, text, href, title_part, suffix) if href else text
 
-    def convert_b(self, el, text, convert_as_inline):
-        return self.convert_strong(el, text, convert_as_inline)
+    def convert_b(self, el, text):
+        return self.convert_strong(el, text)
 
-    def convert_blockquote(self, el, text, convert_as_inline):
+    def convert_span(self, el, text):
+        return '%s' % text if text else ''
 
-        if convert_as_inline:
-            return text
-
+    def convert_blockquote(self, el, text):
         return '\n' + line_beginning_re.sub('> ', text) if text else ''
 
-    def convert_br(self, el, text, convert_as_inline):
-        if convert_as_inline:
-            return ""
-
+    def convert_br(self, el, text):
         return '  \n'
 
-    def convert_em(self, el, text, convert_as_inline):
+    def convert_em(self, el, text):
         prefix, suffix, text = chomp(text)
         if not text:
             return ''
         return '%s*%s*%s' % (prefix, text, suffix)
 
-    def convert_i(self, el, text, convert_as_inline):
-        return self.convert_em(el, text, convert_as_inline)
+    def convert_i(self, el, text):
+        return self.convert_em(el, text)
 
-    def convert_list(self, el, text, convert_as_inline):
+    def convert_list(self, el, text):
 
         # Converting a list to inline is undefined.
         # Ignoring convert_to_inline for list.
@@ -142,7 +134,7 @@ class MarkdownConverter(object):
     convert_ul = convert_list
     convert_ol = convert_list
 
-    def convert_li(self, el, text, convert_as_inline):
+    def convert_li(self, el, text):
         parent = el.parent
         if parent is not None and parent.name == 'ol':
             if parent.get("start"):
@@ -160,12 +152,10 @@ class MarkdownConverter(object):
             bullet = self.bullets[depth % len(bullets)]
         return '%s %s\n' % (bullet, text or '')
 
-    def convert_p(self, el, text, convert_as_inline):
-        if convert_as_inline:
-            return text
+    def convert_p(self, el, text):
         return '%s' % text if text else ''
 
-    def convert_strong(self, el, text, convert_as_inline):
+    def convert_strong(self, el, text):
         prefix, suffix, text = chomp(text)
         if not text:
             return ''
@@ -188,7 +178,7 @@ def search_n_parse(soup: BeautifulSoup):
     title = title.text
     converter = MarkdownConverter()
     package_desc = soup.find("p")
-    emb_desc = converter.process_tag(package_desc, convert_as_inline=False, children_only=True)
+    emb_desc = converter.process_tag(package_desc)
 
     table = soup.find("table")
     prop_list = []
