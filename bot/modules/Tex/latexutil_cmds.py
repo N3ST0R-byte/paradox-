@@ -224,7 +224,7 @@ async def cmd_texdoc(ctx):
         {prefix}texdoc tikz
     """
     if len(ctx.args) > 800:
-        return await ctx.error_reply("Given string is too long!")
+        return await ctx.error_reply("Given query is too long!")
     elif not ctx.args:
         return await ctx.error_reply("Please give me something to search for!")
 
@@ -257,7 +257,7 @@ async def cmd_ctan(ctx):
     url = ctan_url.format("pkg/{}".format(urllib.parse.quote_plus(ctx.args)))
     search_url = ctan_url.format("search?phrase={}&max=10")
     if len(url) > 1500:
-        return await ctx.error_reply("Given string is too long!")
+        return await ctx.error_reply("Given query is too long!")
 
     if ctx.alias.lower() == "ctanlink":
         return await ctx.reply(url if ctx.args else ctan_url.format(''))
