@@ -165,7 +165,7 @@ async def cmd_quote(ctx, flags):
             desc = header + "\n" + block
             embed = discord.Embed(colour=discord.Colour.light_grey(),
                                   description=desc,
-                                  timestamp=datetime.now())
+                                  timestamp=message.created_at)
 
             if not flags["a"]:
                 embed.set_author(name="{user.name}".format(user=message.author),
