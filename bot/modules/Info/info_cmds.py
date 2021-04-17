@@ -186,30 +186,31 @@ async def cmd_userinfo(ctx: Context):
     roles = [r.name for r in user.roles if r.name != "@everyone"]
     roles = ('`' + '`, `'.join(roles) + '`') if roles else "None"
 
-    joined = sorted(ctx.guild.members, key=lambda mem: mem.joined_at)
-    pos = joined.index(user)
-    positions = []
-    for i in range(-3, 4):
-        line_pos = pos + i
-        if line_pos < 0:
-            continue
-        if line_pos >= len(joined):
-            break
-        positions.append(
-            "{:>4}.   {} {}".format(
-                line_pos + 1, ">" if joined[line_pos] == user else " ",
-                joined[line_pos]
-            )
-        )
-    join_seq = "```markdown\n{}\n```".format("\n".join(positions))
-
     embed = discord.Embed(color=colour, description=desc)
     embed.set_author(name=f"{user} ({user.id})",
                      icon_url=user.avatar_url)
     embed.set_thumbnail(url=user.avatar_url)
+    embed.add_field(name="Roles", value=roles, inline=False)
 
-    emb_fields = [("Roles", roles, 0), ("Join order", join_seq, 0)]
-    emb_add_fields(embed, emb_fields)
+    if user.joined_at:  # joined_at is Optional
+        joined = sorted((mem for mem in ctx.guild.members if mem.joined_at), key=lambda mem: mem.joined_at)
+        pos = joined.index(user)
+        positions = []
+        for i in range(-3, 4):
+            line_pos = pos + i
+            if line_pos < 0:
+                continue
+            if line_pos >= len(joined):
+                break
+            positions.append(
+                "{:>4}.   {} {}".format(
+                   line_pos + 1, ">" if joined[line_pos] == user else " ",
+                    joined[line_pos]
+                )
+            )
+        join_seq = "```markdown\n{}\n```".format("\n".join(positions))
+        embed.add_field(name="Join order", value=join_seq, inline=False)
+
     await ctx.reply(embed=embed)
 
 
