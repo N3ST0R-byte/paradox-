@@ -23,7 +23,7 @@ then
   exit 1
 fi
 
-timeout 20 convert -density 700 -quality 75 -depth 8 -trim +repage $1.pdf -colorspace RGB $1.png;
+timeout 20 convert -density 700 -quality 75 -depth 8 -trim +repage $1.pdf -colorspace sRGB $1.png;
 if [ $? -eq 124 ];
 then
  echo "Image processing timed out!";
