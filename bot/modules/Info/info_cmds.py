@@ -274,8 +274,9 @@ async def cmd_guildinfo(ctx: Context, flags):
     devicestatus = "🖥️ - **{}**\n📱 - **{}**\n🌎 - **{}**".format(desktop, mobile, web)
 
     bots = sum(m.bot for m in guild.members)
-    members = "{} humans, {} bots | {} total".format(guild.member_count - bots,
-                                                     bots, guild.member_count)
+    humans = guild.member_count - bots
+    members = "{} human{}, {} bot{} | {} total".format(humans, "s" if humans > 1 else "", 
+                                                     bots, "s" if bots > 1 else "", guild.member_count)
 
     owner = "{0} ({0.id})".format(guild.owner)
     if guild.icon:
@@ -283,8 +284,8 @@ async def cmd_guildinfo(ctx: Context, flags):
     else:
         icon = "No guild icon set"
     mfa = "Enabled" if guild.mfa_level else "Disabled"
-    channels = "{} text, {} voice, {} categories | {} total".format(text, voice, category, total)
-    boosts = "Level {} | {} boosts total".format(guild.premium_tier, guild.premium_subscription_count)
+    channels = "{} text, {} voice, {} categor{} | {} total".format(text, voice, category, "ies" if category > 1 else "y", total)
+    boosts = "Level {} | {} boost{} total".format(guild.premium_tier, guild.premium_subscription_count, "" if guild.premium_subscription_count == 1 else "s")
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - guild.created_at, minutes=True))
 
