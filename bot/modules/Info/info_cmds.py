@@ -183,7 +183,7 @@ async def cmd_userinfo(ctx: Context):
                   shared, joined, joined_ago, created, created_ago]
     desc = prop_tabulate(prop_list, value_list)
 
-    roles = [r.name for r in user.roles if r.name != "@everyone"]
+    roles = [r.name for r in reversed(user.roles) if r.name != "@everyone"]
     roles = ('`' + '`, `'.join(roles) + '`') if roles else "None"
 
     embed = discord.Embed(color=colour, description=desc)

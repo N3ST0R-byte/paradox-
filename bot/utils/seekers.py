@@ -306,8 +306,8 @@ async def find_member(ctx, userstr, interactive=False, collection=None, silent_n
             member_names = [
                 "{} {}".format(
                     member.nick if member.nick else (member if members.count(member) > 1
-                                                     else member.name),
-                    ("<{}>".format(member)) if member.nick else ""
+                                                     else member),
+                    ("({})".format(member)) if member.nick else ""
                 ) for member in members
             ]
 
