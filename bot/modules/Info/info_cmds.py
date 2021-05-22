@@ -76,7 +76,7 @@ async def cmd_roleinfo(ctx: Context):
         if line_pos >= len(guild_roles):
             continue
         position += "{:>4}.   {} {}\n".format(
-            line_pos,
+            len(guild_roles) - line_pos,
             ">" if guild_roles[line_pos] == role else " ",
             guild_roles[line_pos]
         )
