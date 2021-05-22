@@ -138,5 +138,5 @@ schema = tableSchema(
 def attach_snippet_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, schema),
-        "admin_snippet"
+        "admin_snippets"
     )
