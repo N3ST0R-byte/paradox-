@@ -216,7 +216,8 @@ def search_n_parse(soup: BeautifulSoup):
     return (title, emb_desc, prop_list, value_list)
 
 @module.cmd("texdoc",
-            desc="Searches the [texdoc](http://texdoc.net)")
+            desc="Searches the [texdoc](http://texdoc.net)",
+            aliases=["td"])
 async def cmd_texdoc(ctx):
     """
     Usage``:
@@ -269,7 +270,7 @@ async def cmd_ctan(ctx):
     if not ctx.args:
         return await ctx.error_reply("Please give me something to search for!")
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
-    out_msg = await ctx.reply("Searching the ctan please wait {}".format(loading_emoji))
+    out_msg = await ctx.reply("Searching the CTAN, please wait... {}".format(loading_emoji))
 
     soup = soup_site(url)
     title, desc, prop_list, value_list = search_n_parse(soup)
