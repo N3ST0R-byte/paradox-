@@ -1,4 +1,5 @@
 import discord
+import asyncio
 # from datetime import datetime
 
 from cmdClient.lib import ResponseTimedOut, UserCancelled
@@ -204,7 +205,13 @@ async def cmd_prune(ctx, flags):
                 abort = True
     if abort:
         return
-    await ctx.reply("Purge complete.")
+
+    success = await ctx.reply("Purge complete.")
+    try:
+        await asyncio.sleep(3)
+        await success.delete()
+    except Exception:
+        pass    
 
 #    final_message = "Purged **{}** messages. Message breakdown:\n{}".format(len(message_list), counts)
 #    await ctx.reply(final_message)
