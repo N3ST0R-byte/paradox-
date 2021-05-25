@@ -317,12 +317,13 @@ async def cmd_ctan(ctx):
     else:
         table = ""
     read_more = "Read more at [CTAN page]({}) of the package.".format(url)
+    if len(desc) > 700:
+        desc = desc[:700-len(read_more)] + "..."
+    if len(table) > 900:
+        table = table[:900]
+        rightmost_newline = table.rfind("\n")
+        table = table[:rightmost_newline+1]
     emb_desc = desc + "\n" + table + read_more
-    if len(emb_desc) > 2000:
-        idx = len(emb_desc) - 2000 + len("\n" + read_more)
-        short_table = table[:-idx]
-        rightmost_newline = short_table.rfind("\n")
-        emb_desc = desc + "\n" + table[:rightmost_newline] + "\n" + read_more
     embed = discord.Embed(
                 title=title,
                 url=url,
