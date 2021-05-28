@@ -328,7 +328,7 @@ async def cmd_ctan(ctx):
                 title=title,
                 url=url,
                 description=emb_desc,
-                color=discord.Color.dark_purple()
+                color=discord.Color.from_rgb(66, 66, 133)  # ctan's #424285 color
             )
     embed.set_thumbnail(url=lion_url)
 
