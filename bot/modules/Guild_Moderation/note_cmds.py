@@ -47,7 +47,6 @@ async def cmd_note(ctx):
         [user.id],
         reason=note
     )
-    # await ticket.post()
     await ctx.reply(f"Note created for {user}.")
 
 
