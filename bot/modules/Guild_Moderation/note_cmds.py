@@ -47,7 +47,8 @@ async def cmd_note(ctx):
         [user.id],
         reason=note
     )
-    await ctx.reply(f"Note created for {user}.")
+    embed = discord.Embed(description=f"Ticket #{ticket.ticketgid}: Note created for {user.mention}.")
+    await ctx.reply(embed=embed)
 
 
 @describes_ticket(TicketType.NOTE)
