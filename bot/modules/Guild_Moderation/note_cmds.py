@@ -8,24 +8,38 @@ from .tickets import Ticket, describes_ticket, TicketType
 
 
 @module.cmd("note",
-            desc="Create a moderation note on a member.")
+            desc="Create a moderation note on a member.",
+            aliases=["addnote"])
 @guild_moderator()
 async def cmd_note(ctx):
     """
     Usage``:
-        {prefix}note <user>
+        {prefix}note <user> [content]
     Description:
-        Prompts for a note to write on the given user.
-        The note is visible in the `modlog`, if set, and in the user's tickets.
+        Adds a moderator note to the specified user.
+        The note will not be posted to the `modlog`, but it will appear in the user's tickets.
+        Only moderators can view a user's notes.
+        If `content` is not provided, you will be prompted to provide the note content.
     """
     if not ctx.args:
         return await ctx.error_reply("No arguments given, nothing to do.")
 
-    user = await ctx.find_member(ctx.args, interactive=True)
+    user, *note = ctx.args.split(" ")
+
+    # Attempt to get a user from the arguments
+    user = await ctx.find_member(user, interactive=True)
     if user is None:
         return
 
-    note = await ctx.input("Please enter the note.")
+    # If a note was provided, join the contents together.
+    if note:
+        note = " ".join(note)
+    else:
+        # No note was provided, prompt the author to provide the content.
+        note = await ctx.input("Please enter the note, or `c` to cancel.")
+        if note.lower() == "c":
+            return await ctx.error_reply("Note creation cancelled.")
+
     ticket = NoteTicket.create(
         ctx.guild.id,
         ctx.author.id,
@@ -33,8 +47,8 @@ async def cmd_note(ctx):
         [user.id],
         reason=note
     )
-    await ticket.post()
-    await ctx.reply("Note created!")
+    # await ticket.post()
+    await ctx.reply(f"Note created for {user}.")
 
 
 @describes_ticket(TicketType.NOTE)
