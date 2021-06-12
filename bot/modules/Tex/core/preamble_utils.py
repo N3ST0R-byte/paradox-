@@ -39,7 +39,7 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True,
     with the code in codeblocks of mximum 1k chars
     """
     if text:
-        blocks = split_text(text, 1000, code=True, syntax="tex")
+        blocks = split_text(text, 1000, code=True, syntax="latex")
     else:
         blocks = [None]
 
