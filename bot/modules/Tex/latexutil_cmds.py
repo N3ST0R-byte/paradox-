@@ -319,7 +319,10 @@ async def cmd_ctan(ctx):
         table = ""
     read_more = "Read more at [CTAN page]({}) of the package.".format(url)
     if len(desc) > 700:
-        desc = desc[:700-len(read_more)] + "..."
+        desc = desc[:700]
+        r_newline = desc.rfind("\n")
+        r_space = desc.rfind(" ")
+        desc = desc[:r_space if r_space > r_newline else r_newline] + "..."
     if len(table) > 900:
         table = table[:900]
         rightmost_newline = table.rfind("\n")
