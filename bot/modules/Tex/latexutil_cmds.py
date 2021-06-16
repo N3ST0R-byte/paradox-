@@ -265,6 +265,14 @@ async def cmd_ctan(ctx):
 
     if not ctx.args:
         return await ctx.error_reply("Please give me something to search for!")
+    # remove special characters but hyphens,underscores,dots from package name
+    # special characters make ctan redirect to some non-relevant page
+    # e.g `:E` for packages start with an E
+    # but we allow hyphens,underscores,dots to be in there because they can be
+    # used in a package name
+    if not re.sub(r"-|_|\.", "", ctx.args).isalnum():
+        return await ctx.error_reply(f"`{ctx.args}` is not a valid package name!")
+
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
     out_msg = await ctx.reply("Searching the CTAN, please wait... {}".format(loading_emoji))
 
