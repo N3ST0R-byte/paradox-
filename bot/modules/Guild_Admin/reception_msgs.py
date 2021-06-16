@@ -170,7 +170,7 @@ async def send_farewell(client, member):
 @module.init_task
 def attach_reception_handlers(client: cmdClient):
     client.add_after_event("member_join", send_greeting)
-    client.add_after_event("member_leave", send_farewell)
+    client.add_after_event("member_remove", send_farewell)
 
 
 # Define data schemas

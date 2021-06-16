@@ -136,13 +136,16 @@ async def restore_roles(client, member):
     # We could place an async lock on role modifications for the user
 
     # Retrieve the stored roles for this member
-    roleids = client.data.member_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
+    roles = client.data.member_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
+    roleids = []
+    for i in range(len(roles)):
+        roleids.append(roles[i]["roleid"])
 
     if roleids:
         # Get the ignored roles
         ignored = set(client.guild_config.role_persistence_ignores.get(client, member.guild.id).value)
         # Filter the roles
-        roleids = [roleid for roleid in roleids if roleid not in ignored]
+        roleids = [roleid for roleid in roleids if roleid not in ignored and roleid != member.guild.default_role.id]
 
     if roleids and member.guild.me.guild_permissions.manage_roles:
         # Get the associated roles, removing the nonexistent ones
@@ -177,7 +180,7 @@ async def restore_roles(client, member):
 
 @module.init_task
 def attach_restore_roles(client):
-    client.add_after_event('member_leave', store_roles)
+    client.add_after_event('member_remove', store_roles)
     client.add_after_event('member_join', restore_roles)
 
 
