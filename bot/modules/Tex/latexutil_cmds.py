@@ -15,6 +15,7 @@ Provides ctan and texdoc commands.
 
 texdoc_url = "http://texdoc.net/pkg/{}"
 ctan_url = "https://ctan.org/{}"
+lion_url = "https://ctan.org/lion/files/ctan_lion_350x350.png"
 
 def soup_site(url: str) -> BeautifulSoup:
     r = requests.get(url)
@@ -48,28 +49,26 @@ def chomp(text):
 class MarkdownConverter(object):
 
     def __init__(self):
-        self.bullets = "*+-"
+        self.bullets = "-+*"
 
     def convert(self, html):
         soup = BeautifulSoup(html, 'html.parser')
-        return self.process_tag(soup, convert_as_inline=False, children_only=True)
+        return self.process_tag(soup)
 
-    def process_tag(self, node, convert_as_inline, children_only=False):
+    def process_tag(self, node):
         text = ''
         # markdown headings can't include block elements (elements w/newlines)
-        convert_children_as_inline = convert_as_inline
 
         # Convert the children first
         for el in node.children:
             if isinstance(el, NavigableString):
                 text += self.process_text(str(el))
             else:
-                text += self.process_tag(el, convert_children_as_inline)
+                text += self.process_tag(el)
 
-        if not children_only:
-            convert_fn = getattr(self, 'convert_%s' % node.name, None)
-            if convert_fn:
-                text = convert_fn(node, text, convert_as_inline)
+        convert_fn = getattr(self, 'convert_%s' % node.name, None)
+        if convert_fn:
+            text = convert_fn(node, text)
 
         return text
 
@@ -86,44 +85,38 @@ class MarkdownConverter(object):
         text = (text or '').rstrip()
         return '%s\n%s\n\n' % (text, pad_char * len(text)) if text else ''
 
-    def convert_a(self, el, text, convert_as_inline):
+    def convert_a(self, el, text):
         prefix, suffix, text = chomp(text)
         if not text:
             return ''
-        if convert_as_inline:
-            return text
         href = urllib.parse.urljoin(ctan_url, el.get('href'))
         title = el.get('title')
         # For the replacement see #29: text nodes underscores are escaped
         title_part = ' "%s"' % title.replace('"', r'\"') if title else ''
         return '%s[%s](%s%s)%s' % (prefix, text, href, title_part, suffix) if href else text
 
-    def convert_b(self, el, text, convert_as_inline):
-        return self.convert_strong(el, text, convert_as_inline)
+    def convert_b(self, el, text):
+        return self.convert_strong(el, text)
 
-    def convert_blockquote(self, el, text, convert_as_inline):
+    def convert_span(self, el, text):
+        return '%s' % text if text else ''
 
-        if convert_as_inline:
-            return text
-
+    def convert_blockquote(self, el, text):
         return '\n' + line_beginning_re.sub('> ', text) if text else ''
 
-    def convert_br(self, el, text, convert_as_inline):
-        if convert_as_inline:
-            return ""
-
+    def convert_br(self, el, text):
         return '  \n'
 
-    def convert_em(self, el, text, convert_as_inline):
+    def convert_em(self, el, text):
         prefix, suffix, text = chomp(text)
         if not text:
             return ''
         return '%s*%s*%s' % (prefix, text, suffix)
 
-    def convert_i(self, el, text, convert_as_inline):
-        return self.convert_em(el, text, convert_as_inline)
+    def convert_i(self, el, text):
+        return self.convert_em(el, text)
 
-    def convert_list(self, el, text, convert_as_inline):
+    def convert_list(self, el, text):
 
         # Converting a list to inline is undefined.
         # Ignoring convert_to_inline for list.
@@ -137,12 +130,12 @@ class MarkdownConverter(object):
         if nested:
             # remove trailing newline if nested
             return '\n' + self.indent(text, 1).rstrip()
-        return '\n' + text + '\n'
+        return '\n' + text
 
     convert_ul = convert_list
     convert_ol = convert_list
 
-    def convert_li(self, el, text, convert_as_inline):
+    def convert_li(self, el, text):
         parent = el.parent
         if parent is not None and parent.name == 'ol':
             if parent.get("start"):
@@ -160,12 +153,10 @@ class MarkdownConverter(object):
             bullet = self.bullets[depth % len(bullets)]
         return '%s %s\n' % (bullet, text or '')
 
-    def convert_p(self, el, text, convert_as_inline):
-        if convert_as_inline:
-            return text
+    def convert_p(self, el, text):
         return '%s' % text if text else ''
 
-    def convert_strong(self, el, text, convert_as_inline):
+    def convert_strong(self, el, text):
         prefix, suffix, text = chomp(text)
         if not text:
             return ''
@@ -188,13 +179,17 @@ def search_n_parse(soup: BeautifulSoup):
     title = title.text
     converter = MarkdownConverter()
     package_desc = soup.find("p")
-    emb_desc = converter.process_tag(package_desc, convert_as_inline=False, children_only=True)
+    emb_desc = converter.process_tag(package_desc)
 
     table = soup.find("table")
     prop_list = []
     value_list = []
     for tr in table.find_all("tr"):
         tds = tr.find_all("td")
+        ignored = ["TDS archive", "Licenses", "Copyright", "Maintainer"]
+        if tds[0].text in ignored:
+            continue
+
         brs = tds[1].find_all("br")
         if brs is not None:
             for _ in brs:
@@ -210,6 +205,7 @@ def search_n_parse(soup: BeautifulSoup):
                     urllib.parse.urljoin(ctan_url,link.attrs["href"])
                 )
                 tds[1].a.replace_with(md_link)
+
         prop_list.append(tds[0].text)
         value_list.append(tds[1].text.rstrip(", "))
 
@@ -229,7 +225,7 @@ async def cmd_texdoc(ctx):
         {prefix}texdoc tikz
     """
     if len(ctx.args) > 800:
-        return await ctx.error_reply("Given string is too long!")
+        return await ctx.error_reply("Given query is too long!")
     elif not ctx.args:
         return await ctx.error_reply("Please give me something to search for!")
 
@@ -262,7 +258,7 @@ async def cmd_ctan(ctx):
     url = ctan_url.format("pkg/{}".format(urllib.parse.quote_plus(ctx.args)))
     search_url = ctan_url.format("search?phrase={}&max=10")
     if len(url) > 1500:
-        return await ctx.error_reply("Given string is too long!")
+        return await ctx.error_reply("Given query is too long!")
 
     if ctx.alias.lower() == "ctanlink":
         return await ctx.reply(url if ctx.args else ctan_url.format(''))
@@ -321,15 +317,22 @@ async def cmd_ctan(ctx):
         table = prop_tabulate(prop_list, value_list)
     else:
         table = ""
+    read_more = "Read more at [CTAN page]({}) of the package.".format(url)
+    if len(desc) > 700:
+        desc = desc[:700-len(read_more)] + "..."
+    if len(table) > 900:
+        table = table[:900]
+        rightmost_newline = table.rfind("\n")
+        table = table[:rightmost_newline+1]
+    emb_desc = desc + "\n" + table + read_more
+    embed = discord.Embed(
+                title=title,
+                url=url,
+                description=emb_desc,
+                color=discord.Color.from_rgb(66, 66, 133)  # ctan's #424285 color
+            )
+    embed.set_thumbnail(url=lion_url)
 
-    emb_desc = desc + '\n' + table
-    if len(emb_desc) > 2000:
-        read_more = "Read more at [ctan page]({})".format(url)
-        idx = len(emb_desc) - 2000 + len("... " + read_more)
-        short_desc = emb_desc[:-idx]
-        rightmost_newline = short_desc.rfind("\n")
-        emb_desc = short_desc[:rightmost_newline] + "... " + read_more
-    embed = discord.Embed(title=title, url=url, description=emb_desc)
     return await out_msg.edit(
         content="",
         embed=embed
