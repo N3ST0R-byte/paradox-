@@ -134,6 +134,10 @@ class paraModule(Module):
             # Unknown exception!
             full_traceback = traceback.format_exc()
             only_error = "".join(traceback.TracebackException.from_exception(e).format_exception_only())
+            # Handle the error message being too long to display in the embed
+            # Discord can throw error messages over the embed field limit
+            if len(only_error) > 500:
+                only_error = only_error[:500] + "..."
 
             log(("Caught an unhandled exception while "
                  "executing command '{cmdname}' from module '{module}' "
