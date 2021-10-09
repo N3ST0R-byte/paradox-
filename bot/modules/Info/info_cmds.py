@@ -402,9 +402,9 @@ async def cmd_channelinfo(ctx: Context, flags):
         # Embed info specific to threads.
         owner = ctx.guild.get_member(ch.owner_id)
         origin = "{} [<#{}>]".format(ctx.guild.get_channel(ch.parent_id), ch.parent_id)
-        dur = int(ctx.ch.auto_archive_duration / 60)
+        dur = int(ch.auto_archive_duration / 60)
         auto_archive = "In {} hour{}".format(dur, "s" if dur > 1 else "")
-        last_modified = ctx.ch.archive_timestamp.strftime("%d/%m/%Y %H:%M:%S")
+        last_modified = ch.archive_timestamp.strftime("%d/%m/%Y %H:%M:%S")
 
         prop_list = ["Name", "Origin", "Type", "ID", "Owner", "Auto archive", "Last Modified"]
         value_list = [name, origin, tv[str(ch.type)], ch.id, owner, auto_archive, last_modified]
