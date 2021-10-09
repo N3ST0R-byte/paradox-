@@ -192,7 +192,7 @@ async def find_channel(ctx, userstr, interactive=False, collection=None, chan_ty
     def check(chan):
         return (chan.id == chanid) or (searchstr in chan.name.lower())
 
-    # Get list of matching roles
+    # Get list of matching channels
     channels = list(filter(check, collection))
 
     if len(channels) == 0:

@@ -333,7 +333,11 @@ async def cmd_channelinfo(ctx: Context, flags):
         "voice": "Voice channel",
         "category": "Category",
         "news": "Announcement channel",
-        "store": "Store channel"
+        "store": "Store channel",
+        "public_thread": "Public thread",
+        "private_thread": "Private thread",
+        "news_thread": "Public thread",
+        "stage_voice": "Stage channel"
     }
 
     # Definitions to shorten the character count
@@ -357,7 +361,7 @@ async def cmd_channelinfo(ctx: Context, flags):
             return await ctx.reply("Only text channels have topics!")
 
     # Generic embed info, valid for every channel type.
-    name = f"{ch.name} [{ch.mention}]" if isinstance(ch, discord.TextChannel) else f"{ch.name}"
+    name = f"{ch.name} [{ch.mention}]" if not isinstance(ch, discord.CategoryChannel) else f"{ch.name}"
     created = ch.created_at.strftime("%d/%m/%Y")
     created_ago = f"({strfdelta(datetime.utcnow() - ch.created_at, minutes=True)} ago)"
 
@@ -378,7 +382,7 @@ async def cmd_channelinfo(ctx: Context, flags):
         else:
             prop_list.append("Topic")
             value_list.append(topic)
-    elif isinstance(ch, discord.VoiceChannel):
+    elif (isinstance(ch, discord.VoiceChannel)) or (isinstance(ch, discord.StageChannel)):
         # Embed info specific to voice channels.
         userlimit = ch.user_limit or "Unlimited"
 
@@ -393,6 +397,18 @@ async def cmd_channelinfo(ctx: Context, flags):
             emb_add_fields(embed, field)
         else:
             embed.add_field(name="Members", value="None")
+
+    elif isinstance(ch, discord.ThreadChannel):
+        # Embed info specific to threads.
+        owner = ctx.guild.get_member(ch.owner_id)
+        origin = "{} [<#{}>]".format(ctx.guild.get_channel(ch.parent_id), ch.parent_id)
+        dur = int(ctx.ch.auto_archive_duration / 60)
+        auto_archive = "In {} hour{}".format(dur, "s" if dur > 1 else "")
+        last_modified = ctx.ch.archive_timestamp.strftime("%d/%m/%Y %H:%M:%S")
+
+        prop_list = ["Name", "Origin", "Type", "ID", "Owner", "Auto archive", "Last Modified"]
+        value_list = [name, origin, tv[str(ch.type)], ch.id, owner, auto_archive, last_modified]
+
     else:
         # If any other type is present, provide generic information only.
         prop_list = ["Name", "Type", "ID", "Created at", ""]
