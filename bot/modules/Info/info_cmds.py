@@ -1,6 +1,7 @@
 from datetime import datetime
 import discord
 from discord import Status
+from discord.http import Route
 
 from cmdClient import Context
 
@@ -28,6 +29,66 @@ Commands provided:
     channelinfo:
         Displays information about a specified channel
 """
+
+
+async def get_server_avatar(ctx, gid, uid):
+    """
+    Fetches a member's server avatar URL, and return it if it exists.
+    If the member does not have a server avatar, None will be returned.
+
+    Parameters
+    ----------
+    gid: int
+        The guild ID.
+    uid: int
+        The member's user ID.  
+
+    Returns: str
+        The direct URL to the member's server avatar.
+
+    """
+
+    res = await ctx.client.http.request(Route("GET", f"/guilds/{gid}/members/{uid}"))
+    if not res["avatar"]:
+        return None
+
+    if res["avatar"].startswith("a_"):
+        filetype = "gif"
+    else:
+        filetype = "png"
+
+    url = "https://cdn.discordapp.com/guilds/{}/users/{}/avatars/{}.{}?size=1024".format(
+        gid, uid, res["avatar"], filetype)
+
+    return url
+
+
+async def get_user_banner(ctx, uid):
+    """
+    Fetches a user's profile banner, and return it if it exists.
+    If the member does not have a profile banner, None will be returned.
+
+    Parameters
+    ----------
+    uid: int
+        The user's ID.  
+
+    Returns: str
+        The direct URL to the user's profile banner.
+
+    """
+
+    res = await ctx.client.http.request(Route("GET", f"/users/{uid}"))
+    if not res["banner"]:
+        return None
+
+    if res["banner"].startswith("a_"):
+        filetype = "gif"
+    else:
+        filetype = "png"
+
+    url = "https://cdn.discordapp.com/banners/{}/{}.{}?size=2048".format(uid, res["banner"], filetype)
+    return url
 
 
 @module.cmd(name="roleinfo",
@@ -146,6 +207,9 @@ async def cmd_userinfo(ctx: Context):
 
     name = "{} {}".format(user, ctx.client.conf.emojis.getemoji("bot") if user.bot else "")
 
+    banner = await get_user_banner(ctx, user.id)
+    serverav = await get_server_avatar(ctx, ctx.guild.id, user.id)
+
     statusnames = {
         Status.offline: "Offline",
         Status.dnd: "Do Not Disturb",
@@ -189,8 +253,15 @@ async def cmd_userinfo(ctx: Context):
     embed = discord.Embed(color=colour, description=desc)
     embed.set_author(name=f"{user} ({user.id})",
                      icon_url=user.avatar_url)
-    embed.set_thumbnail(url=user.avatar_url)
+    if serverav:
+        embed.set_thumbnail(url=serverav)
+    else:
+        embed.set_thumbnail(url=user.avatar_url)
+
     embed.add_field(name="Roles", value=roles, inline=False)
+
+    if banner:
+        embed.set_image(url=banner)
 
     if user.joined_at:  # joined_at is Optional
         joined = sorted((mem for mem in ctx.guild.members if mem.joined_at), key=lambda mem: mem.joined_at)
@@ -431,15 +502,20 @@ async def cmd_channelinfo(ctx: Context, flags):
 
 @module.cmd("avatar",
             desc="Obtains the mentioned user's avatar, or your own.",
-            aliases=["av"])
-async def cmd_avatar(ctx: Context):
+            aliases=["av"],
+            flags=["server"])
+async def cmd_avatar(ctx: Context, flags):
     """
     Usage``:
-        {prefix}avatar [<username> | <user ID> | <user mention> | <partial lookup>]
+        {prefix}avatar [<username> | <user ID> | <user mention> | <partial lookup>] 
+        [--server]
     Description:
         Displays the avatar of the provided user. If no user is provided, the author will be used.
         Hyperlinks the user's avatar so it can be viewed online.
+    Flags::
+        server: Display the user's server avatar, if set.
     """
+
     user = ctx.author
     if ctx.guild:
         if ctx.args:
@@ -453,9 +529,20 @@ async def cmd_avatar(ctx: Context):
     else:
         colour = ParaCC["blue"]
 
-    desc = f"Click [here]({user.avatar_url}) to view the {'GIF' if user.is_avatar_animated() else 'image'}."
+    if flags["server"]:
+        if not ctx.guild:
+            return await ctx.error_reply("This flag can only be used in a server.")
+
+        avatar_url = await get_server_avatar(ctx, ctx.guild.id, user.id)
+        if not avatar_url:
+            return await ctx.error_reply(f"{user} has no server avatar set.")
+
+    else:
+        avatar_url = user.avatar_url 
+
+    desc = f"Click [here]({avatar_url}) to view the {'GIF' if user.is_avatar_animated() else 'image'}."
     embed = discord.Embed(colour=colour, description=desc)
     embed.set_author(name=f"{user}'s Avatar")
-    embed.set_image(url=user.avatar_url)
+    embed.set_image(url=avatar_url)
 
     await ctx.reply(embed=embed)
