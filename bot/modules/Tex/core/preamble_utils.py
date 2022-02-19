@@ -6,7 +6,7 @@ import discord
 
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 
-from wards import is_manager
+from wards import is_manager, is_reviewer
 
 from utils.lib import split_text, mail
 from utils import interactive  # noqa
@@ -314,9 +314,9 @@ async def judgement_reactions(ctx, userid, msg):
         True, if the preamble was approved,
         False, if the preamble was denied.
     """
-    # Check that the context author has bot manager permissions
-    if not await is_manager.run(ctx):
-        raise ValueError("Attempt to add judgement reactions for non-manager.")
+    # Check that the context author has preamble reviewer permissions
+    if not await is_reviewer.run(ctx):
+        raise ValueError("Attempt to add judgement reactions for non-reviewer.")
 
     # Load reaction emojis
     approve = ctx.client.conf.emojis.getemoji('approve')

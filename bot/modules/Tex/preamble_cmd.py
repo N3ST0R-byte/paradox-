@@ -31,7 +31,7 @@ async def cmd_preamble(ctx, flags):
         {prefix}preamble --reset
         {prefix}preamble --preset [presetname]
         {prefix}preamble --replace [code]
-        {prefix}preamble [--add] [code]
+        {prefix}preamble --add [code]
         {prefix}preamble --remove [code]
     Description:
         With no arguments or flags, displays the preamble used to compile your LaTeX.
@@ -452,7 +452,7 @@ async def cmd_preamble(ctx, flags):
             "User wishes to add {} lines to their preamble".format(len(args.splitlines()))
         )
         return await ctx.reply(
-            "Your preamble request has been sent to my managers for review.\n"
+            "Your preamble request has been sent to my review team.\n"
             "You will be messaged when your request is reviewed "
             "(usually around `2`-`4` hours, depending on availability).\n"
             "If you wish to retract your submission, please use `{}preamble --retract`.".format(ctx.best_prefix())
