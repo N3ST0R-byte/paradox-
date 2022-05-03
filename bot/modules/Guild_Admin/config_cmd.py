@@ -143,7 +143,7 @@ async def cmd_config(ctx):
                     color=discord.Color.red()
                 )
                 embed.set_footer(
-                    text="Use `{}config {}` to see more detailed information about this setting.".format(
+                    text="Use {}config {} to see more detailed information about this setting.".format(
                         ctx.best_prefix(),
                         setting.name
                     )

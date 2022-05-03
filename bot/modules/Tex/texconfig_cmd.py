@@ -147,7 +147,7 @@ async def cmd_texconfig(ctx):
             await ctx.reply(embed=setting.info_embed(ctx, current_value))
         else:
             # Set the option
-            await setting.user_set(ctx, valuestr)
+            await setting.user_set(ctx, valuestr.lower())
 
 
 @module.cmd("autotex",

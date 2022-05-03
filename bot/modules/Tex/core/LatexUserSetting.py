@@ -105,7 +105,7 @@ class LatexUserSetting(SettingType):
                                   description=desc,
                                   color=discord.Color.red())
             embed.set_footer(
-                text="Use `{}texconfig {}` to see more detailed information about this setting.".format(
+                text="Use {}texconfig {} to see more detailed information about this setting.".format(
                     ctx.best_prefix(),
                     cls.name
                 )
