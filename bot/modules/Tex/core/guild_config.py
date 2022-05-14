@@ -136,3 +136,5 @@ class latex_channels(ListData, ChannelList, GuildSetting):
         formatted = super()._format_data(*args, **kwargs)
         if formatted is None:
             return "All Channels"
+
+        return formatted
