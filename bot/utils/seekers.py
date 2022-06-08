@@ -230,7 +230,7 @@ async def find_channel(ctx, userstr, interactive=False, collection=None, chan_ty
 
 
 @Context.util
-async def find_member(ctx, userstr, interactive=False, collection=None, silent_notfound=False):
+async def find_member(ctx, userstr, interactive=False, collection=None, collection_limit=1000, silent_notfound=False):
     """
     Find a guild member given a partial matching string,
     allowing custom member collections.
@@ -246,6 +246,10 @@ async def find_member(ctx, userstr, interactive=False, collection=None, silent_n
     collection: List(discord.Member)
         Collection of members to search amongst.
         If none, uses the full guild member list.
+    collection_limit: int
+        Limit the collection to X members.
+        Queries over this limit will return a SafeCancellation.
+        Default collection limit is 1000.
     silent_notfound: bool
         Whether to not reply with a not-found error when there are no matches.
         Allows custom handling for this case.
@@ -290,8 +294,11 @@ async def find_member(ctx, userstr, interactive=False, collection=None, silent_n
             or searchstr in str(member).lower()
         )
 
-    # Get list of matching roles
+    # Get list of matching members
     members = list(filter(check, collection))
+
+    if len(members) > collection_limit:
+        raise SafeCancellation("Too many matching members found! Please refine your input and try again.")
 
     if len(members) == 0:
         # Nope
@@ -305,8 +312,7 @@ async def find_member(ctx, userstr, interactive=False, collection=None, silent_n
             # Interactive prompt with the list of members
             member_names = [
                 "{} {}".format(
-                    member.nick if member.nick else (member if members.count(member) > 1
-                                                     else member),
+                    member.nick if member.nick else member,
                     ("({})".format(member)) if member.nick else ""
                 ) for member in members
             ]
