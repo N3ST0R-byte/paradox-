@@ -302,6 +302,13 @@ async def cmd_ctan(ctx):
                 )
 
         urls = soup.find_all("a", attrs={"class": "hit-type-pkg"})
+        if not urls:
+            embed.add_field(name="No results found!", value="The search found no matching packages on CTAN.")
+            return await out_msg.edit(
+                    content="",
+                    embed=embed
+                )
+
         md_links = []
         for url in urls:
             md_link = "[{}]({})".format(
