@@ -77,7 +77,7 @@ async def cmd_dog(ctx: Context):
     """
     BASE_URL = "http://random.dog/"
     async with aiohttp.ClientSession() as sess:
-        async with sess.get("http://random.dog/woof") as r:
+        async with sess.get("https://random.dog/woof") as r:
             if r.status == 200:
                 dog = await r.text()
                 embed = discord.Embed(description="[Woof!]({})".format(BASE_URL + dog), color=discord.Colour.light_grey())
@@ -119,7 +119,7 @@ async def cmd_duck(ctx: Context, flags):
 @module.cmd("cat",
             desc="Sends a random cat image",
             aliases=["meow", "purr", "pussy"],
-            flags=["t==", "c==", "cc=", "cs="])
+            flags=["tags==", "caption==", "captioncolour=", "captionsize="])
 async def cmd_cat(ctx: Context, flags):
     """
     Usage``:
@@ -127,38 +127,38 @@ async def cmd_cat(ctx: Context, flags):
     Description:
         Replies with a random cat image!
     Flags::
-        t: Search for an image with one of the specified tags.
-        c: Give the result image a caption.
-        cc: Change the colour of the caption.
-        cs: Change the size of the caption.
+        tags: Search for an image with one of the specified tags.
+        caption: Give the result image a caption.
+        captioncolour: Change the colour of the caption.
+        captionsize: Change the size of the caption.
     """
     BASE_URL = "https://cataas.com/"
     async with aiohttp.ClientSession() as sess:
-        if flags["t"]:
+        if flags["tags"]:
             # Remove any commas beforehand
-            flags["t"] = flags["t"].replace(",", "")
+            flags["tags"] = flags["tags"].replace(",", "")
             # Format the tag arguments as the URL doesn't accept whitespaces between tags.
-            tag = "?tags={}".format(",".join(arg for arg in flags["t"].split()))
+            tag = "?tags={}".format(",".join(arg for arg in flags["tags"].split()))
             FINAL_URL = BASE_URL + "api/cats" + tag
         else:
             FINAL_URL = BASE_URL + "api/cats"
 
-        if flags["c"]:
-            flags["c"] = flags["c"].replace(" ", "%20")
-            caption = "/says/" + flags["c"]
+        if flags["caption"]:
+            flags["caption"] = flags["caption"].replace(" ", "%20")
+            caption = "/says/" + flags["caption"]
         else:
             caption = False
 
-        if flags["cc"]:
-            if flags["cs"]:
-                colour = "&color={}".format(flags["cc"])
+        if flags["captioncolour"]:
+            if flags["captionsize"]:
+                colour = "&color={}".format(flags["captioncolour"])
             else:
-                colour = "?color={}".format(flags["cc"])
+                colour = "?color={}".format(flags["captioncolour"])
         else:
             colour = False
 
-        if flags["cs"]:
-            size = "?size={}".format(flags["cs"])
+        if flags["captionsize"]:
+            size = "?size={}".format(flags["captionsize"])
         else:
             size = False
 
@@ -171,7 +171,7 @@ async def cmd_cat(ctx: Context, flags):
                 except IndexError:
                     # The tag provided wasn't found in any of the available images.
                     return await ctx.error_reply("No images with that tag were found.")
-                cid = cat["id"]
+                cid = cat["_id"]
                 # If a caption is provided, append it to the URL.
                 url = BASE_URL + "cat/{}".format(cid)
                 if caption:
