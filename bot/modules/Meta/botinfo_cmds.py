@@ -130,7 +130,7 @@ async def cmd_ping(ctx: Context):
     """
     # Edit a message and see how long it takes
     msg = await ctx.reply("Beep")
-    await msg.edit(content="Boop")
+    msg = await msg.edit(content="Boop")
     latency = ((msg.edited_at - msg.created_at).microseconds) // 1000
 
     await msg.edit(content="Ping: `{}`ms.\nHeartbeat: `{:.0f}`ms.".format(latency, ctx.client.latency * 1000))

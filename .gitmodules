@@ -2,3 +2,6 @@
 	path = bot/cmdClient
 	url = https://github.com/Intery/dpy-cmdClient.git
     ignore = untracked
+[submodule "cmdClient"]
+	path = cmdClient
+	url = https://github.com/Hweary/cmdClient.git

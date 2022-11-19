@@ -42,9 +42,9 @@ async def cmd_feedback(ctx: Context):
             return await ctx.error_reply("Cancelled question.")
 
     # Build the feedback embed
-    embed = discord.Embed(title="Feedback", color=ParaCC["blue"], timestamp=datetime.now(), description=response)
+    embed = discord.Embed(title="Feedback", color=ParaCC["blue"], timestamp=datetime.utcnow(), description=response)
     embed.set_author(name="{} ({})".format(ctx.author, ctx.author.id),
-                     icon_url=ctx.author.avatar_url)
+                     icon_url=ctx.author.avatar.url)
     embed.set_footer(text=datetime.utcnow().strftime("Sent from {}".format(ctx.guild.name if ctx.guild else "DM")))
 
     # Send a preview and confirm with the user
