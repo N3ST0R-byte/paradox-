@@ -176,7 +176,15 @@ async def find_channel(ctx, userstr, interactive=False, collection=None, chan_ty
         raise ValueError("User string passed to find_channel was empty.")
 
     # Create the collection to search from args or guild channels
-    collection = collection if collection is not None else ctx.guild.channels
+    if collection is None:
+        collection = []
+
+        for ch in ctx.guild.channels:
+            collection.append(ch)
+
+        for ch in ctx.guild.threads:
+            collection.append(ch)
+
     if chan_type is not None:
         collection = [chan for chan in collection if chan.type == chan_type]
 
