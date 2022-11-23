@@ -49,4 +49,9 @@ async def cmd_calc(ctx):
         await ctx.reply("The following error occured while calculating:\n`{}`".format(
             discord.utils.escape_mentions(answer["error"])))
         return
-    await ctx.reply("Result{}:\n```\n{}\n```".format("s" if len(exprs) > 1 else "", "\n".join(answer["result"])))
+    # Start building the message
+    res = "\n".join(answer["result"])
+    res = res[:1900] + (f"...\n--- {str(len(res[1900:]))}" + " characters excluded ---" if len(res) > 1900 else "")
+    msg = f"```\n{res}\n```"
+
+    await ctx.reply("Result{}:\n{}".format("s" if len(exprs) > 1 else "", msg))

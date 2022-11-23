@@ -118,13 +118,13 @@ async def cmd_nlab(ctx):
 
     title = soup.find("title")
     if title is None or "Search results" not in title.contents[0]:
-        await out_msg.edit(
+        out_msg = await out_msg.edit(
             content="Nlab redirected the search to the following page:\n{}".format(soup.find("a").attrs["href"])
         )
         return
     parsed = await search_page_parse(soup)
     if not parsed:
-        await out_msg.edit(
+        out_msg = await out_msg.edit(
             content="I don't understand the search results. Read them yourself at:\n{}".format(url)
         )
         return
@@ -165,7 +165,7 @@ async def cmd_nlab(ctx):
             ]
 
     if not in_title and not in_body:
-        await out_msg.edit(content="No results found at:\n{}".format(url))
+        out_msg = await out_msg.edit(content="No results found at:\n{}".format(url))
         return
 
     emb_pages = []

@@ -269,19 +269,18 @@ async def cmd_query(ctx, flags):
     try:
         result = await get_query(ctx.args, appid)
     except Exception as e:
-        print(e)
         return await ctx.error_reply(
             "An unknown exception occurred while fetching the Wolfram Alpha query!\n"
             "If the problem persists please contact support."
         )
     if not result:
-        await ctx.safe_delete_msgs(temp_msg)
+        temp_msg = await ctx.safe_delete_msgs(temp_msg)
         return await ctx.error_reply(
             "Failed to get a response from Wolfram Alpha.\n"
             "If the problem persists, please contact support."
         )
     if "queryresult" not in result:
-        await ctx.safe_delete_msgs(temp_msg)
+        temp_msg = await ctx.safe_delete_msgs(temp_msg)
         return await ctx.error_reply(
             "Did not get a valid response from Wolfram Alpha.\n"
             "If the problem persists, please contact support."
@@ -311,21 +310,21 @@ async def cmd_query(ctx, flags):
                 "Perhaps try rephrasing your question?\n{}"
             ).format(link)
         embed = discord.Embed(description=desc)
-        embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
+        embed.set_footer(icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author))
         embed.set_thumbnail(url=WOLF_ICON)
-        await ctx.safe_delete_msgs(temp_msg)
+        temp_msg = await ctx.safe_delete_msgs(temp_msg)
         await ctx.offer_delete(await ctx.reply(embed=embed))
         return
 
     if flags["text"]:
         fields = await pods_to_textdata(result["queryresult"]["pods"])
         embed = discord.Embed(description=link)
-        embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
+        embed.set_footer(icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author))
         embed.set_thumbnail(url=WOLF_ICON)
         emb_add_fields(embed, fields)
-        await ctx.safe_delete_msgs(temp_msg)
+        temp_msg = await ctx.safe_delete_msgs(temp_msg)
         out_msg = await ctx.reply(embed=embed)
-        await ctx.offer_delete(out_msg)
+        out_msg = await ctx.offer_delete(out_msg)
         return
 
     important, extra = triage_pods(result["queryresult"]["pods"])
@@ -337,12 +336,12 @@ async def cmd_query(ctx, flags):
     embed.set_author(name="Results provided by WolframAlpha",
                      icon_url=WOLF_SMALL_ICON,
                      url="http://www.wolframalpha.com/pro/")
-    embed.set_footer(icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author))
+    embed.set_footer(icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author))
     embed.set_thumbnail(url=WOLF_ICON)
     embed.set_image(url="attachment://wolf.png")
     # embed.set_image(url="https://content.wolfram.com/uploads/sites/10/2016/12/WolframAlphaLogo_Web_sanstagline-med.jpg")
 
-    await ctx.safe_delete_msgs(temp_msg)
+    temp_msg = await ctx.safe_delete_msgs(temp_msg)
     dfile = discord.File(data, filename="wolf.png")
     out_msg = await ctx.reply(file=dfile, embed=embed)
     asyncio.ensure_future(ctx.offer_delete(out_msg))
@@ -366,7 +365,7 @@ async def cmd_query(ctx, flags):
                 )
             except asyncio.TimeoutError:
                 try:
-                    await out_msg.remove_reaction(more_emoji, ctx.me)
+                    out_msg = await out_msg.remove_reaction(more_emoji, ctx.me)
                 except discord.NotFound:
                     pass
                 except Exception:
