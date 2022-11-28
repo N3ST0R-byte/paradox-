@@ -59,7 +59,7 @@ async def cmd_help(ctx: Context):
         # Send specific command help
 
         # Attempt to fetch the command
-        command = ctx.client.cmd_names.get(ctx.args.strip(), None)
+        command = ctx.client.cmd_names.get(ctx.args.lower().strip(), None)
         if command is None:
             if ctx.args == "cmd":
                 return await ctx.reply("~~You really shouldn't take it literally :upside_down:.~~ "

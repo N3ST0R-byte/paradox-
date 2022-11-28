@@ -57,7 +57,7 @@ async def cmd_shutdown(ctx: Context):
         *Requires you to be an owner of the bot.*
     """
     await ctx.reply("Shutting down...")
-    await ctx.client.logout()
+    await ctx.client.close()
 
 
 @module.cmd("setinfo",

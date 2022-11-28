@@ -8,7 +8,7 @@ from .module import maths_module as module
 Provides the calc command
 """
 
-API_ADDR = 'http://api.mathjs.org/v4/'
+API_ADDR = 'https://api.mathjs.org/v4/'
 
 
 @module.cmd("calc",
@@ -23,7 +23,7 @@ async def cmd_calc(ctx):
         Multiple expressions may be entered simultaneously, separated by newlines.
         Variables defined in one expression will be remembered in the expressions below.
 
-        For further documentation see the [mathjs API docs](http://api.mathjs.org/).
+        For further documentation see the [mathjs API docs](https://api.mathjs.org/).
     Examples``:
         {prefix}calc sin(45 deg)
         {prefix}calc det([1, 1; 2, 3])
