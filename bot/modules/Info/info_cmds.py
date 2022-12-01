@@ -4,7 +4,7 @@ from discord.http import Route
 
 from cmdClient import Context
 
-from wards import in_guild
+from wards import in_guild, chunk_guild
 from constants import ParaCC
 from utils.lib import emb_add_fields, paginate_list, strfdelta, prop_tabulate, format_activity, join_list
 
@@ -93,6 +93,7 @@ async def get_user_banner(ctx, uid):
             desc="Displays information about a role.",
             aliases=["role", "rinfo", "ri"])
 @in_guild()
+@chunk_guild()
 async def cmd_roleinfo(ctx: Context):
     """
     Usage``:
@@ -163,6 +164,7 @@ async def cmd_roleinfo(ctx: Context):
             desc="Lists members with a particular role.",
             aliases=["rolemems", "whohas"])
 @in_guild()
+@chunk_guild()
 async def cmd_rolemembers(ctx: Context):
     """
     Usage``:
@@ -188,6 +190,7 @@ async def cmd_rolemembers(ctx: Context):
             desc="Shows various information about a user.",
             aliases=["uinfo", "ui", "user", "profile"])
 @in_guild()
+@chunk_guild()
 async def cmd_userinfo(ctx: Context):
     """
     Usage``:
@@ -196,11 +199,13 @@ async def cmd_userinfo(ctx: Context):
         Sends information on the provided user.
         If no user is provided, the author will be used.
     """
+
     user = ctx.author
     if ctx.args:
         user = await ctx.find_member(ctx.args, interactive=True)
         if not user:
             return
+
     colour = (user.colour if user.colour.value else ParaCC["blue"])
 
     name = "{} {}".format(user, ctx.client.conf.emojis.getemoji("bot") if user.bot else "")
@@ -208,41 +213,15 @@ async def cmd_userinfo(ctx: Context):
     banner = await get_user_banner(ctx, user.id)
     serverav = await get_server_avatar(ctx, ctx.guild.id, user.id)
 
-    statusnames = {
-        Status.offline: "Offline",
-        Status.dnd: "Do Not Disturb",
-        Status.online: "Online",
-        Status.idle: "Away",
-    }
-
-    # Acceptable statuses to be considered as active.
-    activestatus = [Status.online, Status.idle, Status.dnd]
-
-    devicestatus = {
-        "desktop": user.desktop_status in activestatus,
-        "mobile": user.mobile_status in activestatus,
-        "web": user.web_status in activestatus,
-    }
-
-    if any(devicestatus.values()):
-        # String if the user is "online" on one or more devices.
-        device = "Active on {}".format(join_list(string=[k for k, v in devicestatus.items() if v], nfs=True))
-    else:
-        # String if the user isn't "online" on any device.
-        device = "Not active on any device"
-
-    activity = format_activity(user)
-    presence = "{} {}".format(ctx.client.conf.emojis.getemoji(user.status.name), statusnames[user.status])
     numshared = sum(g.get_member(user.id) is not None for g in ctx.client.guilds)
     shared = "{} guild{}".format(numshared, "s" if numshared > 1 else "")
-    joined_ago = "({} ago)".format(strfdelta(discord.utils.utcnow() - user.joined_at, minutes=True))
-    joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
-    created_ago = "({} ago)".format(strfdelta(discord.utils.utcnow() - user.created_at, minutes=True))
-    created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
-    prop_list = ["Full name", "Nickname", "Presence", "Activity", "Device",
-                 "Seen in", "Joined at", "", "Created at", ""]
-    value_list = [name, user.display_name, presence, activity, device,
-                  shared, joined, joined_ago, created, created_ago]
+    joined = int(round(user.joined_at.timestamp()))
+    joined_ago = f"<t:{joined}:F>"
+    created = int(round(user.created_at.timestamp()))
+    created_ago = f"<t:{created}:F>"
+    prop_list = ["Full name", "Nickname", "Seen in", "Joined at", "Created at"]
+    value_list = [name, user.display_name,
+                  shared, joined_ago, created_ago]
     desc = prop_tabulate(prop_list, value_list)
 
     roles = [r.name for r in reversed(user.roles) if r.name != "@everyone"]
@@ -323,30 +302,21 @@ async def cmd_guildinfo(ctx: Context, flags):
     stage = len(guild.stage_channels)
     forum = len(guild.forums)
     total = len(guild.channels)
-
-    statuses = [s for s in Status if s != Status.invisible]
-    activestatus = [s for s in statuses if s != Status.offline]
-    emoji = {s: ctx.client.conf.emojis.getemoji(s.name) for s in statuses}
-
-    counts = {s: 0 for s in statuses}
-    desktop = mobile = web = 0
-
-    for m in guild.members:
-        counts[m.status] += 1
-
-        desktop += m.desktop_status in activestatus
-        mobile += m.mobile_status in activestatus
-        web += m.web_status in activestatus
-
-    status = '\n'.join("{} - **{}**".format(emoji[s], counts[s]) for s in statuses)
-    devicestatus = "🖥️ - **{}**\n📱 - **{}**\n🌎 - **{}**".format(desktop, mobile, web)
-
     bots = sum(m.bot for m in guild.members)
     humans = guild.member_count - bots
     members = "{} human{}, {} bot{} | {} total".format(humans, "s" if humans > 1 else "", 
                                                      bots, "s" if bots > 1 else "", guild.member_count)
 
-    owner = "{0} ({0.id})".format(guild.owner)
+    # Fetch guild owner without chunking entire guild
+    if guild.owner_id:
+        oid = guild.owner_id
+        owner = await guild.fetch_member(oid)
+        colour = owner.colour if owner.colour.value else discord.Colour.teal()
+        owner = "{0} ({0.id})".format(owner)
+    else:
+        owner = "Unknown"
+        colour = discord.Colour.teal()
+
     if guild.icon:
         icon = "[Icon Link]({})".format(guild.icon)
     else:
@@ -354,29 +324,31 @@ async def cmd_guildinfo(ctx: Context, flags):
     mfa = "Enabled" if guild.mfa_level else "Disabled"
     channels = "{} text, {} voice, {} categor{}, {} stage, {} forum | {} total".format(text, voice, category, "ies" if category > 1 else "y", stage, forum, total)
     boosts = "Level {} | {} boost{} total".format(guild.premium_tier, guild.premium_subscription_count, "" if guild.premium_subscription_count == 1 else "s")
-    created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
-    created_ago = "({} ago)".format(strfdelta(discord.utils.utcnow() - guild.created_at, minutes=True))
+    created = int(round(guild.created_at.timestamp()))
+    created_ago = f"<t:{created}:F>"
 
     prop_list = ["Owner", "Icon", "Verification",
-                 "2FA", "Roles", "Members", "Channels", "Server Boosts", "Created at", ""]
+                 "2FA", "Roles", "Members", "Channels", "Server Boosts", "Created at"]
     value_list = [owner,
                   icon,
                   ver,
                   mfa,
                   len(guild.roles),
-                  members, channels, boosts, created, created_ago]
+                  members, channels, boosts, created_ago]
     desc = prop_tabulate(prop_list, value_list)
 
     embed = discord.Embed(
-        color=guild.owner.colour if guild.owner.colour.value else discord.Colour.teal(),
+        color=colour,
         description=desc
     )
     embed.set_author(name="{0} ({0.id})".format(ctx.guild))
     embed.set_thumbnail(url=guild.icon)
 
+    """
     emb_fields = [("Member Status", status, 0), ("Member Status by Device", devicestatus, 0)]
 
     emb_add_fields(embed, emb_fields)
+    """
     await ctx.reply(embed=embed)
 
 
@@ -559,6 +531,7 @@ async def cmd_channelinfo(ctx: Context, flags):
             desc="Obtains the mentioned user's avatar, or your own.",
             aliases=["av"],
             flags=["server"])
+@chunk_guild()
 async def cmd_avatar(ctx: Context, flags):
     """
     Usage``:
@@ -572,7 +545,6 @@ async def cmd_avatar(ctx: Context, flags):
     """
 
     user = ctx.author
-    
     if ctx.guild:
         if ctx.args:
             user = await ctx.find_member(ctx.args, interactive=True)

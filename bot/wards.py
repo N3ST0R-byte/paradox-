@@ -72,15 +72,26 @@ async def guild_admin(ctx, *args, **kwargs):
 
 
 @check(name="CHUNK_GUILD",
-       msg=None,
-       requires=[in_guild])
+       msg=None)
 async def chunk_guild(ctx, *args, **kwargs):
 
     progress_msg = "Loading your guild, please wait..."
     progress_msg_large = "Loading your guild, please wait...\nDue to the size of the guild, this may take a few seconds."
 
+    # Silently pass if not in a guild to accommodate for commands that can be used in and outside guilds
+    if not ctx.guild:
+        return True
+
     # The guild isn't chunked, begin
     if not ctx.guild.chunked:
+
+        # Gracefully error if the bot lacks the Members Privileged Intent
+        if not ctx.client.intents.members:
+            ctx.log(f"Failed to chunk guild {ctx.guild.name} ({ctx.guild.id}) as the bot lacks Members Privileged Intent.",
+                    level=logging.ERROR)
+            await ctx.reply("Failed to load your guild. The bot requires the Members Privileged Intent for this to function.")
+            return False
+
         task = asyncio.create_task(ctx.guild.chunk())
         ctx.log(f"Command {ctx.cmd.name} requested guild chunking for {ctx.guild.name} ({ctx.guild.id}).",
                 level=logging.WARNING)
@@ -89,13 +100,6 @@ async def chunk_guild(ctx, *args, **kwargs):
             await asyncio.wait_for(asyncio.shield(task), timeout=1)
             # The guild has been chunked successfully!
             ctx.log(f"{ctx.guild.name} ({ctx.guild.id}) is now chunked.")
-
-        # Gracefully error if the bot lacks the Members Privileged Intent
-        except discord.ClientException:
-            ctx.log(f"Failed to chunk guild {ctx.guild.name} ({ctx.guild.id}) as the bot lacks Members Privileged Intent.",
-                    level=logging.ERROR)
-            await ctx.reply("Failed to load your guild. The bot requires the Members Privileged Intent for this to function.")
-            return False
 
         # Chunking the guild is taking longer than normal, send a message to the author
         except asyncio.TimeoutError:
