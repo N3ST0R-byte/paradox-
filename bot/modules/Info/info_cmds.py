@@ -531,7 +531,6 @@ async def cmd_channelinfo(ctx: Context, flags):
             desc="Obtains the mentioned user's avatar, or your own.",
             aliases=["av"],
             flags=["server"])
-@chunk_guild()
 async def cmd_avatar(ctx: Context, flags):
     """
     Usage``:
@@ -547,6 +546,9 @@ async def cmd_avatar(ctx: Context, flags):
     user = ctx.author
     if ctx.guild:
         if ctx.args:
+            # Only chunk guild if arguments were provided
+            await chunk_guild.run(ctx)
+
             user = await ctx.find_member(ctx.args, interactive=True)
 
             if not user:

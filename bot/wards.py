@@ -72,15 +72,12 @@ async def guild_admin(ctx, *args, **kwargs):
 
 
 @check(name="CHUNK_GUILD",
-       msg=None)
+       msg=None,
+       requires=[in_guild])
 async def chunk_guild(ctx, *args, **kwargs):
 
     progress_msg = "Loading your guild, please wait..."
     progress_msg_large = "Loading your guild, please wait...\nDue to the size of the guild, this may take a few seconds."
-
-    # Silently pass if not in a guild to accommodate for commands that can be used in and outside guilds
-    if not ctx.guild:
-        return True
 
     # The guild isn't chunked, begin
     if not ctx.guild.chunked:
