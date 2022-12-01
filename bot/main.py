@@ -80,7 +80,8 @@ client = cmdClient(
     prefix=PREFIX,
     shard_id=shard_num,
     shard_count=SHARD_COUNT,
-    intents=discord.Intents.all()
+    intents=~discord.Intents(presences=True),
+    chunk_guilds_at_startup=False
 )
 client.log = log
 client.conf = conf

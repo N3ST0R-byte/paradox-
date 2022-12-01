@@ -1,3 +1,7 @@
+import logging
+import discord
+import asyncio
+
 from cmdClient import check
 from config import get_conf
 
@@ -65,6 +69,63 @@ async def guild_manager(ctx, *args, **kwargs):
        requires=[in_guild])
 async def guild_admin(ctx, *args, **kwargs):
     return ctx.author.guild_permissions.administrator
+
+
+@check(name="CHUNK_GUILD",
+       msg=None,
+       requires=[in_guild])
+async def chunk_guild(ctx, *args, **kwargs):
+
+    progress_msg = "Loading your guild, please wait..."
+    progress_msg_large = "Loading your guild, please wait...\nDue to the size of the guild, this may take a few seconds."
+
+    # The guild isn't chunked, begin
+    if not ctx.guild.chunked:
+        task = asyncio.create_task(ctx.guild.chunk())
+        ctx.log(f"Command {ctx.cmd.name} requested guild chunking for {ctx.guild.name} ({ctx.guild.id}).",
+                level=logging.WARNING)
+
+        try:
+            await asyncio.wait_for(asyncio.shield(task), timeout=1)
+            # The guild has been chunked successfully!
+            ctx.log(f"{ctx.guild.name} ({ctx.guild.id}) is now chunked.")
+
+        # Gracefully error if the bot lacks the Members Privileged Intent
+        except discord.ClientException:
+            ctx.log(f"Failed to chunk guild {ctx.guild.name} ({ctx.guild.id}) as the bot lacks Members Privileged Intent.",
+                    level=logging.ERROR)
+            await ctx.reply("Failed to load your guild. The bot requires the Members Privileged Intent for this to function.")
+            return False
+
+        # Chunking the guild is taking longer than normal, send a message to the author
+        except asyncio.TimeoutError:
+
+            # If the guild has over 20000 members, send a message warning them about extra time
+            if ctx.guild.member_count > 20000:
+                msg = progress_msg_large
+            else:
+                msg = progress_msg
+            progress = await ctx.reply(msg)
+
+            try:
+                await asyncio.wait_for(task, timeout=10)
+
+            # It has taken 10 seconds and there has been no response
+            # Either Discord isn't working or the request was left hanging
+            except asyncio.TimeoutError:
+                progress = await progress.edit(content="Failed to load your guild. Please try again in a few minutes.")
+                return False
+            
+            else:
+                # The guild has successfully been chunked but took longer than normal
+                ctx.log(f"{ctx.guild.name} ({ctx.guild.id}) is now chunked.")
+                progress = await progress.edit(content="Your guild has been loaded successfully.")
+                progress = await progress.delete()
+                return True
+
+    # The guild is already chunked, skip the chunking process
+    return True
+
 
 
 # Old wards, not migrated
