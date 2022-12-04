@@ -22,11 +22,13 @@ async def cmd_rotate(ctx):
         {prefix}rccw [amount]
     Description:
         Rotates the last image (within the last `10` messages) by `amount` degrees, or `90` if not specified.
+        If an image is attached, the attachment will be used instead.
     Aliases::
         rcw: Rotate clockwise.
         rccw: Rotate counterclockwise.
         rotate: If `amount` is given, rotate clockwise, otherwise rotate counterclockwise.
     """
+
     amount = -1 * int(ctx.args) if (ctx.args
                                     and (ctx.args.isdigit()
                                          or (len(ctx.args) > 1
@@ -67,6 +69,14 @@ async def cmd_rotate(ctx):
 
     if image_url is None:
         return await ctx.error_reply("Couldn't find an attached image in the last 10 messages.")
+
+    if ctx.msg.attachments:
+        if (
+            ctx.msg.attachments[0].height and 
+            ctx.msg.attachments[0].filename and 
+            (mtypes.guess_type(ctx.msg.attachments[0].filename)[0] or "").startswith('image')
+        ):
+            image_url = ctx.msg.attachments[0].proxy_url
 
     async with aiohttp.ClientSession() as session:
         async with session.get(image_url) as r:
@@ -129,7 +139,7 @@ async def _rotate(ctx, im, amount, name):
                         pass
                     return
                 try:
-                    await out_msg.delete()
+                    out_msg = await out_msg.delete()
                 except discord.NotFound:
                     return
 

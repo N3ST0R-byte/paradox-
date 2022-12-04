@@ -8,7 +8,7 @@ import aiohttp
 from utils import seekers  # noqa
 from utils.lib import split_text, prop_tabulate
 
-from wards import in_guild
+from wards import in_guild, chunk_guild
 
 from .module import utils_module as module
 
@@ -54,7 +54,7 @@ async def cmd_secho(ctx):
 
 
 @module.cmd("jumpto",
-            desc="Finds the given messageid and generates a jump link.")
+            desc="Finds the given message ID and generates a jump link.")
 @in_guild()
 async def cmd_jumpto(ctx):
     """
@@ -65,11 +65,12 @@ async def cmd_jumpto(ctx):
     Examples``:
         {prefix}jumpto {ctx.msg.id}
     """
-
-    msgid = ctx.args
-    if not msgid or not msgid.isdigit():
-        await ctx.error_reply("Please provide a valid message ID.")
-        return
+    error_msg = "Please provide a valid message ID."
+    if not ctx.args:
+        return await ctx.error_reply(error_msg)
+    msgid = ctx.args.split()[0]
+    if not msgid.isdigit():
+        return await ctx.error_reply(error_msg)
     msgid = int(msgid)
 
     # Placeholder output
@@ -99,7 +100,7 @@ async def cmd_jumpto(ctx):
         embed.description = "[Jump to message]({})".format(message.jump_url)
 
     try:
-        await out_msg.edit(embed=embed)
+        out_msg = await out_msg.edit(embed=embed)
     except discord.NotFound:
         await ctx.reply(embed=embed)
 
@@ -121,10 +122,12 @@ async def cmd_quote(ctx, flags):
     Examples``:
         {prefix}quote {ctx.msg.id}
     """
-    msgid = ctx.args
-    if not msgid or not msgid.isdigit():
-        await ctx.error_reply("Please provide a valid message ID.")
-        return
+    error_msg = "Please provide a valid message ID."
+    if not ctx.args:
+        return await ctx.error_reply(error_msg)
+    msgid = ctx.args.split()[0]
+    if not msgid.isdigit():
+        return await ctx.error_reply(error_msg)
     msgid = int(msgid)
 
     # Placeholder output
@@ -151,7 +154,7 @@ async def cmd_quote(ctx, flags):
         embed.description = "Couldn't find the message!"
         embed.colour = discord.Colour.red()
         try:
-            await out_msg.edit(embed=embed)
+            out_msg = await out_msg.edit(embed=embed)
         except discord.NotFound:
             await ctx.reply(embed=embed)
     else:
@@ -169,7 +172,7 @@ async def cmd_quote(ctx, flags):
 
             if not flags["a"]:
                 embed.set_author(name="{user.name}".format(user=message.author),
-                                 icon_url=message.author.avatar_url)
+                                 icon_url=message.author.avatar.url)
             embed.set_footer(text="Sent in #{}".format(message.channel.name))
             if message.attachments:
                 embed.set_image(url=message.attachments[0].proxy_url)
@@ -177,9 +180,9 @@ async def cmd_quote(ctx, flags):
 
         try:
             if len(embeds) == 1:
-                await out_msg.edit(embed=embeds[0])
+                out_msg = await out_msg.edit(embed=embeds[0])
             else:
-                await out_msg.delete()
+                out_msg = await out_msg.delete()
                 await ctx.pager(embeds, locked=False)
         except discord.NotFound:
             await ctx.pager(embeds, locked=False)
@@ -188,6 +191,7 @@ async def cmd_quote(ctx, flags):
 @module.cmd("invitebot",
             desc="Generates a bot invite link for a given bot or botid.",
             aliases=["ibot"])
+@chunk_guild()
 async def cmd_invitebot(ctx):
     """
     Usage``:
@@ -340,7 +344,7 @@ async def cmd_colour(ctx):
     Usage``:
         {prefix}colour <hexvalue>
     Description:
-        Displays some detailed information about the colour, including a picture.
+        Displays some detailed information about the colour.
     Examples``:
         {prefix}colour #0047AB
         {prefix}colour 0047AB
@@ -350,7 +354,7 @@ async def cmd_colour(ctx):
     if not (len(hexstr) == 6 and all(c in string.hexdigits for c in hexstr)):
         await ctx.error_reply("Please give me a valid hex colour (e.g. #0047AB)")
         return
-    fetchstr = "http://thecolorapi.com/id?hex={}&format=json".format(hexstr)
+    fetchstr = "https://www.thecolorapi.com/id?hex={}".format(hexstr)
     async with aiohttp.ClientSession() as session:
         async with session.get(fetchstr) as r:
             if r.status == 200:
@@ -364,51 +368,16 @@ async def cmd_colour(ctx):
                     color=discord.Colour(int(hexstr, 16)),
                     description=desc
                 )
-                embed.set_thumbnail(
-                    url="http://placehold.it/150x150.png/{}/{}?text={}".format(hexstr, inverted, "%23" + hexstr)
-                )
+
                 embed.add_field(
                     name="Closest named colour",
                     value="`{}` (Hex `{}`)".format(js["name"]["value"], js["name"]["closest_named_hex"])
                 )
                 await ctx.reply(embed=embed)
             else:
-                await ctx.error_reply("Sorry, something went wrong while fetching your colour! Please try again later")
-                return
+                return await ctx.error_reply("Sorry, something went wrong while fetching your colour! Please try again later")
 
 
 def col_invert(color_to_convert):
     table = str.maketrans('0123456789abcdef', 'fedcba9876543210')
     return color_to_convert.lower().translate(table).upper()
-
-
-@module.cmd("names",
-            desc="Lists previous recorded names for a user.",
-            aliases=["namesfor", "whowas"],
-            disabled=True)
-async def cmd_names(ctx):
-    """
-    Sorry!:
-        Feature temporarily disabled pending the next update.
-    """
-    await ctx.reply(
-        embed=discord.Embed(title="Sorry!",
-                            description="Name recording has been temporarily disabled pending the next update.")
-    )
-#     """
-#     Usage:
-#         {prefix}names [user]
-#     Description:
-#         Displays the past names I have seen for the provided user, or yourself.
-#     """
-#     user = ctx.author
-#     if ctx.arg_str != "":
-#         user = ctx.objs["found_user"]
-#         if not user:
-#             await ctx.reply("No matching users found in this server!")
-#             return
-#     usernames = await ctx.bot.data.users_long.get(user.id, "name_history")
-#     if not usernames:
-#         await ctx.reply("I haven't seen this user change their name!")
-#         return
-#     await ctx.pager(ctx.paginate_list(usernames, title="Usernames for {}".format(user)))

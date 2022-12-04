@@ -6,6 +6,7 @@ import random
 
 from utils.lib import paginate_list
 from utils import seekers, interactive  # noqa
+from wards import chunk_guild
 
 from .module import utils_module as module
 
@@ -184,6 +185,7 @@ async def time_diff(ctx, tz, auth_tz, brief=False):
             desc="Displays the current time for a user",
             flags=['set', 'at', 'list', 'brief', '24h', 'reset'],
             aliases=['ti'])
+@chunk_guild()
 async def cmd_time(ctx, flags):
     """
     Usage``:

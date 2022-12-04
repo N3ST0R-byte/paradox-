@@ -82,7 +82,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
         If used as ree, reacts with the emoji, and as sree, silently reacts.
         Built in emoji support is coming soon!
     Flags::
-        ​e: Only shows the enlarged emoji, with no other information.
+        e: Only shows the enlarged emoji, with no other information.
         to: Accepts a message id in the current channel to react to.
         up: Accepts a number of messages above yours to react to (default is `1`).
     Examples``:
@@ -137,8 +137,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
             # We can't do much with just an id
             emoji = {'id': int(ctx.args)}
             if not enlarged_only or not await emoji_validity(emoji):
-                await ctx.reply("No emojis with this id found!")
-                return
+                return await ctx.reply("No emojis with this ID found!")
         else:
             # We found the emoji, get the emoji dict
             emoji = await get_custom_emoji(ctx, emoji_obj.guild.id, emoji_obj.id)
@@ -162,8 +161,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
                     'animated': ctx.args[1] == 'a'
                 }
                 if not await emoji_validity(emoji):
-                    await ctx.error_reply("No matching emojis found!")
-                    return
+                    return await ctx.error_reply("No matching emojis found!")
             else:
                 # We found the emoji, get the emoji dict
                 emoji = await get_custom_emoji(ctx, emoji_obj.guild.id, emoji_obj.id)
@@ -171,8 +169,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
         # There's unicode in this string
         # TODO: handle unicode emojis
         # Consider using https://github.com/twitter/twemoji/blob/master/scripts/build.js#L571
-        await ctx.error_reply("Sorry, I cannot handle built in emojis at this time!")
-        return
+        return await ctx.error_reply("Sorry, I cannot handle built in emojis at this time!")
     else:
         # Time to do a lookup
         # First, grab the emojis in the current guild and see if any of them match
@@ -205,13 +202,11 @@ async def cmd_emoji(ctx: cmdClient, flags):
                 emoji = await get_custom_emoji(ctx, emoji_obj.guild.id, emoji_obj.id)
             else:
                 # We coldn't find the emoji. Nothing we can do with a partial name
-                await ctx.error_reply("No matching emojis found!")
-                return
+                return await ctx.error_reply("No matching emojis found!")
 
     # Just in case we somehow came out with no emoji
     if emoji is None:
-        await ctx.error_reply("No matching emojis found!")
-        return
+        return await ctx.error_reply("No matching emojis found!")
 
     # At this point, we should have enough of the emoji to do what is requested.
     # Start handling the different output cases.
@@ -231,8 +226,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
             react_message = await ctx.ch.fetch_message(int(flags['to']))
             if not react_message:
                 # Couldn't find the requested message to react to
-                await ctx.error_reply("Couldn't find that message in this channel!")
-                return
+                return await ctx.error_reply("Couldn't find that message in this channel!")
         else:
             if flags['up'] and flags['up'].isdigit() and int(flags['up']) < 20:
                 distance = int(flags['up']) + 1
@@ -246,8 +240,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
 
             # If there wasn't a previous message, whinge
             if react_message is None or react_message == ctx.msg:
-                await ctx.reply("Couldn't find a message to react to!")
-                return
+                return await ctx.reply("Couldn't find a message to react to!")
 
         # React to the specified message.
         # Wrap this in try/except in case the message was deleted in the meantime somehow.
@@ -308,7 +301,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
             prop_list.append('Server')
             value_list.append(emoji_obj.guild.name if emoji_obj.guild else "Unknown")
 
-            created_ago = strfdelta(datetime.utcnow() - emoji_obj.created_at)
+            created_ago = strfdelta(discord.utils.utcnow() - emoji_obj.created_at)
             created = emoji_obj.created_at.strftime("%I:%M %p, %d/%m/%Y")
             prop_list.append('Created at')
             value_list.append(created)

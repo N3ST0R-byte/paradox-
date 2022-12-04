@@ -72,7 +72,7 @@ async def cmd_giveme(ctx: Context, flags):
     if flags['add'] or flags['remove']:
         # Permission resolution, get the highest role position the author may add
         modrole_pos = None
-        if ctx.author == ctx.guild.owner:
+        if ctx.author.id == ctx.guild.owner_id:
             modrole_pos = len(ctx.guild.roles)
         elif ctx.author.guild_permissions.manage_guild and ctx.author.guild_permissions.manage_roles:
             modrole_pos = max(
