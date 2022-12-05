@@ -63,9 +63,11 @@ class paraModule(Module):
 
             # Handle blacklisted guild channels
             disabled = ctx.client.objects["disabled_guild_channels"]
-            if ctx.guild.id in disabled and ctx.ch.id in disabled[ctx.guild.id]:
-                if not ctx.author.guild_permissions.administrator:
-                    raise SafeCancellation
+            if ctx.guild.id in disabled:
+                # Handle disabled channels, disabled categories, and threads in disabled channels
+                if ctx.ch.id in disabled[ctx.guild.id] or ctx.ch.category_id in disabled[ctx.guild.id] or (ctx.ch.type in (discord.ChannelType.news_thread, discord.ChannelType.public_thread, discord.ChannelType.private_thread) and ctx.ch.parent_id in disabled[ctx.guild.id]):
+                    if not ctx.author.guild_permissions.administrator:
+                        raise SafeCancellation
 
     def data_init_task(self, func):
         """

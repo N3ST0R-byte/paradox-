@@ -1,28 +1,14 @@
 import logging
 import asyncio
-from datetime import datetime
 import discord
-from discord import Status
 
 from settings import GuildSetting, Channel, ColumnData
 from registry import tableInterface, tableSchema, Column, ColumnType
 
-from utils.lib import strfdelta, prop_tabulate, format_activity, join_list
+from utils.lib import strfdelta, prop_tabulate, join_list
 from wards import guild_manager
 
 from .module import guild_logging_module as module
-
-
-# Map providing human readable names for each status
-statusnames = {
-    Status.offline: "Offline",
-    Status.dnd: "Do Not Disturb",
-    Status.online: "Online",
-    Status.idle: "Away",
-}
-
-# Statuses which are considered as active
-activestatus = [Status.online, Status.idle, Status.dnd]
 
 
 # Member join log event handler
@@ -45,22 +31,8 @@ async def join_logger(client, member):
         client.conf.emojis.getemoji("bot") if member.bot else "",
         member.mention
     )
-    activity = format_activity(member)
-    presence = "{} {}".format(client.conf.emojis.getemoji(member.status.name), statusnames[member.status])
-    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.created_at, minutes=True))
+    created_ago = "({} ago)".format(strfdelta(discord.utils.utcnow() - member.created_at, minutes=True))
     created = member.created_at.strftime("%I:%M %p, %d/%m/%Y")
-
-    devicestatus = {
-        "desktop": member.desktop_status in activestatus,
-        "mobile": member.mobile_status in activestatus,
-        "web": member.web_status in activestatus,
-    }
-    if any(devicestatus.values()):
-        # String if the member is "online" on one or more devices.
-        device = "Active on **{}**".format(join_list(string=[k for k, v in devicestatus.items() if v], nfs=True))
-    else:
-        # String if the user isn't "online" on any device.
-        device = "Not active on any device"
 
     member_count = "{} Users, {} Bots | {} total".format(
         len([m for m in member.guild.members if not m.bot]),
@@ -69,21 +41,21 @@ async def join_logger(client, member):
     )
 
     # Build the log embed
-    prop_list = ["User", "Presence", "Activity", "Device", "Created at", "", "Member Count"]
-    value_list = [name, presence, activity, device, created, created_ago, member_count]
+    prop_list = ["User", "Created at", "", "Member Count"]
+    value_list = [name, created, created_ago, member_count]
     desc = prop_tabulate(prop_list, value_list)
 
     embed = discord.Embed(
         color=colour,
         title="{user} ({user.id})".format(user=member),
         description=desc,
-        timestamp=datetime.now()
+        timestamp=discord.utils.utcnow()
     )
     embed.set_author(
         name="New {usertype} joined!".format(usertype='bot' if member.bot else 'user'),
-        url=member.avatar_url
+        url=member.avatar
     )
-    embed.set_thumbnail(url=member.avatar_url)
+    embed.set_thumbnail(url=member.avatar)
 
     try:
         await joinlog.send(embed=embed)
@@ -112,9 +84,9 @@ async def departure_logger(client, member):
     # Extract member information
     name = "{} ({})".format(member.display_name, member.mention)
     colour = discord.Colour.red()
-    avatar = member.avatar_url
+    avatar = member.avatar
 
-    joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.joined_at, minutes=True))
+    joined_ago = "({} ago)".format(strfdelta(discord.utils.utcnow() - member.joined_at, minutes=True))
     joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
 
     roles = [r.mention for r in member.roles if not r.is_default()]
@@ -135,7 +107,7 @@ async def departure_logger(client, member):
         color=colour,
         title="{user} ({user.id})".format(user=member),
         description=desc,
-        timestamp=datetime.now()
+        timestamp=discord.utils.utcnow()
     )
     embed.set_author(
         name="{usertype} left!".format(usertype='Bot' if member.bot else 'User'),

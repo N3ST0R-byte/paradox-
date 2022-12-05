@@ -6,7 +6,7 @@ from cmdClient import Context
 
 from wards import in_guild, chunk_guild
 from constants import ParaCC
-from utils.lib import emb_add_fields, paginate_list, strfdelta, prop_tabulate, format_activity, join_list
+from utils.lib import emb_add_fields, paginate_list, strfdelta, prop_tabulate, join_list
 
 from .module import info_module as module
 

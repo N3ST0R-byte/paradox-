@@ -368,65 +368,6 @@ def join_list(string, nfs=False):
         return "{}{}".format("".join(string), "" if nfs else ".")
 
 
-def format_activity(user):
-    """
-    Format a user's activity string, depending on the type of activity.
-    Currently supported types are:
-    - Nothing
-    - Custom status
-    - Playing (with rich presence support)
-    - Streaming
-    - Listening (with rich presence support)
-    - Watching
-    - Unknown
-    Parameters
-    ----------
-    user: discord.Member
-        The user to format the status of.
-        If the user has no activity, "Nothing" will be returned.
-
-    Returns: str
-        A formatted string with various information about the user's current activity like the name,
-        and any extra information about the activity (such as current song artists for Spotify)
-    """
-    if not user.activity:
-        return "Nothing"
-
-    AT = user.activity.type
-    a = user.activity
-    if str(AT) == "ActivityType.custom":
-        return "Status: {}".format(a)
-
-    if str(AT) == "ActivityType.playing":
-        string = "Playing {}".format(a.name)
-        try:
-            string += " ({})".format(a.details)
-        except Exception:
-            pass
-
-        return string
-
-    if str(AT) == "ActivityType.streaming":
-        return "Streaming {}".format(a.name)
-
-    if str(AT) == "ActivityType.listening":
-        try:
-            string = "Listening to `{}`".format(a.title)
-            if len(a.artists) > 1:
-                string += " by {}".format(join_list(string=a.artists))
-            else:
-                string += " by **{}**".format(a.artist)
-        except Exception:
-            string = "Listening to `{}`".format(a.name)
-        return string
-
-    if str(AT) == "ActivityType.watching":
-        return "Watching `{}`".format(a.name)
-
-    if str(AT) == "ActivityType.unknown":
-        return "Unknown"
-
-
 def shard_of(shard_count: int, guildid: int):
     """
     Calculate the shard number of a given guild.
