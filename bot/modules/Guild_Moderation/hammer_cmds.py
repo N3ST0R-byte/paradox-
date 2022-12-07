@@ -3,6 +3,7 @@ import asyncio
 import discord
 
 from cmdClient.lib import SafeCancellation
+from wards import chunk_guild
 
 from .module import guild_moderation_module as module
 
@@ -125,6 +126,7 @@ class BanAction(HammerAction):
             desc="Permanently remove a misbehaving user from the guild.",
             flags=['r==', 'p='],
             aliases=["bean"])
+@chunk_guild()
 async def cmd_ban(ctx, flags):
     """
     Usage``:
@@ -168,7 +170,13 @@ class UnbanAction(HammerAction):
     audit_reason = "Unbanned by {self.mod.id}: {self.short_reason}"
 
     async def get_collection(self):
-        return [entry.user for entry in (await self.ctx.guild.bans())]
+        bans = []
+
+        # No limit may be slow for large guilds, default is 1000
+        async for ban in self.ctx.guild.bans(limit=None):
+            bans.append(ban.user)
+
+        return bans
 
     async def _single_target_action(self, target: discord.User, **kwargs):
         try:
@@ -184,6 +192,7 @@ class UnbanAction(HammerAction):
 @module.cmd("unban",
             desc="Unban a previously banned user.",
             flags=['r=='])
+@chunk_guild()
 async def cmd_unban(ctx, flags):
 
     """
@@ -241,6 +250,7 @@ class KickAction(HammerAction):
 @module.cmd("kick",
             desc="Kick a user from the guild.",
             flags=['r=='])
+@chunk_guild()
 async def cmd_kick(ctx, flags):
     """
     Usage``:
@@ -312,6 +322,7 @@ class PreBanAction(HammerAction):
 @module.cmd("preban",
             desc="Preemptively ban users from the guild by user id.",
             flags=['r=='])
+@chunk_guild() # Does preban need chunking?
 async def cmd_preban(ctx, flags):
     """
     Usage``:

@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime as dt
 
 import discord
-from wards import guild_moderator
+from wards import guild_moderator, chunk_guild
 
 from .module import guild_moderation_module as module
 from .tickets import Ticket
@@ -11,6 +11,7 @@ from .tickets import Ticket
 @module.cmd("tickets",
             desc="List a user's moderation tickets.")
 @guild_moderator()
+@chunk_guild()
 async def cmd_tickets(ctx):
     """
     Usage``:
