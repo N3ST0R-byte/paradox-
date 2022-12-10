@@ -31,18 +31,15 @@ async def join_logger(client, member):
         client.conf.emojis.getemoji("bot") if member.bot else "",
         member.mention
     )
-    created_ago = "({} ago)".format(strfdelta(discord.utils.utcnow() - member.created_at, minutes=True))
-    created = member.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
-    member_count = "{} Users, {} Bots | {} total".format(
-        len([m for m in member.guild.members if not m.bot]),
-        len([m for m in member.guild.members if m.bot]),
-        member.guild.member_count
-    )
+    created = int(round(member.created_at.timestamp()))
+    created_ago = f"<t:{created}:F>"
+
+    member_count = f"{member.guild.member_count} total"
 
     # Build the log embed
-    prop_list = ["User", "Created at", "", "Member Count"]
-    value_list = [name, created, created_ago, member_count]
+    prop_list = ["User", "Created at", "Member Count"]
+    value_list = [name, created_ago, member_count]
     desc = prop_tabulate(prop_list, value_list)
 
     embed = discord.Embed(
@@ -74,33 +71,37 @@ async def join_logger(client, member):
                    level=logging.WARNING)
 
 
-# member departure log event handler
-async def departure_logger(client, member):
+# Member departure log event handler
+async def departure_logger(client, payload):
+    member = payload.user
+
     # Get the departure log, return if it doesn't exist
-    departure_log = client.guild_config.departure_log.get(client, member.guild.id).value
+    departure_log = client.guild_config.departure_log.get(client, payload.guild_id).value
     if not departure_log:
         return
+
+    guild = client.get_guild(payload.guild_id)
 
     # Extract member information
     name = "{} ({})".format(member.display_name, member.mention)
     colour = discord.Colour.red()
     avatar = member.avatar
 
-    joined_ago = "({} ago)".format(strfdelta(discord.utils.utcnow() - member.joined_at, minutes=True))
-    joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
+    if isinstance(member, discord.Member):
+        joined = int(round(member.joined_at.timestamp()))
+        joined_ago = f"<t:{joined}:F>"
 
-    roles = [r.mention for r in member.roles if not r.is_default()]
-    roles.reverse()
-    rolestr = ", ".join(roles) if len(roles) > 0 else "None"
+        roles = [r.mention for r in member.roles if not r.is_default()]
+        roles.reverse()
+        rolestr = ", ".join(roles) if len(roles) > 0 else "None"
+    else:
+        joined_ago = "Unknown"
+        rolestr = "Unknown"
 
-    member_count = "{} Users, {} Bots | {} total".format(
-        len([m for m in member.guild.members if not m.bot]),
-        len([m for m in member.guild.members if m.bot]),
-        member.guild.member_count
-    )
+    member_count = f"{guild.member_count} total"
 
-    prop_list = ["Member", "Joined at", "", "Roles", "Member count"]
-    value_list = [name, joined, joined_ago, rolestr, member_count]
+    prop_list = ["Member", "Joined at", "Roles", "Member count"]
+    value_list = [name, joined_ago, rolestr, member_count]
     desc = prop_tabulate(prop_list, value_list)
 
     embed = discord.Embed(
@@ -136,7 +137,7 @@ async def departure_logger(client, member):
 @module.init_task
 def attach_traffic_handlers(client):
     client.add_after_event('member_join', join_logger)
-    client.add_after_event('member_remove', departure_logger)
+    client.add_after_event('raw_member_remove', departure_logger)
 
 
 # Define configuration settings

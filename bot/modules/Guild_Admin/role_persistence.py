@@ -1,5 +1,5 @@
 import logging
-import datetime as dt
+import discord
 
 from cmdClient.lib import UserCancelled
 
@@ -98,7 +98,6 @@ class role_persistence_ignores(ListData, RoleList, GuildSetting):
 
 
 # Define event handlers
-
 async def store_roles(client, member):
     """
     Store member roles when the member leaves.
@@ -107,7 +106,7 @@ async def store_roles(client, member):
     role_list = [role.id for role in member.roles]
 
     # Don't update if the member joined in the last 10 seconds, to allow time for autoroles and role addition
-    if dt.datetime.utcnow().timestamp() - member.joined_at.timestamp() < 10:
+    if discord.utils.utcnow().timestamp() - member.joined_at.timestamp() < 10:
         return
 
     # Delete the stored roles associated to this member
