@@ -4,7 +4,7 @@ import asyncio
 
 from cmdClient.lib import ResponseTimedOut, UserCancelled
 
-from wards import guild_moderator
+from wards import guild_moderator, chunk_guild
 from utils import seekers  # noqa
 
 from .module import guild_moderation_module as module
@@ -15,6 +15,7 @@ from .module import guild_moderation_module as module
             aliases=["purge"],
             flags=["r==", "bot", "bots", "user", "embed", "file", "me", "from==", "after==", "force"])
 @guild_moderator()
+@chunk_guild()
 async def cmd_prune(ctx, flags):
     """
     Usage``:

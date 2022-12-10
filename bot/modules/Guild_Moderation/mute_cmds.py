@@ -5,7 +5,7 @@ import discord
 
 from cmdClient.lib import SafeCancellation
 
-from wards import guild_moderator
+from wards import guild_moderator, chunk_guild
 
 from .module import guild_moderation_module as module
 
@@ -223,6 +223,7 @@ class UnMuteAction(_MuteTypeAction):
             flags=['r==', 'f', 't=='],
             handle_edits=False)
 @guild_moderator()
+@chunk_guild()
 async def cmd_mute(ctx, flags):
     """
     Usage``:
@@ -248,6 +249,7 @@ async def cmd_mute(ctx, flags):
             flags=['r==', 'f'],
             handle_edits=False)
 @guild_moderator()
+@chunk_guild()
 async def cmd_unmute(ctx, flags):
     """
     Usage``:
